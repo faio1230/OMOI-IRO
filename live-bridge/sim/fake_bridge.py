@@ -19,8 +19,11 @@
 #        python fake_bridge.py --steady SECONDS [--start-ms MS]
 #   --steady: play from --start-ms for SECONDS without events (long runs,
 #   e.g. memory soak tests), then stop.
+#   --meter: also send v3 meter records at ~30 Hz while playing: the master
+#   and a track "Kick" pulsing at 120 bpm (synthetic levels, 0.1.3).
 
 import argparse
+import math
 import os
 import sys
 import time
@@ -85,6 +88,7 @@ def main():
     ap.add_argument("--port", type=int, default=bridge_core.DEFAULT_PORT)
     ap.add_argument("--steady", type=float, default=None, help="play steadily for this many seconds instead of the scenario")
     ap.add_argument("--start-ms", type=float, default=0.0, help="song position at the start of --steady")
+    ap.add_argument("--meter", action="store_true", help="also send synthetic v3 meter records (master + [LED] Kick)")
     args = ap.parse_args()
     out = bridge_core.Output(port=args.port)
     song = Transport()
@@ -113,6 +117,11 @@ def main():
     emit("meta", "start")
     next_listener = t0
     next_timer = t0
+    next_meter = t0
+
+    class Level(object):
+        def __init__(self, l, r):
+            self.output_meter_left, self.output_meter_right = l, r
     while True:
         t = time.perf_counter() - t0
         if t >= end_s:
@@ -127,6 +136,13 @@ def main():
         if not silent and now >= next_timer:
             emit("timer", "tick")
             next_timer = now + 0.1
+        if args.meter and not silent and song.is_playing and now >= next_meter:
+            # A kick on every beat at 120 bpm (decaying), a slow swell on the master.
+            beat = (now - t0) * 2.0
+            kick = math.exp(-6.0 * (beat - math.floor(beat)))
+            master = 0.35 + 0.25 * math.sin(now - t0) + 0.3 * kick
+            out.emit(bridge_core.make_meter(time.perf_counter_ns(), Level(master, master * 0.9), [("Kick", Level(kick, kick))]))
+            next_meter = now + bridge_core.METER_INTERVAL_NS / 1e9
         time.sleep(0.002)
     emit("meta", "stop")
     out.close()

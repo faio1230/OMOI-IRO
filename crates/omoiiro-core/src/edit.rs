@@ -13,7 +13,7 @@
 //!   never reused within a show.
 
 use crate::model::{
-    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Compound, ConstellationParams, Content, CycleParams, CycleScope, Effect, EdgeMode, PadsMode, PadsParams, Recording, FrameAnchor, FramesParams, Layer, TextFont, TextMode, TextParams, LayerMask, Loss, ParticleMode, ParticlesParams, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
+    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Compound, ConstellationParams, Content, CycleParams, CycleScope, Effect, EdgeMode, PadsMode, PadsParams, Recording, MeterChannel, MeterMode, MeterParams, MeterSource, FrameAnchor, FramesParams, Layer, TextFont, TextMode, TextParams, LayerMask, Loss, ParticleMode, ParticlesParams, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
     StopBehavior, StrobeMode, StrobeParams, Sync, TriggerOn, TriggerSpec, Target, TimecodeSettings, TimecodeSource, Waveform, SCHEMA_VERSION,
 };
 use crate::surface::GRID64_PROFILE;
@@ -353,6 +353,23 @@ pub fn default_effect(effect_type: &str) -> Option<Effect> {
         "builtin.constellation" => Effect::Constellation {
             version: 1,
             params: ConstellationParams { color: "#A0C0FF".into(), stroke: 1.0, lifetime_ms: 2000, fade: RippleFade::Linear, max_segments: 6, dots: true },
+        },
+        "builtin.meter" => Effect::Meter {
+            version: 1,
+            params: MeterParams {
+                source: MeterSource::Master,
+                track_name: None,
+                channel: MeterChannel::Mix,
+                mode: MeterMode::Bar,
+                color_low: "#00C060".into(),
+                color_high: "#FF2020".into(),
+                gain: 1.0,
+                floor: 0.05,
+                attack_ms: 20,
+                release_ms: 300,
+                columns: None,
+                peak_hold_ms: Some(600),
+            },
         },
         "builtin.shape" => Effect::Shape {
             version: 1,

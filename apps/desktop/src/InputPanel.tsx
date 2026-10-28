@@ -9,7 +9,10 @@ import type { EditorView } from "./ipc/types";
 
 const secs = (us: number) => `${(us / 1e6).toFixed(2)} s`;
 
-export default function InputPanel(props: { running: boolean; recordingSinceUs: number | null; docKey: string; run: (f: () => Promise<unknown>) => void }) {
+type Audio = { age_ms: number; lost: boolean; master: [number, number]; tracks: [string, [number, number]][] } | null;
+const lr = ([l, r]: [number, number]) => `${l.toFixed(2)} / ${r.toFixed(2)}`;
+
+export default function InputPanel(props: { running: boolean; recordingSinceUs: number | null; docKey: string; audio: Audio; run: (f: () => Promise<unknown>) => void }) {
   const { running, recordingSinceUs, run } = props;
   const [view, setView] = useState<EditorView | null>(null);
   const [layerId, setLayerId] = useState("");
@@ -57,6 +60,11 @@ export default function InputPanel(props: { running: boolean; recordingSinceUs: 
         )}
       </div>
       {recording && <p className="hint warn">録音中：パッドの押下を曲の時刻で記録している。</p>}
+      <p className={props.audio?.lost ? "hint warn" : "hint"}>
+        音量（ブリッジ）：{props.audio
+          ? `${props.audio.lost ? "途絶" : "受信中"}（${props.audio.age_ms} ms 前） · マスター ${lr(props.audio.master)}${props.audio.tracks.map(([n, v]) => ` · ${n} ${lr(v)}`).join("")}`
+          : "未受信（Live のブリッジ v3 と、名前が [LED] で始まるトラック）"}
+      </p>
       {note && <p className="hint">{note}</p>}
     </section>
   );

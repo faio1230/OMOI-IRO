@@ -359,6 +359,31 @@ mod tests {
     }
 
     #[test]
+    fn audio_meter_fixture_reacts_to_fake_meters() {
+        use omoiiro_core::render::{AudioInput, Renderer};
+        let text = include_str!("../../../fixtures/shows/audio-meter-0.1.3.show.json");
+        let show = load_str(text).unwrap();
+        assert_eq!(to_canonical_string(&show), text, "written in the canonical form");
+        let mut r = Renderer::new(&show).unwrap();
+        let lit = |f: &omoiiro_core::surface::Frame| (0..64).filter(|i| f.leds[*i].r + f.leds[*i].g + f.leds[*i].b > 0.0).count();
+        let quiet = AudioInput { now_us: 0, master: [0.0, 0.0], tracks: vec![("Kick".into(), [0.0, 0.0])] };
+        let loud = |now_us| AudioInput { now_us, master: [0.6, 0.5], tracks: vec![("Kick".into(), [0.9, 0.9])] };
+        // No bridge: every meter is transparent.
+        for t in [1_000_000, 17_000_000, 33_000_000] {
+            assert_eq!(lit(&r.render(t, None)), 0, "at {t}");
+        }
+        // Glow: dark when quiet, the whole grid when loud.
+        assert_eq!(lit(&r.render_all(1_000_000, None, None, Some(&quiet))), 0);
+        assert_eq!(lit(&r.render_all(1_000_000, None, None, Some(&loud(10_000)))), 64);
+        // Orb on [LED] Kick: grows with the kick only.
+        let small = lit(&r.render_all(17_000_000, None, None, Some(&AudioInput { tracks: vec![("Kick".into(), [0.1, 0.1])], ..loud(20_000) })));
+        let big = lit(&r.render_all(17_000_000, None, None, Some(&loud(40_000))));
+        assert!(small < big, "{small} < {big}");
+        // Bars: 0.6 of 8 rows on every column (5 rows rounded).
+        assert_eq!(lit(&r.render_all(33_000_000, None, None, Some(&loud(60_000)))), 5 * 8);
+    }
+
+    #[test]
     fn triggered_layer_round_trips_and_needs_its_interval() {
         let mut v = demo_value();
         v["layers"][0]["content"] = json!({"kind": "triggered", "clips": [], "trigger": {"on": "interval"}});
@@ -380,7 +405,7 @@ mod tests {
     #[test]
     fn new_0_1_2_presets_round_trip() {
         let mut show = load_str(DEMO).unwrap();
-        for (id, t) in [("pd", "builtin.pads"), ("cy", "builtin.cycle"), ("cn", "builtin.constellation"), ("fr", "builtin.frames"), ("tx", "builtin.text"), ("pt", "builtin.particles"), ("pa", "builtin.path"), ("sh", "builtin.shape"), ("tg", "builtin.tap_glow"), ("x", "builtin.cross"), ("rg", "builtin.regions"), ("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
+        for (id, t) in [("me", "builtin.meter"), ("pd", "builtin.pads"), ("cy", "builtin.cycle"), ("cn", "builtin.constellation"), ("fr", "builtin.frames"), ("tx", "builtin.text"), ("pt", "builtin.particles"), ("pa", "builtin.path"), ("sh", "builtin.shape"), ("tg", "builtin.tap_glow"), ("x", "builtin.cross"), ("rg", "builtin.regions"), ("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
             let effect = omoiiro_core::edit::default_effect(t).unwrap();
             show.presets.push(omoiiro_core::model::Preset { id: id.into(), name: id.into(), effect });
         }

@@ -500,6 +500,67 @@ pub enum Effect {
     /// 0.1.3 stage 8: lines from each press to the one before.
     #[serde(rename = "builtin.constellation")]
     Constellation { version: u32, params: ConstellationParams },
+    /// 0.1.3 stage 9: the level of Live's master or an `[LED]` track (bridge meters).
+    #[serde(rename = "builtin.meter")]
+    Meter { version: u32, params: MeterParams },
+}
+
+/// Audio level from the bridge. Only the level: Live's meters carry no
+/// frequency bands (put a `[LED]` track on a bus of what should react).
+/// Transparent without meters (no bridge, lost after 500 ms, unknown track).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MeterParams {
+    pub source: MeterSource,
+    /// `track`: the bridge name (the track's name after `[LED]`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub track_name: Option<String>,
+    pub channel: MeterChannel,
+    pub mode: MeterMode,
+    pub color_low: String,
+    pub color_high: String,
+    /// Level × gain, 0.5..=8, at most 1.
+    #[serde(serialize_with = "ser_num")]
+    pub gain: f64,
+    /// Below this the level is 0, 0..=0.5.
+    #[serde(serialize_with = "ser_num")]
+    pub floor: f64,
+    /// Smoothing towards a higher / lower level (ms).
+    pub attack_ms: u32,
+    pub release_ms: u32,
+    /// bar: columns used (x, 1..=8 of them; absent = all).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub columns: Option<Vec<u8>>,
+    /// bar: the peak cell stays this long, 0..=2000 ms.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub peak_hold_ms: Option<u32>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MeterSource {
+    Master,
+    Track,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MeterChannel {
+    /// The louder of left and right.
+    Mix,
+    Left,
+    Right,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MeterMode {
+    /// Columns filled from the bottom, level × 8 rows.
+    Bar,
+    /// The whole grid, level as brightness.
+    Glow,
+    /// A ball in the middle, radius 0.5 + level × 3.5.
+    Orb,
 }
 
 /// Pad states computed from the input history each frame (not seekable:
@@ -1042,6 +1103,7 @@ impl Effect {
             Effect::Pads { .. } => "builtin.pads",
             Effect::Cycle { .. } => "builtin.cycle",
             Effect::Constellation { .. } => "builtin.constellation",
+            Effect::Meter { .. } => "builtin.meter",
         }
     }
 
@@ -1066,7 +1128,8 @@ impl Effect {
             | Effect::Text { version, .. }
             | Effect::Pads { version, .. }
             | Effect::Cycle { version, .. }
-            | Effect::Constellation { version, .. } => *version,
+            | Effect::Constellation { version, .. }
+            | Effect::Meter { version, .. } => *version,
         }
     }
 
@@ -1483,7 +1546,7 @@ pub(crate) fn demo_for_tests() -> Show {
     s
 }
 
-step_only!(Axis, Waveform, StrobeMode, RippleFade, RippleTrigger, RippleShape, RainDirection, OrbMotion, RegionPattern, StepMode, StepOrder, PathKind, Mirror, ShapeKind, ParticleMode, EdgeMode, FrameAnchor, TextFont, TextMode, PadsMode, CycleScope);
+step_only!(Axis, Waveform, StrobeMode, RippleFade, RippleTrigger, RippleShape, RainDirection, OrbMotion, RegionPattern, StepMode, StepOrder, PathKind, Mirror, ShapeKind, ParticleMode, EdgeMode, FrameAnchor, TextFont, TextMode, PadsMode, CycleScope, MeterSource, MeterChannel, MeterMode);
 
 #[cfg(test)]
 mod keyframe_tests {

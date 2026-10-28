@@ -1,0 +1,139 @@
+{
+  "$schema": "../../schemas/show.schema.json",
+  "schema_version": "0.1.3",
+  "id": "audio-meter-0-1-3",
+  "name": "0.1.3 の音反応（59：マスターの glow・[LED] Kick の orb・全列の bar）",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "master-glow",
+      "name": "59 マスターで全面が明るく",
+      "effect": {
+        "type": "builtin.meter",
+        "version": 1,
+        "params": {
+          "source": "master",
+          "channel": "mix",
+          "mode": "glow",
+          "color_low": "#200030",
+          "color_high": "#FF60C0",
+          "gain": 1.5,
+          "floor": 0.05,
+          "attack_ms": 10,
+          "release_ms": 250
+        }
+      }
+    },
+    {
+      "id": "kick-orb",
+      "name": "59 [LED] Kick で中央の球",
+      "effect": {
+        "type": "builtin.meter",
+        "version": 1,
+        "params": {
+          "source": "track",
+          "track_name": "Kick",
+          "channel": "mix",
+          "mode": "orb",
+          "color_low": "#2040FF",
+          "color_high": "#FFFFFF",
+          "gain": 2,
+          "floor": 0.1,
+          "attack_ms": 0,
+          "release_ms": 150
+        }
+      }
+    },
+    {
+      "id": "master-bars",
+      "name": "59 マスターの縦棒（全列）",
+      "effect": {
+        "type": "builtin.meter",
+        "version": 1,
+        "params": {
+          "source": "master",
+          "channel": "mix",
+          "mode": "bar",
+          "color_low": "#00C060",
+          "color_high": "#FF2020",
+          "gain": 1,
+          "floor": 0.05,
+          "attack_ms": 20,
+          "release_ms": 300,
+          "peak_hold_ms": 600
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "meters",
+      "name": "59 音量",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "glow-1",
+            "preset_id": "master-glow",
+            "start_us": 0,
+            "duration_us": 16000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "orb-1",
+            "preset_id": "kick-orb",
+            "start_us": 16000000,
+            "duration_us": 16000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "bars-1",
+            "preset_id": "master-bars",
+            "start_us": 32000000,
+            "duration_us": 16000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    }
+  ]
+}

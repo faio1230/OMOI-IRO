@@ -112,6 +112,8 @@ pub enum CompiledEffect {
     Pads(crate::history::PadsLook),
     Cycle(crate::history::CycleLook),
     Constellation(crate::history::ConstellationLook),
+    /// 0.1.3 stage 9: the bridge meters (`meter`).
+    Meter(crate::meter::MeterLook),
     Regions { pattern: RegionPattern, color: Rgb, color_b: Option<Rgb>, mode: StepMode, step_beats: f64, step_s: f64, order: StepOrder, soft: f64, duty: f64, custom: Option<CustomGroups> },
     Path(PathLook),
     Shape { kind: ShapeKind, color: Rgb, fill: bool, stroke: f64, center: (f64, f64), size: (f64, f64), angle: f64, edge: f64, invert: bool },
@@ -244,6 +246,36 @@ impl PadInput {
         self.now_us = now_us;
         self.hits.retain(|h| now_us - h.t_us <= Self::MAX_AGE_US);
         self.history.retain(|h| now_us - h.t_us <= Self::HISTORY_AGE_US);
+    }
+}
+
+/// Audio levels (0.1.3, docs/14 §4-9): Live's output meters sent by the
+/// bridge, 0..=1 (roughly logarithmic), at the monotonic time `now_us` of
+/// the frame (smoothing uses it). Only the level: no frequency bands.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct AudioInput {
+    pub now_us: i64,
+    pub master: [f32; 2],
+    /// `[LED]` tracks by name (the prefix removed), at most 4.
+    pub tracks: Vec<(String, [f32; 2])>,
+}
+
+impl AudioInput {
+    /// Audio is lost when the last meter record is older than this.
+    pub const LOST_AFTER_US: i64 = 500_000;
+
+    /// A bridge meter record (`{"v": 3, "kind": "meter", "master": [l, r], "tracks": {name: [l, r]}}`).
+    pub fn from_meter_record(p: &serde_json::Value) -> Option<AudioInput> {
+        if p.get("v").and_then(serde_json::Value::as_i64) != Some(3) || p.get("kind").and_then(serde_json::Value::as_str) != Some("meter") {
+            return None;
+        }
+        let pair = |v: &serde_json::Value| -> Option<[f32; 2]> {
+            let a = v.as_array()?;
+            Some([a.first()?.as_f64()?.clamp(0.0, 1.0) as f32, a.get(1)?.as_f64()?.clamp(0.0, 1.0) as f32])
+        };
+        let master = p.get("master").and_then(pair).unwrap_or_default();
+        let tracks = p.get("tracks").and_then(serde_json::Value::as_object).map(|m| m.iter().filter_map(|(k, v)| Some((k.clone(), pair(v)?))).take(4).collect()).unwrap_or_default();
+        Some(AudioInput { now_us: 0, master, tracks })
     }
 }
 
@@ -389,6 +421,7 @@ impl CompiledEffect {
             Effect::Pads { params, .. } => CompiledEffect::Pads(crate::history::PadsLook::compile(params)?),
             Effect::Cycle { params, .. } => CompiledEffect::Cycle(crate::history::CycleLook::compile(params)?),
             Effect::Constellation { params, .. } => CompiledEffect::Constellation(crate::history::ConstellationLook::compile(params)?),
+            Effect::Meter { params, .. } => CompiledEffect::Meter(crate::meter::MeterLook::compile(params)?),
             Effect::Shape { params, .. } => {
                 let size = params.size.at(t);
                 CompiledEffect::Shape {
@@ -492,6 +525,8 @@ impl CompiledEffect {
             CompiledEffect::TapGlow { .. } | CompiledEffect::Cross { .. } => {}
             // They need the input history (`paint_history`).
             CompiledEffect::Pads(_) | CompiledEffect::Cycle(_) | CompiledEffect::Constellation(_) => {}
+            // It needs the meters and its layer's smoothing state (`render_all`).
+            CompiledEffect::Meter(_) => {}
             CompiledEffect::Frames(ref f) => {
                 if let Some(frame) = f.frame_at(local_us) {
                     paint_frame(frame, (0, 0), alpha, layer);
@@ -1768,6 +1803,9 @@ pub struct Renderer {
     events: Vec<Event>,
     /// Input of one clip on its own clock (with its recording), reused.
     clip_pads: PadInput,
+    /// Smoothed meter level per layer and the clip it belongs to (0.1.3):
+    /// another clip starts from 0 (`usize::MAX` = a continuous layer).
+    meter_env: Vec<(usize, crate::meter::MeterEnv)>,
     /// Compound placements, and the buffers and clip list they draw with.
     uses: Vec<CompoundUse>,
     inner_active: Vec<ClipSpan>,
@@ -1868,6 +1906,7 @@ impl Renderer {
             inst: Vec::with_capacity(MAX_INSTANCES),
             keyed,
             events: Vec::with_capacity(4 * MAX_EVENTS),
+            meter_env: vec![(usize::MAX, Default::default()); show.layers.len()],
             clip_pads: PadInput { now_us: 0, hits: Vec::with_capacity(PadInput::CAPACITY), history: Vec::with_capacity(PadInput::HISTORY_CAPACITY) },
             uses,
             inner_active: Vec::with_capacity(max_inner_clips),
@@ -1896,6 +1935,11 @@ impl Renderer {
 
     /// `render` with the pad hits for input-driven effects.
     pub fn render_input(&mut self, t: ShowTimeUs, beat: Option<BeatState>, input: Option<&PadInput>) -> Frame {
+        self.render_all(t, beat, input, None)
+    }
+
+    /// `render_input` with the bridge meters (None: no audio, meters transparent).
+    pub fn render_all(&mut self, t: ShowTimeUs, beat: Option<BeatState>, input: Option<&PadInput>, audio: Option<&AudioInput>) -> Frame {
         let mut frame = Frame::default();
         // Particles left for this frame (all layers): lower layers draw first.
         let mut show_left = MAX_SHOW_PARTICLES;
@@ -1909,6 +1953,11 @@ impl Renderer {
                     let (effects, keyed, ei) = (&self.effects, &self.keyed, *effect);
                     continuous_particle_events(&|x| particle_look(effects, keyed, ei, x), t as u64, &mut self.events);
                     paint_particles(effects, keyed, ei, &self.events, 1.0, &mut self.buf, &mut show_left);
+                }
+                LayerContent::Continuous { effect } if matches!(self.effects[*effect], CompiledEffect::Meter(_)) => {
+                    if let CompiledEffect::Meter(m) = &self.effects[*effect] {
+                        crate::meter::paint_meter(m, audio, &mut self.meter_env[i].1, 1.0, &mut self.buf);
+                    }
                 }
                 LayerContent::Continuous { effect } if self.effects[*effect].reads_history() => {
                     if let Some(input) = input {
@@ -1930,6 +1979,17 @@ impl Renderer {
                 LayerContent::Timeline { index, effects, uses } => {
                     index.active(t, &mut self.active);
                     for span in &self.active {
+                        // A meter clip (a preset clip: compound clips have no effect index).
+                        if uses[span.order].is_none() {
+                            if let CompiledEffect::Meter(m) = &self.effects[effects[span.order]] {
+                                let slot = &mut self.meter_env[i];
+                                if slot.0 != span.order {
+                                    *slot = (span.order, Default::default());
+                                }
+                                crate::meter::paint_meter(m, audio, &mut slot.1, span.fade(t), &mut self.buf);
+                                continue;
+                            }
+                        }
                         let Some(u) = uses[span.order] else {
                             paint_timeline_presets(&self.effects, &self.keyed, effects, std::slice::from_ref(span), t, beat, input, &mut self.buf, &mut show_left, &mut self.clip_pads);
                             continue;
@@ -2839,6 +2899,25 @@ mod tests {
         let three = text_effect("3", F3x5, Static, |_| {});
         assert_eq!(alpha_grid(&by_beat, 1_250_000, Some(BeatState::new(10.5, 120.0))), alpha_grid(&three, 0, None));
     }
+    #[test]
+    fn meter_records_parse_and_drive_meter_layers() {
+        let rec = serde_json::json!({"v": 3, "kind": "meter", "t": 1, "master": [0.5, 2.0], "tracks": {"Kick": [0.25, 0.75]}});
+        let a = AudioInput::from_meter_record(&rec).unwrap();
+        assert_eq!((a.master, a.tracks.clone()), ([0.5, 1.0], vec![("Kick".to_string(), [0.25, 0.75])]), "clamped to 0..1");
+        assert!(AudioInput::from_meter_record(&serde_json::json!({"v": 2, "kind": "listener", "song_ms": 1.0})).is_none(), "timing records are not meters");
+        // A continuous glow layer: transparent without audio, lit with it.
+        let mut s = demo();
+        let mut e = crate::edit::default_effect("builtin.meter").unwrap();
+        let Effect::Meter { params, .. } = &mut e else { unreachable!() };
+        params.mode = crate::model::MeterMode::Glow;
+        s.presets.push(crate::model::Preset { id: "m".into(), name: "m".into(), effect: e });
+        s.layers.truncate(1);
+        s.layers[0].content = Content::Continuous { preset_id: "m".into() };
+        let mut r = Renderer::new(&s).unwrap();
+        assert_eq!(lit(&r.render(1_000_000, None)), 0);
+        assert_eq!(lit(&r.render_all(1_000_000, None, None, Some(&AudioInput { now_us: 5, ..a }))), 64);
+    }
+
     #[test]
     fn recorded_clips_play_by_time_and_loop() {
         use crate::model::{RecordedPad, Recording};

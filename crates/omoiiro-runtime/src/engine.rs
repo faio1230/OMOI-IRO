@@ -163,6 +163,9 @@ pub struct Engine {
     /// Pad hits for input-driven effects (Ripple); the render loop feeds and
     /// advances it before `evaluate`.
     pub pads: PadInput,
+    /// Bridge meters for this frame, and whether they are fresh (0.1.3).
+    pub audio: omoiiro_core::render::AudioInput,
+    pub audio_fresh: bool,
 }
 
 impl Default for Engine {
@@ -184,6 +187,8 @@ impl Engine {
             muted_layers: Vec::new(),
             safety_changed: false,
             pads: PadInput { now_us: 0, hits: Vec::with_capacity(PadInput::CAPACITY), history: Vec::with_capacity(PadInput::HISTORY_CAPACITY) },
+            audio: Default::default(),
+            audio_fresh: false,
         }
     }
 
@@ -251,7 +256,7 @@ impl Engine {
             return dark(DarkReason::NoTime, None);
         };
         let gain = snap.output_gain.clamp(0.0, 1.0) * ov.brightness();
-        let mut frame = renderer.render_input(t, snap.beat, Some(&self.pads));
+        let mut frame = renderer.render_all(t, snap.beat, Some(&self.pads), self.audio_fresh.then_some(&self.audio));
         // Overrides (transport gain, brightness), then the safety ceiling per
         // channel, then device quantization.
         if gain != 1.0 {

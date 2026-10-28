@@ -9,6 +9,15 @@ import socket
 import time
 
 FORMAT_VERSION = 2
+# Meter records (0.1.3, docs/14 §4-9) are a separate stream with their own
+# version: timing records stay v2, so receivers of v2 keep working.
+METER_VERSION = 3
+METER_INTERVAL_NS = 33000000  # about 30 per second
+METER_FALLBACK_NS = 100000000  # from the 100 ms timer when the meters are quiet
+TRACK_SCAN_NS = 1000000000
+LED_PREFIX = "[LED]"
+MAX_METER_TRACKS = 4
+MAX_TRACK_NAME = 32
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 9007
 MAX_DATAGRAM = 512
@@ -51,6 +60,40 @@ def make_record(seq, kind, event, perf_ns, song, time_format):
         "length_beats": float(song.loop_length),
     })
     rec["errors"] = errors
+    return rec
+
+
+def led_tracks(tracks):
+    """The tracks named `[LED] ...`, at most MAX_METER_TRACKS, in Live's order,
+    as (name without the prefix, track). `tracks` has objects with `.name`."""
+    out = []
+    for t in tracks:
+        try:
+            name = str(t.name)
+        except Exception:  # noqa: BLE001
+            continue
+        if name.startswith(LED_PREFIX):
+            out.append((name[len(LED_PREFIX):].strip()[:MAX_TRACK_NAME], t))
+            if len(out) == MAX_METER_TRACKS:
+                break
+    return out
+
+
+def meter_pair(track):
+    """[left, right] output meter of a track (0..1, rounded), or None."""
+    try:
+        return [round(float(track.output_meter_left), 3), round(float(track.output_meter_right), 3)]
+    except Exception:  # noqa: BLE001 - a MIDI track without audio has no meter
+        return None
+
+
+def make_meter(perf_ns, master, tracks):
+    """One meter record: the master and the `[LED]` tracks (name -> [l, r])."""
+    rec = {"v": METER_VERSION, "kind": "meter", "t": perf_ns, "master": meter_pair(master), "tracks": {}}
+    for name, t in tracks:
+        pair = meter_pair(t)
+        if pair is not None:
+            rec["tracks"][name] = pair
     return rec
 
 

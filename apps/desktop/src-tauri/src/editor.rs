@@ -163,6 +163,7 @@ fn color_of(e: &Effect) -> String {
         Effect::Pads { params, .. } => params.color_high.clone().or_else(|| params.color.clone()).unwrap_or_else(|| "#FF4020".into()),
         Effect::Cycle { params, .. } => params.palette.first().cloned().unwrap_or_else(|| "#FFFFFF".into()),
         Effect::Constellation { params, .. } => params.color.clone(),
+        Effect::Meter { params, .. } => params.color_high.clone(),
     }
 }
 

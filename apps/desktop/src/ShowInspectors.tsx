@@ -26,6 +26,7 @@ const TYPE_JA: Record<EffectType, string> = {
   "builtin.pads": "パッドの状態（Pads）",
   "builtin.cycle": "叩くたびに色（Cycle）",
   "builtin.constellation": "星座（Constellation）",
+  "builtin.meter": "音量（Meter）",
 };
 
 const isKeyed = <T,>(v: K<T>): v is { keyframes: Keyframe<T>[] } => typeof v === "object" && v !== null && "keyframes" in v;
@@ -348,6 +349,67 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
             <span>終点で折り返して往復する（切ると終点で止まる）</span>
           </label>
         )}
+      </div>
+    );
+  }
+  if (effect.type === "builtin.meter") {
+    const p = effect.params;
+    const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
+    return (
+      <div className="insp-grid">
+        <label className="field">
+          <span>音の元</span>
+          <select value={p.source} onChange={(e) => set(e.target.value === "track" ? { source: "track", track_name: p.track_name ?? "Kick" } : { source: "master", track_name: undefined })}>
+            <option value="master">マスター</option>
+            <option value="track">トラック（Live で名前の頭に [LED]）</option>
+          </select>
+        </label>
+        {p.source === "track" && (
+          <label className="field">
+            <span>トラック名（[LED] を除く）</span>
+            <input value={p.track_name ?? ""} maxLength={32} spellCheck={false} onChange={(e) => set({ track_name: e.target.value })} />
+            <span className="hint">例：Live の「[LED] Kick」なら Kick。届かない名前なら何も出ない</span>
+          </label>
+        )}
+        <label className="field">
+          <span>チャンネル</span>
+          <select value={p.channel} onChange={(e) => set({ channel: e.target.value as "mix" | "left" | "right" })}>
+            <option value="mix">大きい方（左右）</option>
+            <option value="left">左</option>
+            <option value="right">右</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>見せ方</span>
+          <select value={p.mode} onChange={(e) => set({ mode: e.target.value as "bar" | "glow" | "orb" })}>
+            <option value="bar">縦の棒</option>
+            <option value="glow">全面の明るさ</option>
+            <option value="orb">中央の球</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>小さいときの色</span>
+          <input type="color" value={p.color_low} onChange={(e) => set({ color_low: e.target.value.toUpperCase() })} />
+        </label>
+        <label className="field">
+          <span>大きいときの色</span>
+          <input type="color" value={p.color_high} onChange={(e) => set({ color_high: e.target.value.toUpperCase() })} />
+        </label>
+        <NumberField fixed label="増幅" value={p.gain} min={0.5} max={8} step={0.25} hint="0.5〜8（値は 1 まで）" onChange={(v) => set({ gain: first(v) })} />
+        <NumberField fixed label="これ未満は 0" value={p.floor} min={0} max={0.5} step={0.01} hint="0〜0.5（小さな音を無視）" onChange={(v) => set({ floor: first(v) })} />
+        <NumberField fixed label="上がる速さ（ms）" value={p.attack_ms} min={0} max={500} step={10} integer hint="0〜500" onChange={(v) => set({ attack_ms: first(v) })} />
+        <NumberField fixed label="下がる速さ（ms）" value={p.release_ms} min={0} max={2000} step={50} integer hint="0〜2000" onChange={(v) => set({ release_ms: first(v) })} />
+        {p.mode === "bar" && (
+          <>
+            <ListField label="使う列（0〜7、空欄で全列）" value={p.columns} format={(c) => (c ?? []).join(" ")} parse={(s) => {
+              const v = s.split(/[\s,]+/).filter(Boolean).map(Number);
+              if (v.length === 0) return undefined;
+              return v.length <= 8 && v.every((x) => Number.isInteger(x) && x >= 0 && x <= 7) ? v : "0〜7 の列番号を 1〜8 個";
+            }} hint="複数トラックを並べるときは、列を分けたメーターのレイヤーを重ねる" onChange={(columns) => set({ columns })} />
+            <NumberField fixed label="ピークを残す時間（ms）" value={p.peak_hold_ms ?? 0} min={0} max={2000} step={100} integer hint="0 でピーク表示なし" onChange={(v) => set({ peak_hold_ms: first(v) || undefined })} />
+          </>
+        )}
+        <p className="hint">Live のブリッジが送る音量（出力メーター）だけを使う。周波数の帯域は取れない：帯域ごとに反応させたいときは Live でトラックを分け、その名前の頭に [LED] を付ける（最大4本）。音量が 0.5 秒届かないと何も出ない。</p>
       </div>
     );
   }

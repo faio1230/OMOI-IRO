@@ -429,7 +429,7 @@ export default function App() {
               <p className="hint">Blackout と明るさは LED だけに作用する。Live への操作の転送は止めない。 frame {s?.frame ?? 0} · rev {s?.revision ?? 0} · uptime {((s?.uptime_ms ?? 0) / 1000).toFixed(1)} s</p>
             </section>
 
-            <InputPanel running={running} recordingSinceUs={s?.recording_since_us ?? null} docKey={`${s?.document?.path ?? ""}|${s?.document?.dirty ?? ""}`} run={run} />
+            <InputPanel running={running} recordingSinceUs={s?.recording_since_us ?? null} audio={s?.audio ?? null} docKey={`${s?.document?.path ?? ""}|${s?.document?.dirty ?? ""}`} run={run} />
             {s && <Health s={s} busy={busy} onReset={() => run(() => ipc.resetControlFault())} onReconnect={() => run(() => ipc.reconnectPorts())} />}
             {s && <Diagnostics s={s} />}
 

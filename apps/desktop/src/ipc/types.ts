@@ -152,6 +152,8 @@ export interface StatusDto {
   preview_skipped: number;
   /** 0.1.3: show time the pad recording began at (null: not recording). */
   recording_since_us: number | null;
+  /** 0.1.3: bridge meters (null: none received in this run). */
+  audio: { age_ms: number; lost: boolean; master: [number, number]; tracks: [string, [number, number]][] } | null;
   safety: SafetyDto;
   document: { path: string; dirty: boolean } | null;
   close_requested: boolean;
@@ -298,7 +300,7 @@ export type EditCommand =
   | { op: "set_clip_recording"; clip_id: string; recording: Recording | null; looping: boolean | null };
 
 export type Blend = "over" | "add" | "max";
-export type EffectType = "builtin.solid" | "builtin.chase" | "builtin.pulse" | "builtin.strobe" | "builtin.noise" | "builtin.ripple" | "builtin.rain" | "builtin.wave" | "builtin.orb" | "builtin.regions" | "builtin.tap_glow" | "builtin.cross" | "builtin.path" | "builtin.shape" | "builtin.particles" | "builtin.frames" | "builtin.text" | "builtin.pads" | "builtin.cycle" | "builtin.constellation";
+export type EffectType = "builtin.solid" | "builtin.chase" | "builtin.pulse" | "builtin.strobe" | "builtin.noise" | "builtin.ripple" | "builtin.rain" | "builtin.wave" | "builtin.orb" | "builtin.regions" | "builtin.tap_glow" | "builtin.cross" | "builtin.path" | "builtin.shape" | "builtin.particles" | "builtin.frames" | "builtin.text" | "builtin.pads" | "builtin.cycle" | "builtin.constellation" | "builtin.meter";
 export type OnConflict = "error" | "rename";
 
 export type Ease = "linear" | "step" | "ease_in" | "ease_out" | "ease_in_out";
@@ -327,7 +329,10 @@ export type Effect =
   | { type: "builtin.text"; version: number; params: TextParams }
   | { type: "builtin.pads"; version: number; params: PadsParams }
   | { type: "builtin.cycle"; version: number; params: { palette: string[]; scope: "global" | "per_pad"; lifetime_ms: number; radius: number } }
-  | { type: "builtin.constellation"; version: number; params: { color: string; stroke: number; lifetime_ms: number; fade: "linear" | "exp"; max_segments: number; dots: boolean } };
+  | { type: "builtin.constellation"; version: number; params: { color: string; stroke: number; lifetime_ms: number; fade: "linear" | "exp"; max_segments: number; dots: boolean } }
+  | { type: "builtin.meter"; version: number; params: MeterParams };
+
+export interface MeterParams { source: "master" | "track"; track_name?: string; channel: "mix" | "left" | "right"; mode: "bar" | "glow" | "orb"; color_low: string; color_high: string; gain: number; floor: number; attack_ms: number; release_ms: number; columns?: number[]; peak_hold_ms?: number }
 
 export type PadsMode = "heat" | "plant" | "paint";
 export interface PadsParams { mode: PadsMode; color_low?: string; color_high?: string; color?: string; palette?: string[]; gain?: number; decay_ms?: number; attack_ms?: number; sustain_ms?: number; release_ms?: number; size?: number }

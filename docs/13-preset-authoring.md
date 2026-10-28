@@ -53,6 +53,8 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 | `builtin.cycle` | 叩くたびに色 | `palette`（2〜8 色）, `scope`（`global` / `per_pad`）, `lifetime_ms`（0 で次の押下まで）, `radius`（0〜3） | 色 = palette[回数 mod 長さ]。56 |
 | `builtin.constellation` | 星座 | `color`, `stroke`（0.5〜2）, `lifetime_ms`, `fade`（`linear` / `exp`）, `max_segments`（1〜16）, `dots`（bool） | 直前の押下と今回の押下を線で結ぶ。14 |
 
+| `builtin.meter` | 音量 | `source`（`master` / `track`）, `track_name`（track のとき必須。Live のトラック名から `[LED]` を除いたもの）, `channel`（`mix` / `left` / `right`）, `mode`（`bar` 縦棒 / `glow` 全面の明るさ / `orb` 中央の球）, `color_low` / `color_high`, `gain`（0.5〜8）, `floor`（0〜0.5）, `attack_ms`（0〜500）, `release_ms`（0〜2000）, `columns`（bar、使う列）, `peak_hold_ms`（bar、0〜2000） | Live 内のブリッジが送る音量メーター（マスターと、名前が `[LED]` で始まるトラック最大4本）に反応。**取れるのは音量だけで周波数帯域は取れない**。キックだけに反応させたいときは Live でそのトラック（やバス）の名前の頭に `[LED]` を付け、`track_name` にその名前を書く。音が届かないときは透明。continuous と timeline で使える（素材の中と triggered では描かない）。59 |
+
 `builtin.tap_glow` に `charge`（bool）を付けると、`hold` の発火で押している間に半径と明るさが育ち、離すと届いた大きさで光って冷める（13 長押しチャージ）。
 
 **記録（60 演奏の残像ループ）**：triggered レイヤーのクリップに `recording` を持たせると、記録した押下を時刻どおりに再生し、実際の押下と重ねる。
@@ -71,7 +73,7 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 
 `builtin.regions` の `pattern` に `custom` を指定すると `groups`（[[セル番号,…],…] 1〜32群、セル番号 = 行×8+列）が必須になり、任意の `offset`（群ごとの位相差 0〜1、群数と同じ長さ）が使える。
 
-すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）、`d-effects-0.1.2.show.json`（領域ステップ・余熱・十字・形つき波紋）、`triggered-0.1.3.show.json`（発火レイヤー）、`keyframes-0.1.3.show.json`（粒から豪雨へ、加速する走査）、`paths-shapes-0.1.3.show.json`（外周ランナー2種、ムービングヘッド対、ひし形の拡大、自由グループ）、`transitions-0.1.3.show.json`（円の中の雨、アイリス、シャッター2種）、`particles-0.1.3.show.json`（火花、花火、しずく、吸い込み→爆発、噴水）、`compounds-0.1.3.show.json`（複合素材）、`frames-text-0.1.3.show.json`（星のスタンプ、文字スクロール、カウントダウン、8 フレームのループ）、`input-states-0.1.3.show.json`（星座、熱、色の循環、育つ光、塗る、長押しチャージ、記録ループ）。
+すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）、`d-effects-0.1.2.show.json`（領域ステップ・余熱・十字・形つき波紋）、`triggered-0.1.3.show.json`（発火レイヤー）、`keyframes-0.1.3.show.json`（粒から豪雨へ、加速する走査）、`paths-shapes-0.1.3.show.json`（外周ランナー2種、ムービングヘッド対、ひし形の拡大、自由グループ）、`transitions-0.1.3.show.json`（円の中の雨、アイリス、シャッター2種）、`particles-0.1.3.show.json`（火花、花火、しずく、吸い込み→爆発、噴水）、`compounds-0.1.3.show.json`（複合素材）、`frames-text-0.1.3.show.json`（星のスタンプ、文字スクロール、カウントダウン、8 フレームのループ）、`input-states-0.1.3.show.json`（星座、熱、色の循環、育つ光、塗る、長押しチャージ、記録ループ）、`audio-meter-0.1.3.show.json`（マスターの glow、Kick の orb、全列 bar。`live-bridge/sim/fake_bridge.py --meter` で模擬入力）。
 
 ## 3b. 発火レイヤーとキーフレーム（0.1.3）
 

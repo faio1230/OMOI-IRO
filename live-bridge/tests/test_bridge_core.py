@@ -39,6 +39,44 @@ class FakeSong(object):
         return Smpte(3723456)
 
 
+class Track(object):
+    def __init__(self, name, l=0.25, r=0.5, audio=True):
+        self.name = name
+        self._lr = (l, r)
+        self.audio = audio
+
+    @property
+    def output_meter_left(self):
+        if not self.audio:
+            raise RuntimeError("no audio output")
+        return self._lr[0]
+
+    @property
+    def output_meter_right(self):
+        if not self.audio:
+            raise RuntimeError("no audio output")
+        return self._lr[1]
+
+
+class MeterTest(unittest.TestCase):
+    def test_led_tracks_are_picked_by_prefix_up_to_four(self):
+        ts = [Track("Bass"), Track("[LED] Kick"), Track("[LED]Snare"), Track("[LED] a"), Track("[LED] b"), Track("[LED] c")]
+        self.assertEqual([n for n, _ in bridge_core.led_tracks(ts)], ["Kick", "Snare", "a", "b"])
+
+    def test_meter_record_is_v3_and_small(self):
+        tracks = bridge_core.led_tracks([Track("[LED] Kick", 0.8, 0.7), Track("[LED] Midi", audio=False)])
+        rec = bridge_core.make_meter(5, Track("Master", 0.12345, 0.5), tracks)
+        self.assertEqual(rec["v"], 3)
+        self.assertEqual(rec["kind"], "meter")
+        self.assertEqual(rec["master"], [0.123, 0.5])
+        self.assertEqual(rec["tracks"], {"Kick": [0.8, 0.7]}, "a track without audio is left out")
+        long = bridge_core.led_tracks([Track("[LED] " + "x" * 200) for _ in range(4)])
+        self.assertIsNotNone(bridge_core.encode(bridge_core.make_meter(5, Track("M"), long)), "names are cut to fit a datagram")
+
+    def test_timing_records_stay_v2(self):
+        self.assertEqual(bridge_core.make_record(1, "timer", "tick", 0, FakeSong(), TimeFormat)["v"], 2)
+
+
 def read(path):
     with open(path, encoding="utf-8") as f:
         return f.read()

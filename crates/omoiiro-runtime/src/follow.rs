@@ -69,6 +69,8 @@ pub struct FollowShared {
     pub pad_rx: Receiver<PadEvent>,
     /// Pad events as the render thread took them, with their show time (0.1.3).
     pub pad_log: Mutex<PadLog>,
+    /// Latest bridge meter record and when it arrived (monotonic µs; 0.1.3).
+    pub audio: Mutex<Option<(i64, omoiiro_core::render::AudioInput)>>,
 }
 
 /// Raw pad events kept for a recording or the JSONL record, at most
@@ -102,6 +104,7 @@ impl FollowShared {
             pad_tx,
             pad_rx,
             pad_log: Mutex::new(PadLog::default()),
+            audio: Mutex::new(None),
         })
     }
 }
@@ -207,6 +210,15 @@ impl RenderLoop {
         }
         drop(log);
         self.engine.pads.advance(t0);
+        // Audio for this frame: the newest meters unless older than 500 ms (lost).
+        match shared.audio.lock().unwrap().as_ref() {
+            Some((at, a)) if t0 - at <= omoiiro_core::render::AudioInput::LOST_AFTER_US => {
+                self.engine.audio.clone_from(a);
+                self.engine.audio_fresh = true;
+            }
+            _ => self.engine.audio_fresh = false,
+        }
+        self.engine.audio.now_us = t0;
         let eval = self.engine.evaluate(&snap, &shared.overrides);
         if self.engine.safety_changed {
             self.engine.safety_changed = false;
@@ -768,6 +780,19 @@ mod tests {
             time.advance_us(1_000);
         }
         assert!(r.engine.pads.hits.is_empty() && r.engine.pads.history.is_empty());
+
+        // 0.1.3: fresh meters reach the engine; after 500 ms without a record they are lost.
+        let a = omoiiro_core::render::AudioInput { now_us: 0, master: [0.5, 0.5], tracks: vec![] };
+        *shared.audio.lock().unwrap() = Some((time.now_us(), a));
+        while r.step(&shared, &|| clock.now_us()).is_none() {
+            time.advance_us(1_000);
+        }
+        assert!(r.engine.audio_fresh && r.engine.audio.master == [0.5, 0.5]);
+        time.advance_us(600_000);
+        while r.step(&shared, &|| clock.now_us()).is_none() {
+            time.advance_us(1_000);
+        }
+        assert!(!r.engine.audio_fresh, "lost after 500 ms");
     }
 
     /// M6 preparation: a (fake) Launchpad X is identified before any LED

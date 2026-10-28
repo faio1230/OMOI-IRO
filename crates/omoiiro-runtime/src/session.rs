@@ -331,6 +331,12 @@ impl FollowSession {
         self.shared.pad_log.lock().unwrap().recording.take()
     }
 
+    /// Latest bridge meters and their age (µs), if any arrived (0.1.3).
+    pub fn audio(&self) -> Option<(i64, omoiiro_core::render::AudioInput)> {
+        let now = self.clock.now_us();
+        self.shared.audio.lock().unwrap().as_ref().map(|(at, a)| (now - at, a.clone()))
+    }
+
     /// Show time the running recording began at.
     pub fn recording_since(&self) -> Option<i64> {
         self.shared.pad_log.lock().unwrap().recording.as_ref().map(|r| r.0)
@@ -458,7 +464,12 @@ fn sync_loop(
             Ok(d) => {
                 let payload = datagram_payload(&d.bytes);
                 bev.clear();
-                shared.transport.lock().unwrap().feed_bridge(BridgeSample::from_payload(d.t_mono_us, &payload), &mut bev);
+                // Meter records (v3) are their own stream: not timing samples.
+                if let Some(a) = omoiiro_core::render::AudioInput::from_meter_record(&payload) {
+                    *shared.audio.lock().unwrap() = Some((d.t_mono_us, a));
+                } else {
+                    shared.transport.lock().unwrap().feed_bridge(BridgeSample::from_payload(d.t_mono_us, &payload), &mut bev);
+                }
                 for e in &bev {
                     let _ = events.try_send(format!("t={:.3}s bridge {}", us_to_secs(d.t_mono_us), event_line(e)));
                 }

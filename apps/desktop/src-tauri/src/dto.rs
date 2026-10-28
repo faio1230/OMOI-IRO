@@ -127,6 +127,15 @@ pub struct SafetyDto {
 }
 
 #[derive(Debug, Serialize)]
+pub struct AudioDto {
+    pub age_ms: i64,
+    /// Older than 500 ms: meters draw nothing.
+    pub lost: bool,
+    pub master: [f32; 2],
+    pub tracks: Vec<(String, [f32; 2])>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct StatusDto {
     pub running: bool,
     pub show_path: Option<String>,
@@ -159,6 +168,8 @@ pub struct StatusDto {
     pub preview_skipped: u64,
     /// 0.1.3: show time the running pad recording began at (None: not recording).
     pub recording_since_us: Option<i64>,
+    /// 0.1.3: bridge meters (None: none received in this run).
+    pub audio: Option<AudioDto>,
     pub safety: SafetyDto,
     pub document: Option<DocumentDto>,
     /// The window was asked to close while the document has unsaved changes.
@@ -196,6 +207,7 @@ impl StatusDto {
             diag: None,
             preview_skipped: 0,
             recording_since_us: None,
+            audio: None,
             safety: SafetyDto { max_brightness: limits.max_brightness, max_flash_hz: limits.max_flash_hz, limit_flash: limits.limit_flash, warnings: Vec::new(), muted_layers: Vec::new() },
             document: None,
             close_requested: false,
@@ -241,6 +253,7 @@ impl StatusDto {
             diag: Some(f.diag),
             preview_skipped,
             recording_since_us: s.recording_since(),
+            audio: s.audio().map(|(age, a)| AudioDto { age_ms: age / 1000, lost: age > omoiiro_core::render::AudioInput::LOST_AFTER_US, master: a.master, tracks: a.tracks }),
             safety: {
                 let l = s.shared().overrides.limits();
                 SafetyDto { max_brightness: l.max_brightness, max_flash_hz: l.max_flash_hz, limit_flash: l.limit_flash, warnings: f.safety_warnings.clone(), muted_layers: f.muted_layers.clone() }

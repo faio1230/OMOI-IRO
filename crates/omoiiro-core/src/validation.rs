@@ -471,6 +471,31 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                     c.unit(*v, format!("{e}/params/repeat_decay"));
                 }
             }
+            Effect::Meter { params, .. } => {
+                c.color(&params.color_low, format!("{e}/params/color_low"));
+                c.color(&params.color_high, format!("{e}/params/color_high"));
+                match (params.source, &params.track_name) {
+                    (crate::model::MeterSource::Track, None) => c.push(format!("{e}/params/track_name"), "required when source is track"),
+                    (crate::model::MeterSource::Track, Some(n)) if n.is_empty() || n.chars().count() > 32 => c.push(format!("{e}/params/track_name"), "1..=32 characters (the track name after [LED])"),
+                    _ => {}
+                }
+                c.range(params.gain, 0.5, 8.0, format!("{e}/params/gain"));
+                c.range(params.floor, 0.0, 0.5, format!("{e}/params/floor"));
+                if params.attack_ms > 500 {
+                    c.push(format!("{e}/params/attack_ms"), "attack_ms must be within 0..=500");
+                }
+                if params.release_ms > 2000 {
+                    c.push(format!("{e}/params/release_ms"), "release_ms must be within 0..=2000");
+                }
+                if let Some(cols) = &params.columns {
+                    if !(1..=8).contains(&cols.len()) || cols.iter().any(|x| *x > 7) {
+                        c.push(format!("{e}/params/columns"), "1..=8 columns within 0..=7");
+                    }
+                }
+                if params.peak_hold_ms.is_some_and(|h| h > 2000) {
+                    c.push(format!("{e}/params/peak_hold_ms"), "peak_hold_ms must be within 0..=2000");
+                }
+            }
             Effect::Pads { params, .. } => {
                 for (name, v) in [("color_low", &params.color_low), ("color_high", &params.color_high), ("color", &params.color)] {
                     if let Some(v) = v {
