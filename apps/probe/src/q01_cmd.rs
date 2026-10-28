@@ -208,6 +208,7 @@ fn follow(r: &mut Report, show: &Show, seconds: u64) -> Value {
     show.sync.mtc_output = Some(MtcOutput { enabled: true }); // exercise the timecode binding too
     let port = free_udp_port();
     let cfg = SessionConfig {
+        time_source: Default::default(),
         show: show.clone(),
         bind: format!("127.0.0.1:{port}"),
         clock_in: None,

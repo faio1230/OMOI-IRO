@@ -23,8 +23,21 @@ export interface PortsDto {
 }
 
 /** Ports, bridge address and Link come from the saved terminal settings. */
+/** A21: follow Live, or run on the local clock (no Live). */
+export type TimeSource = "live" | "local";
+
+/** A21: the runtime's local clock. */
+export interface LocalTransport {
+  playing: boolean;
+  position_us: number;
+  length_us: number | null;
+  bpm: number;
+}
+
 export interface StartRequest {
   show_path: string;
+  /** Default "live". */
+  time_source?: TimeSource;
 }
 
 export interface StartResult {
@@ -161,6 +174,9 @@ export interface StatusDto {
   document: { path: string; dirty: boolean } | null;
   close_requested: boolean;
   events: string[];
+  /** A21: null while stopped. */
+  time_source: TimeSource | null;
+  local: LocalTransport | null;
 }
 
 // ---- LED preview (apps/desktop/src-tauri/src/preview.rs) ----
@@ -213,6 +229,8 @@ export interface TerminalSettings {
   devices: { allow_launchpad_led: boolean };
   /** A20: library show files (kept by the app, at most 10). */
   library_shows: string[];
+  /** A21: the time source chosen at the last start. */
+  last_time_source: TimeSource;
 }
 
 export interface SettingsView {

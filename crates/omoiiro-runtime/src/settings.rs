@@ -79,6 +79,9 @@ pub struct TerminalSettings {
     /// (A20; read only, at most `MAX_LIBRARY`). Missing in older files: none.
     #[serde(default)]
     pub library_shows: Vec<String>,
+    /// A21: the time source chosen at the last start. Missing: live.
+    #[serde(default)]
+    pub last_time_source: crate::session::TimeSource,
 }
 
 /// What the app may send to a device directly.
@@ -106,6 +109,7 @@ impl Default for TerminalSettings {
             safety: Default::default(),
             devices: Default::default(),
             library_shows: Vec::new(),
+            last_time_source: Default::default(),
         }
     }
 }
@@ -561,9 +565,11 @@ mod tests {
         let mut old: serde_json::Value = serde_json::from_str(&s.to_json()).unwrap();
         old.as_object_mut().unwrap().remove("safety");
         old.as_object_mut().unwrap().remove("library_shows");
+        old.as_object_mut().unwrap().remove("last_time_source");
         std::fs::write(dir.join(SETTINGS_FILE), old.to_string()).unwrap();
         assert_eq!(load(&dir).unwrap().safety, omoiiro_core::safety::SafetyLimits::default());
         assert!(load(&dir).unwrap().library_shows.is_empty(), "files without the library still load");
+        assert_eq!(load(&dir).unwrap().last_time_source, crate::session::TimeSource::Live);
         let mut bad = TerminalSettings::default();
         bad.safety.max_flash_hz = 100.0;
         assert!(!check_roles(&bad, &[], &[]).ok, "out-of-range safety values are refused");

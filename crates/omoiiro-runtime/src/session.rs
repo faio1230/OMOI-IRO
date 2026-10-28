@@ -55,9 +55,31 @@ pub enum LedOut {
     Port { spec: String, allow_device: bool },
 }
 
+/// A21: where the show time comes from.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TimeSource {
+    /// Follow Live (bridge + the show's beat source).
+    #[default]
+    Live,
+    /// A local play / pause / seek clock (no Live, no bridge, no beat input).
+    Local,
+}
+
+/// A21: the local clock as shown in the status.
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize)]
+pub struct LocalTransport {
+    pub playing: bool,
+    pub position_us: i64,
+    pub length_us: Option<i64>,
+    pub bpm: f64,
+}
+
 #[derive(Clone, Debug)]
 pub struct SessionConfig {
     pub show: Show,
+    /// A21: `Local` opens no bridge, clock input, Link or MTC output.
+    pub time_source: TimeSource,
     pub bind: String,
     /// MIDI Clock input (used when the show's beat source is midi_clock).
     pub clock_in: Option<String>,
@@ -93,9 +115,13 @@ pub struct SessionStatus {
     pub dropped_bridge: u64,
     pub dropped_clock: u64,
     pub dropped_control: u64,
+    pub time_source: TimeSource,
+    /// A21: the local clock (`time_source: local` only).
+    pub local: Option<LocalTransport>,
 }
 
 pub struct FollowSession {
+    time_source: TimeSource,
     shared: Arc<FollowShared>,
     clock: MonotonicClock,
     started_us: i64,
@@ -121,7 +147,12 @@ impl FollowSession {
         let tcfg = TransportConfig::from_show(&cfg.show)?;
         let rate = RenderRate { num: cfg.show.render.fps as u64, den: 1 };
         let mut notes = Vec::new();
+        let local = cfg.time_source == TimeSource::Local;
+        if local {
+            notes.push(format!("時刻源：手元の時計（Live なし、{} bpm）", cfg.show.preview.bpm));
+        }
         match tcfg.beat_source {
+            _ if local => {}
             Some(BeatSourceKind::MidiClock) if cfg.clock_in.is_none() => notes.push("beat source midi_clock without a clock input; Pulse stays transparent".to_string()),
             Some(BeatSourceKind::Link) if !cfg.link => notes.push("beat source ableton_link without Link; Pulse stays transparent".to_string()),
             _ => {}
@@ -142,19 +173,29 @@ impl FollowSession {
             }
         };
 
-        let shared = FollowShared::new(Transport::new(tcfg.clone()));
+        let transport = if local {
+            Transport::new_local(tcfg.clone(), crate::preview::show_length_us(&cfg.show), cfg.show.preview.bpm)
+        } else {
+            Transport::new(tcfg.clone())
+        };
+        let shared = FollowShared::new(transport);
         shared.overrides.set_limits(&cfg.safety);
         let revision = shared.exchange.submit(&cfg.show).map_err(|issues| format!("show rejected: {issues:?}"))?;
 
         let (bridge_tx, bridge_rx) = bounded::<RawDatagram>(8192);
         let bridge_dropped = Arc::new(AtomicU64::new(0));
         let sync_stop = Arc::new(AtomicBool::new(false));
-        let bridge_thread = spawn_receiver(&cfg.bind, clock.clone(), bridge_tx, bridge_dropped.clone(), sync_stop.clone()).map_err(|e| format!("bind UDP {}: {e}", cfg.bind))?;
+        // Local: no UDP receiver; the sender is kept so the sync loop keeps running.
+        let (bridge_thread, bridge_keep) = if local {
+            (None, Some(bridge_tx))
+        } else {
+            (Some(spawn_receiver(&cfg.bind, clock.clone(), bridge_tx, bridge_dropped.clone(), sync_stop.clone()).map_err(|e| format!("bind UDP {}: {e}", cfg.bind))?), None)
+        };
 
         let (clock_tx, clock_rx) = bounded::<RawIn>(8192);
         let clock_stats = Arc::new(IngressStats::default());
         let clock_conn = match (&cfg.clock_in, beat_source) {
-            (Some(spec), Some(BeatSourceKind::MidiClock)) => Some(
+            (Some(spec), Some(BeatSourceKind::MidiClock)) if !local => Some(
                 backend
                     .lock()
                     .unwrap()
@@ -164,7 +205,7 @@ impl FollowSession {
             _ => None,
         };
         drop(clock_tx);
-        let use_link = cfg.link && beat_source == Some(BeatSourceKind::Link);
+        let use_link = cfg.link && beat_source == Some(BeatSourceKind::Link) && !local;
 
         let (ctl_tx, ctl_rx) = bounded::<RawIn>(4096);
         let control_stats = Arc::new(IngressStats::default());
@@ -185,6 +226,10 @@ impl FollowSession {
         // MTC output for external gear (show `sync.mtc_output.enabled` + a timecode port).
         let mtc_enabled = cfg.show.sync.mtc_output.as_ref().is_some_and(|m| m.enabled);
         let mtc = match (&cfg.timecode_out, mtc_enabled) {
+            (Some(_), true) if local => {
+                notes.push("手元の時計では MTC を送らない".into());
+                None
+            }
             (Some(spec), true) => {
                 let gen = MtcGen::new(cfg.show.sync.timecode.frame_rate).map_err(|e| format!("MTC output: {e}"))?;
                 // Reconnects by itself; a missing port is retried like the other bindings.
@@ -226,6 +271,7 @@ impl FollowSession {
             meta["revision"] = json!(revision);
             meta["fps"] = json!(cfg.show.render.fps);
             meta["bridge_udp"] = json!(cfg.bind);
+            meta["time_source"] = json!(cfg.time_source);
             meta["beat_source"] = json!(format!("{:?}", tcfg.beat_source));
             meta["origin"] = json!(tcfg.origin.to_string());
             meta["input_offset_us"] = json!(tcfg.input_offset_us);
@@ -243,8 +289,11 @@ impl FollowSession {
                 .name("omoiiro-sync".into())
                 .spawn(move || {
                     let _clock_conn = clock_conn;
+                    let _bridge_keep = bridge_keep;
                     let r = sync_loop(&shared, &clock, &stop, bridge_rx, clock_rx, use_link, writer.as_mut(), &ev_tx);
-                    let _ = bridge_thread.join();
+                    if let Some(h) = bridge_thread {
+                        let _ = h.join();
+                    }
                     (r, writer)
                 })
                 .map_err(|e| e.to_string())?
@@ -252,6 +301,7 @@ impl FollowSession {
 
         let started_us = clock.now_us();
         Ok(FollowSession {
+            time_source: cfg.time_source,
             shared,
             clock,
             started_us,
@@ -297,6 +347,8 @@ impl FollowSession {
             dropped_bridge: self.bridge_dropped.load(Ordering::Relaxed),
             dropped_clock: self.clock_stats.dropped(),
             dropped_control: self.control_stats.dropped(),
+            time_source: self.time_source,
+            local: self.local_transport(),
         }
     }
 
@@ -355,7 +407,59 @@ impl FollowSession {
     pub fn submit_show(&mut self, show: &Show) -> Result<u64, Vec<Issue>> {
         let r = self.shared.exchange.submit(show)?;
         self.revision = r;
+        // A21: the local clock wraps at the edited length.
+        if let Some(l) = self.shared.transport.lock().unwrap().local_mut() {
+            l.clock.set_length(crate::preview::show_length_us(show));
+        }
         Ok(r)
+    }
+
+    pub fn time_source(&self) -> TimeSource {
+        self.time_source
+    }
+
+    pub fn local_transport(&self) -> Option<LocalTransport> {
+        let now = self.clock.now_us();
+        self.shared.transport.lock().unwrap().local().map(|l| LocalTransport { playing: l.clock.playing(), position_us: l.clock.position(now), length_us: l.clock.length_us(), bpm: l.bpm })
+    }
+
+    /// A21: change the local clock; refused while following Live.
+    fn with_local(&self, f: impl FnOnce(&mut crate::sync::transport::LocalTime, i64) -> Result<(), String>) -> Result<LocalTransport, String> {
+        {
+            let now = self.clock.now_us();
+            let mut t = self.shared.transport.lock().unwrap();
+            let l = t.local_mut().ok_or("Live に追従中：再生位置とテンポは Live が決める（手元の時計で開始すると操作できる）")?;
+            f(l, now)?;
+        }
+        Ok(self.local_transport().expect("local"))
+    }
+
+    pub fn local_play(&self, playing: bool) -> Result<LocalTransport, String> {
+        self.with_local(|l, now| {
+            if playing {
+                l.clock.play(now)
+            } else {
+                l.clock.pause(now)
+            }
+            Ok(())
+        })
+    }
+
+    pub fn local_seek(&self, position_us: i64) -> Result<LocalTransport, String> {
+        self.with_local(|l, now| {
+            l.clock.seek(now, position_us);
+            Ok(())
+        })
+    }
+
+    pub fn local_set_bpm(&self, bpm: f64) -> Result<LocalTransport, String> {
+        self.with_local(|l, _| {
+            if !bpm.is_finite() || !(20.0..=999.0).contains(&bpm) {
+                return Err(format!("tempo must be 20..999 bpm, got {bpm}"));
+            }
+            l.bpm = bpm;
+            Ok(())
+        })
     }
 
     /// Newest frame the render thread evaluated since the last call (what the
@@ -560,6 +664,7 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let rec = dir.join("session.jsonl");
         let cfg = SessionConfig {
+            time_source: TimeSource::Live,
             show: show.clone(),
             bind: "127.0.0.1:0".into(),
             clock_in: None,
@@ -574,6 +679,7 @@ mod tests {
         };
         let mut s = FollowSession::start(cfg, backend).unwrap();
         assert_eq!(s.revision, 1);
+        assert!(s.local_play(true).is_err() && s.local_seek(0).is_err() && s.status().local.is_none(), "Live decides the position");
         std::thread::sleep(Duration::from_millis(400));
         ports.inject("Pads", &[0x90, 11, 100]);
         s.set_blackout(true);
@@ -598,6 +704,68 @@ mod tests {
         std::fs::remove_dir_all(&dir).ok();
     }
 
+    /// A21: the local clock drives the same render and LED path without Live.
+    #[test]
+    fn local_time_source_plays_seeks_and_stops_dark() {
+        use omoiiro_devices::adapter::DeviceAdapter;
+        let show = omoiiro_store::load_str(include_str!("../../../examples/demo.show.json")).unwrap();
+        let (be, ports) = fake_backend();
+        ports.add_output("LED Out");
+        ports.add_output(ports::names::TIMECODE_PORT);
+        let backend: SharedBackend = Arc::new(Mutex::new(Box::new(be)));
+        let cfg = SessionConfig {
+            time_source: TimeSource::Local,
+            show: show.clone(),
+            bind: "127.0.0.1:0".into(),
+            clock_in: Some("not used".into()),
+            link: false,
+            led_out: LedOut::Port { spec: "LED Out".into(), allow_device: false },
+            control: None,
+            timecode_out: Some(ports::names::TIMECODE_PORT.into()),
+            record: None,
+            meta: json!({}),
+            safety: Default::default(),
+            identify_led: false,
+        };
+        let s = FollowSession::start(cfg, backend).unwrap();
+        assert!(s.notes.iter().any(|n| n.contains("手元の時計")), "{:?}", s.notes);
+        std::thread::sleep(Duration::from_millis(300));
+        let st = s.status();
+        assert_eq!(st.time_source, TimeSource::Local);
+        let l = st.local.unwrap();
+        assert!(!l.playing && l.position_us == 0 && l.bpm == show.preview.bpm);
+        assert_eq!((st.transport.show_time_us, st.transport.output), (Some(0), crate::sync::transport::OutputState::Hold), "stopped: shown, not black");
+        assert!(st.transport.beat.is_some());
+
+        // Play: the show time advances and frames go to the LED port.
+        let p = s.local_play(true).unwrap();
+        assert!(p.playing);
+        std::thread::sleep(Duration::from_millis(400));
+        let st = s.status();
+        assert!(st.transport.show_time_us.unwrap() >= 300_000, "{:?}", st.transport.show_time_us);
+        assert_eq!(st.transport.output, crate::sync::transport::OutputState::Follow);
+        assert!(st.follow.frame_index >= 8);
+        assert!(!ports.sent("LED Out").is_empty(), "LED frames were sent");
+        assert_eq!(st.follow.show_time_us.map(|t| t > 0), Some(true), "the render loop follows the local clock");
+
+        // Seek while paused: the time is exactly there.
+        s.local_play(false).unwrap();
+        let l = s.local_seek(10_000_000).unwrap();
+        assert_eq!(l.position_us, 10_000_000);
+        std::thread::sleep(Duration::from_millis(150));
+        assert_eq!(s.status().transport.show_time_us, Some(10_000_000));
+        assert_eq!(s.local_set_bpm(90.0).unwrap().bpm, 90.0);
+        assert!(s.local_set_bpm(0.0).is_err());
+
+        // No MTC from the local clock; stop turns the LEDs off.
+        let end = s.stop().unwrap();
+        assert!(end["mtc_out"].is_null());
+        assert!(ports.sent(ports::names::TIMECODE_PORT).is_empty());
+        let sent = ports.sent("LED Out");
+        let off = LaunchpadXAdapter.shutdown();
+        assert!(!off.is_empty() && sent.ends_with(&off), "stop sends the LED shutdown last");
+    }
+
     /// M6: a Launchpad-looking LED output starts only with the device permission.
     #[test]
     fn launchpad_led_output_needs_the_permission() {
@@ -607,6 +775,7 @@ mod tests {
             ports.add_output("LPX MIDI");
             let backend: SharedBackend = Arc::new(Mutex::new(Box::new(be)));
             let cfg = SessionConfig {
+                time_source: TimeSource::Live,
                 show: show.clone(),
                 bind: "127.0.0.1:0".into(),
                 clock_in: None,
@@ -642,6 +811,7 @@ mod tests {
         ports.add_output(ports::names::CONTROL_PORT);
         let backend: SharedBackend = Arc::new(Mutex::new(Box::new(be)));
         let cfg = SessionConfig {
+            time_source: TimeSource::Live,
             show,
             bind: "127.0.0.1:0".into(),
             clock_in: None,

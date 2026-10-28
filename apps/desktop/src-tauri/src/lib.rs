@@ -24,7 +24,7 @@ use dto::*;
 use omoiiro_midi::backend::MidiBackend;
 use omoiiro_midi::midir_backend::MidirBackend;
 use omoiiro_runtime::follow::SharedBackend;
-use omoiiro_runtime::session::{FollowSession, LedOut, SessionConfig};
+use omoiiro_runtime::session::{FollowSession, LedOut, LocalTransport, SessionConfig};
 use omoiiro_runtime::settings::{check_roles, TerminalSettings};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -110,6 +110,7 @@ fn runtime_start(state: State<'_, AppState>, ed: State<'_, editor::EditorState>,
     drop(slot);
     *state.show_path.lock().unwrap() = Some(path.clone());
     settings::remember_show(&state, &path.display().to_string());
+    settings::remember_time_source(&state, req.time_source);
     Ok(result)
 }
 
@@ -180,6 +181,30 @@ fn reset_control_fault(state: State<'_, AppState>) -> CmdResult<()> {
     with_session(&state, |s| s.reset_control_fault())
 }
 
+/// A21: the local clock of a session started with `time_source: local`
+/// (refused while following Live).
+fn with_local(state: &State<'_, AppState>, f: impl FnOnce(&FollowSession) -> Result<LocalTransport, String>) -> CmdResult<LocalTransport> {
+    match state.session.lock().unwrap().as_ref() {
+        Some(s) => f(s).map_err(|e| CommandError::new("time_source", e)),
+        None => Err(CommandError::new("not_running", "the runtime is not running")),
+    }
+}
+
+#[tauri::command]
+fn runtime_transport_play(state: State<'_, AppState>, playing: bool) -> CmdResult<LocalTransport> {
+    with_local(&state, |s| s.local_play(playing))
+}
+
+#[tauri::command]
+fn runtime_transport_seek(state: State<'_, AppState>, position_us: i64) -> CmdResult<LocalTransport> {
+    with_local(&state, |s| s.local_seek(position_us))
+}
+
+#[tauri::command]
+fn runtime_transport_bpm(state: State<'_, AppState>, bpm: f64) -> CmdResult<LocalTransport> {
+    with_local(&state, |s| s.local_set_bpm(bpm))
+}
+
 /// Forget every pad press (input history of pads / cycle / constellation).
 #[tauri::command]
 fn reset_input(state: State<'_, AppState>) -> CmdResult<()> {
@@ -236,6 +261,7 @@ impl StartRequest {
             _ => None,
         };
         Ok(SessionConfig {
+            time_source: self.time_source,
             show,
             bind: bind.to_string(),
             clock_in: p.clock_in.clone(),
@@ -309,6 +335,9 @@ pub fn run() {
             editor::frames_import,
             editor::recording_stop,
             reset_input,
+            runtime_transport_play,
+            runtime_transport_seek,
+            runtime_transport_bpm,
             recording_start,
             editor::preset_export,
             editor::editor_save,
@@ -343,26 +372,29 @@ mod tests {
     #[test]
     fn start_request_validation_uses_terminal_settings() {
         let mut s = TerminalSettings::default();
-        let cfg = StartRequest { show_path: demo() }.validate(&s, None).unwrap();
+        let cfg = StartRequest { show_path: demo(), time_source: Default::default() }.validate(&s, None).unwrap();
         assert_eq!(cfg.led_out, LedOut::Virtual);
         assert!(cfg.control.is_none(), "no control input: no route");
-        assert_eq!(StartRequest { show_path: "".into() }.validate(&s, None).unwrap_err().code, "invalid");
-        assert_eq!(StartRequest { show_path: "nope.show.json".into() }.validate(&s, None).unwrap_err().code, "io");
-        assert_eq!(StartRequest { show_path: "demo.json".into() }.validate(&s, None).unwrap_err().code, "invalid", "only *.show.json");
+        assert_eq!(StartRequest { show_path: "".into(), time_source: Default::default() }.validate(&s, None).unwrap_err().code, "invalid");
+        assert_eq!(StartRequest { show_path: "nope.show.json".into(), time_source: Default::default() }.validate(&s, None).unwrap_err().code, "io");
+        assert_eq!(StartRequest { show_path: "demo.json".into(), time_source: Default::default() }.validate(&s, None).unwrap_err().code, "invalid", "only *.show.json");
         s.ports.control_in = Some("Pads".into());
         s.ports.timecode_out = Some("OMOI-IRO Timecode".into());
-        let cfg = StartRequest { show_path: demo() }.validate(&s, None).unwrap();
+        let cfg = StartRequest { show_path: demo(), time_source: Default::default() }.validate(&s, None).unwrap();
+        assert_eq!(cfg.time_source, omoiiro_runtime::session::TimeSource::Live, "existing calls follow Live");
+        let req: StartRequest = serde_json::from_str(&format!("{{\"show_path\": {:?}, \"time_source\": \"local\"}}", demo())).unwrap();
+        assert_eq!(req.validate(&s, None).unwrap().time_source, omoiiro_runtime::session::TimeSource::Local);
         assert_eq!(cfg.control, Some(("Pads".into(), omoiiro_midi::ports::names::CONTROL_PORT.into())));
         assert_eq!(cfg.timecode_out.as_deref(), Some("OMOI-IRO Timecode"));
         // Device LED output follows the terminal permission.
         s.ports.led_out = Some("LPX MIDI".into());
-        assert_eq!(StartRequest { show_path: demo() }.validate(&s, None).unwrap().led_out, LedOut::Port { spec: "LPX MIDI".into(), allow_device: false });
+        assert_eq!(StartRequest { show_path: demo(), time_source: Default::default() }.validate(&s, None).unwrap().led_out, LedOut::Port { spec: "LPX MIDI".into(), allow_device: false });
         s.devices.allow_launchpad_led = true;
-        let cfg = StartRequest { show_path: demo() }.validate(&s, None).unwrap();
+        let cfg = StartRequest { show_path: demo(), time_source: Default::default() }.validate(&s, None).unwrap();
         assert_eq!(cfg.led_out, LedOut::Port { spec: "LPX MIDI".into(), allow_device: true });
         assert!(cfg.identify_led, "a device is identified first");
         s.bridge_bind = "localhost".into();
-        assert_eq!(StartRequest { show_path: demo() }.validate(&s, None).unwrap_err().code, "settings");
+        assert_eq!(StartRequest { show_path: demo(), time_source: Default::default() }.validate(&s, None).unwrap_err().code, "settings");
     }
 
     #[test]

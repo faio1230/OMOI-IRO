@@ -3,7 +3,7 @@
 
 use omoiiro_core::safety::{FlashWarning, SafetyLimits};
 use omoiiro_runtime::follow::LiveDiag;
-use omoiiro_runtime::session::FollowSession;
+use omoiiro_runtime::session::{FollowSession, LocalTransport, TimeSource};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -60,6 +60,9 @@ pub struct PortsDto {
 #[serde(deny_unknown_fields)]
 pub struct StartRequest {
     pub show_path: String,
+    /// A21: follow Live (default) or run on the local clock.
+    #[serde(default)]
+    pub time_source: TimeSource,
 }
 
 #[derive(Debug, Serialize)]
@@ -177,6 +180,10 @@ pub struct StatusDto {
     pub document: Option<DocumentDto>,
     /// The window was asked to close while the document has unsaved changes.
     pub close_requested: bool,
+    /// A21: the running session's time source (None while stopped).
+    pub time_source: Option<TimeSource>,
+    /// A21: the local clock (`time_source: local` only).
+    pub local: Option<LocalTransport>,
     /// Event lines since the previous status call (bridge lock, jumps, stop ...).
     pub events: Vec<String>,
 }
@@ -217,6 +224,8 @@ impl StatusDto {
             document: None,
             close_requested: false,
             events: Vec::new(),
+            time_source: None,
+            local: None,
         }
     }
 
@@ -268,6 +277,8 @@ impl StatusDto {
             document: None,
             close_requested: false,
             events: s.drain_events(),
+            time_source: Some(st.time_source),
+            local: st.local,
         }
     }
 }

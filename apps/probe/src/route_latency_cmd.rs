@@ -36,6 +36,7 @@ pub fn run(args: RouteLatencyArgs) -> Result<(), Box<dyn std::error::Error>> {
     let backend: SharedBackend = Arc::new(Mutex::new(Box::new(be) as Box<dyn MidiBackend>));
     let port = UdpSocket::bind("127.0.0.1:0")?.local_addr()?.port();
     let cfg = SessionConfig {
+        time_source: Default::default(),
         show,
         bind: format!("127.0.0.1:{port}"),
         clock_in: None,

@@ -77,6 +77,20 @@ pub fn remember_show(state: &AppState, path: &str) {
     }
 }
 
+/// A21: the last chosen time source, offered at the next start (best effort).
+pub fn remember_time_source(state: &AppState, source: omoiiro_runtime::session::TimeSource) {
+    let mut s = state.settings.lock().unwrap();
+    if s.last_time_source == source {
+        return;
+    }
+    s.last_time_source = source;
+    if let Some(dir) = state.settings_dir.lock().unwrap().as_ref() {
+        if state.settings_load_error.lock().unwrap().is_none() {
+            let _ = ts::save(dir, &s);
+        }
+    }
+}
+
 fn view(state: &AppState) -> SettingsView {
     SettingsView {
         settings: state.settings.lock().unwrap().clone(),
@@ -119,6 +133,7 @@ pub fn settings_save(state: State<'_, AppState>, settings: TerminalSettings) -> 
         let current = state.settings.lock().unwrap();
         settings.recent_shows = current.recent_shows.clone();
         settings.library_shows = current.library_shows.clone();
+        settings.last_time_source = current.last_time_source;
     }
     let dir = state.settings_dir.lock().unwrap().clone().ok_or_else(|| CommandError::new("settings", "settings directory is not ready"))?;
     ts::save(&dir, &settings).map_err(|e| CommandError::new("save", e))?;

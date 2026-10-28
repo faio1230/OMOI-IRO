@@ -197,8 +197,18 @@ enum Dark {
     Stop,
 }
 
+/// A21: the Live-less local time (`time_source: local`). The show time is a
+/// play / pause / seek clock that wraps at the show length; the beat comes
+/// from `bpm` (beat 0 at song start). Nothing is received from Live.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct LocalTime {
+    pub clock: crate::preview::LocalClock,
+    pub bpm: f64,
+}
+
 pub struct Transport {
     cfg: TransportConfig,
+    local: Option<LocalTime>,
     bridge: BridgeDecoder,
     clock: ClockDecoder,
     /// The clock origin was seeded once on this clock connection.
@@ -225,8 +235,24 @@ impl Transport {
             gens: Generations::default(),
             dark: Dark::No,
             recover_from: None,
+            local: None,
             cfg,
         }
+    }
+
+    /// A21: driven by a local clock instead of the bridge (stopped at 0).
+    pub fn new_local(cfg: TransportConfig, length_us: Option<i64>, bpm: f64) -> Transport {
+        let mut t = Transport::new(cfg);
+        t.local = Some(LocalTime { clock: crate::preview::LocalClock::new(length_us), bpm });
+        t
+    }
+
+    pub fn local(&self) -> Option<&LocalTime> {
+        self.local.as_ref()
+    }
+
+    pub fn local_mut(&mut self) -> Option<&mut LocalTime> {
+        self.local.as_mut()
     }
 
     pub fn config(&self) -> &TransportConfig {
@@ -334,6 +360,9 @@ impl Transport {
     }
 
     pub fn snapshot(&mut self, now_us: i64) -> TransportSnapshot {
+        if let Some(l) = self.local {
+            return self.local_snapshot(&l, now_us);
+        }
         let b = self.bridge.snapshot(now_us);
         let offset = self.cfg.input_offset_us;
         let show_time = b.song_ms.map(|ms| (ms * 1000.0).round() as i64 + offset);
@@ -391,6 +420,28 @@ impl Transport {
             beat_seeded,
             clock_seeded: c.stats.seeded,
             mtc_label,
+            generations: self.gens,
+        }
+    }
+
+    /// A21: always locked; stopped holds the position (shown, not black).
+    fn local_snapshot(&self, l: &LocalTime, now_us: i64) -> TransportSnapshot {
+        let t = l.clock.position(now_us);
+        let playing = l.clock.playing();
+        TransportSnapshot {
+            now_us,
+            show_time_us: Some(t),
+            advancing: playing,
+            transport: if playing { TransportState::Playing } else { TransportState::Stopped },
+            stalled: false,
+            time_health: BridgeHealth::Locked,
+            output: if playing { OutputState::Follow } else { OutputState::Hold },
+            output_gain: 1.0,
+            beat: Some(BeatState::new(t as f64 / 1e6 * l.bpm / 60.0, l.bpm)),
+            beat_health: BeatHealth::Locked,
+            beat_seeded: false,
+            clock_seeded: 0,
+            mtc_label: Some(self.cfg.origin.add_us(t).to_string()),
             generations: self.gens,
         }
     }

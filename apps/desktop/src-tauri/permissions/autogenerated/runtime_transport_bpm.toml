@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-runtime-transport-bpm"
+description = "Enables the runtime_transport_bpm command without any pre-configured scope."
+commands.allow = ["runtime_transport_bpm"]
+
+[[permission]]
+identifier = "deny-runtime-transport-bpm"
+description = "Denies the runtime_transport_bpm command without any pre-configured scope."
+commands.deny = ["runtime_transport_bpm"]

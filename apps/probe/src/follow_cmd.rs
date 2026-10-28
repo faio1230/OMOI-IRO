@@ -97,6 +97,7 @@ pub fn run(args: FollowArgs) -> Result<(), Box<dyn std::error::Error>> {
         LedOut::Port { spec: args.led_out.clone(), allow_device: args.allow_device }
     };
     let cfg = SessionConfig {
+        time_source: Default::default(),
         show,
         bind: args.bind.clone(),
         clock_in: args.clock_in.clone(),

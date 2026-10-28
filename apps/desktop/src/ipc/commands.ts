@@ -1,7 +1,7 @@
 // Typed wrappers over the Rust commands (apps/desktop/src-tauri/src/lib.rs).
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import type { AppInfo, CommandError, EditCommand, EditorView, LibraryView, MaterialKind, OnConflict, ListenResult, PortsDto, PreviewFrame, PreviewInfo, PreviewSource, SettingsCheck, SettingsView, Snap, StartRequest, StartResult, StatusDto, StopResult, TerminalSettings } from "./types";
+import type { AppInfo, CommandError, EditCommand, EditorView, LibraryView, LocalTransport, MaterialKind, OnConflict, ListenResult, PortsDto, PreviewFrame, PreviewInfo, PreviewSource, SettingsCheck, SettingsView, Snap, StartRequest, StartResult, StatusDto, StopResult, TerminalSettings } from "./types";
 
 export const appInfo = () => invoke<AppInfo>("app_info");
 export const listPorts = () => invoke<PortsDto>("list_ports");
@@ -12,6 +12,10 @@ export const setBlackout = (on: boolean) => invoke<void>("set_blackout", { on })
 export const setBrightness = (value: number) => invoke<void>("set_brightness", { value });
 export const resetControlFault = () => invoke<void>("reset_control_fault");
 export const reconnectPorts = () => invoke<void>("reconnect_ports");
+// A21: the runtime's local clock (refused while following Live).
+export const runtimeTransportPlay = (playing: boolean) => invoke<LocalTransport>("runtime_transport_play", { playing });
+export const runtimeTransportSeek = (positionUs: number) => invoke<LocalTransport>("runtime_transport_seek", { positionUs });
+export const runtimeTransportBpm = (bpm: number) => invoke<LocalTransport>("runtime_transport_bpm", { bpm });
 
 /** Subscribe to Rust-rendered preview frames. Call `previewAck(frame.seq)` after drawing each one. */
 export function previewSubscribe(onFrame: (f: PreviewFrame) => void): Promise<void> {
