@@ -270,6 +270,9 @@ table.compounds input { background: var(--bg); color: var(--text); border: 1px s
 .material-select canvas { display: block; width: 72px; height: 72px; max-width: 100%; align-self: center; margin: 3px 0 6px; image-rendering: pixelated; }
 .material-name { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; }
 .material-type { font-size: 9px; color: var(--muted); letter-spacing: .06em; }
+.material-source { display: block; font-size: 9px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bank-library { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 4px 0 8px; font-size: 12px; }
+.bank-library-file button { padding: 1px 8px; }
 .material-footer { display: flex; align-items: center; justify-content: space-between; padding: 4px 7px; border-top: 1px solid #262325; gap: 4px; }
 .material-footer > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 10px; }
 .material-footer .favorite { font: 9px Consolas, monospace; padding: 4px; min-height: 24px; background: transparent; }

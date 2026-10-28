@@ -1,7 +1,7 @@
 // Typed wrappers over the Rust commands (apps/desktop/src-tauri/src/lib.rs).
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import type { AppInfo, CommandError, EditCommand, EditorView, OnConflict, ListenResult, PortsDto, PreviewFrame, PreviewInfo, PreviewSource, SettingsCheck, SettingsView, Snap, StartRequest, StartResult, StatusDto, StopResult, TerminalSettings } from "./types";
+import type { AppInfo, CommandError, EditCommand, EditorView, LibraryView, MaterialKind, OnConflict, ListenResult, PortsDto, PreviewFrame, PreviewInfo, PreviewSource, SettingsCheck, SettingsView, Snap, StartRequest, StartResult, StatusDto, StopResult, TerminalSettings } from "./types";
 
 export const appInfo = () => invoke<AppInfo>("app_info");
 export const listPorts = () => invoke<PortsDto>("list_ports");
@@ -86,3 +86,11 @@ export function errorText(e: unknown): string {
 }
 
 export const materialPreview = (materialKind: "preset" | "compound", materialId: string) => invoke<number[][]>("material_preview", { materialKind, materialId });
+
+// Material library (A20): registered show files, read only; import copies into the edited show.
+export const libraryList = (path: string) => invoke<LibraryView>("library_list", { path });
+export const libraryPreview = (path: string, materialKind: MaterialKind, materialId: string) => invoke<number[][]>("library_preview", { path, materialKind, materialId });
+/** One history entry; `outcome` names the material in the edited show (reused if already there). */
+export const libraryImport = (path: string, materialKind: MaterialKind, materialId: string) => invoke<EditorView>("library_import", { path, materialKind, materialId });
+export const libraryAdd = (path: string) => invoke<string[]>("library_add", { path });
+export const libraryRemove = (path: string) => invoke<string[]>("library_remove", { path });

@@ -278,6 +278,20 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
         if (kind === "compound") apply({ op: "add_compound_clip", layer_id: target.id, compound_id: id, start_us, duration_us: null });
         else apply({ op: "add_clip", layer_id: target.id, preset_id: id, start_us, duration_us: DEFAULT_CLIP_US });
       }}
+      onImport={async (path, kind, id) => {
+        if (busy.current) return null;
+        busy.current = true;
+        try {
+          const v = await ipc.libraryImport(path, kind, id);
+          accept(v);
+          return v;
+        } catch (e) {
+          setError(ipc.errorText(e));
+          return null;
+        } finally {
+          busy.current = false;
+        }
+      }}
     />
     <section id="timeline-editor" className="panel timeline-panel">
       <h2>タイムライン：{view.name}{view.path ? "" : "（新規・未保存）"}{compound ? ` ／ 素材「${compound.name}」の中` : ""}</h2>

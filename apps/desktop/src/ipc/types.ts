@@ -211,6 +211,8 @@ export interface TerminalSettings {
   recent_shows: string[];
   safety: SafetyLimits;
   devices: { allow_launchpad_led: boolean };
+  /** A20: library show files (kept by the app, at most 10). */
+  library_shows: string[];
 }
 
 export interface SettingsView {
@@ -271,6 +273,16 @@ export interface ListenResult {
 export type Snap = "none" | "second" | "frame30";
 
 export interface MaterialMetadata { category: string; tags: string[]; favorite: boolean }
+
+/** A20: materials of one library show file. */
+export interface LibraryView {
+  path: string;
+  name: string;
+  /** Changes when the file changes. */
+  stamp: string;
+  presets: { id: string; name: string; effect_type: string; metadata: MaterialMetadata; effect: unknown }[];
+  compounds: { id: string; name: string; length_us: number; metadata: MaterialMetadata; preset_ids: string[] }[];
+}
 export type MaterialKind = "preset" | "compound";
 
 export type EditCommand =
