@@ -10,7 +10,7 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 - パレット用ショーには、プリセットと、それを見るためのクリップを入れる。クリップは4秒ずつ順番に並べ、1つのレイヤーに置く。常時系（Pulse、Noise、Ripple）は continuous レイヤーでもよい。
 - 本番側では、このショーを開いてプリセットを選び直すか、プリセット欄の「読み込み」で `.preset.json` を取り込む。`.preset.json` も出すなら `shows/presets/<id>.preset.json`。
 
-テンプレートは `fixtures/shows/effects-0.1.2.show.json`。これを複製して `id`、`name`、`presets`、`layers` を書き換えるのが最短。
+テンプレートは `shows/omoi-iro-live-template.show.json`（本番用の雛形、31 プリセット）か `fixtures/shows/effects-0.1.2.show.json`。全プリセットの比較は `shows/omoi-iro-palette.show.json`。納品前に `omoiiro-probe check-shows --write shows` を通す（正規形に整え、読込・保存・描画を検査）。これを複製して `id`、`name`、`presets`、`layers` を書き換えるのが最短。
 
 ## 2. 盤面と色の前提
 
