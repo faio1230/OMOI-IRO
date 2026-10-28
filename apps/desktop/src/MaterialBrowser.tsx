@@ -6,19 +6,6 @@ const CATEGORIES = ["タップ", "背景", "アクセント", "トランジシ�
 const PAGE_SIZE = 12;
 type Material = { id: string; kind: MaterialKind; name: string; metadata: MaterialMetadata; label: string; used: number; signature: string; durationMs: number };
 const keyOf = (m: Material) => `${m.kind}:${m.id}`;
-const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-
-/** Follows the OS setting; the thumbnail cannot animate while it is on. */
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(() => matchMedia(REDUCED_MOTION).matches);
-  useEffect(() => {
-    const q = matchMedia(REDUCED_MOTION);
-    const onChange = () => setReduced(q.matches);
-    q.addEventListener("change", onChange);
-    return () => q.removeEventListener("change", onChange);
-  }, []);
-  return reduced;
-}
 
 /** Draw only Rust-rendered pixels; y=0 is the bottom row on the device. */
 function MiniPreview({ frames, animate, name, durationMs = 2000 }: { frames?: number[][]; animate: boolean; name: string; durationMs?: number }) {
@@ -38,7 +25,7 @@ function MiniPreview({ frames, animate, name, durationMs = 2000 }: { frames?: nu
       index = (index + 1) % (frames?.length || 1);
     };
     paint();
-    if (!animate || !frames || matchMedia(REDUCED_MOTION).matches) return;
+    if (!animate || !frames) return;
     const timer = window.setInterval(() => { if (!document.hidden) paint(); }, Math.max(16, durationMs / frames.length));
     return () => clearInterval(timer);
   }, [frames, animate, durationMs]);
@@ -76,7 +63,6 @@ export default function MaterialBrowser({ view, apply, onEdit, onPick, targetNam
   const [page, setPage] = useState(0);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [moving, setMoving] = useState(false);
-  const reducedMotion = useReducedMotion();
   const [previews, setPreviews] = useState<Record<string, number[][]>>({});
   const [previewError, setPreviewError] = useState<string | null>(null);
   const cache = useRef(new Map<string, number[][]>());
@@ -157,11 +143,11 @@ export default function MaterialBrowser({ view, apply, onEdit, onPick, targetNam
     </div>
     {selected ? <div className="material-detail">
       <div className="material-detail-title"><MiniPreview frames={previews[keyOf(selected)]} name={selected.name} animate={moving} durationMs={selected.durationMs} /><div className="selected-material-name"><span className="eyebrow">SELECTED MATERIAL</span><h3>{selected.name}</h3><span className="hint">{selected.label} · 使用 {selected.used} 箇所</span></div><div className="actions">
-        <button aria-pressed={moving && !reducedMotion} className={moving && !reducedMotion ? "on" : ""} disabled={reducedMotion} onClick={() => setMoving(!moving)}>{moving && !reducedMotion ? "サムネイル停止" : "サムネイルを動かす"}</button>
+        <button aria-pressed={moving} className={moving ? "on" : ""} onClick={() => setMoving(!moving)}>{moving ? "サムネイル停止" : "サムネイルを動かす"}</button>
         <button onClick={() => onEdit(selected.kind, selected.id)}>効果を編集</button>
         <button className="primary" disabled={!canPlace(selected.kind)} onClick={() => onPlace(selected.kind, selected.id)}>レイヤーに配置</button>
       </div></div>
-      <p className="hint">{reducedMotion ? "OS の設定でアニメーション効果が無効のため動かせません" : "24コマのコマ送り（サンプル入力）。実際の再生は「レイヤーに配置」→ LEDプレビューの「手元で再生」で確認"}</p>
+      <p className="hint">24コマのコマ送り（サンプル入力）。実際の再生は「レイヤーに配置」→ LEDプレビューの「手元で再生」で確認</p>
       <Classification material={selected} categories={categories} apply={apply} />
       <p className="hint">{targetName ? `配置先：${targetName}。再生位置、停止中は末尾に追加。` : "配置先は下のタイムラインでレイヤーを選択。"} 複合素材はショーのタイムラインに配置できます。</p>
     </div> : <p className="bank-select-hint">素材を選ぶと、分類の編集・動きの確認・レイヤーへの配置ができます。</p>}
