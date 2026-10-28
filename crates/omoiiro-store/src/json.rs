@@ -375,12 +375,13 @@ mod tests {
         // Glow: dark when quiet, the whole grid when loud.
         assert_eq!(lit(&r.render_all(1_000_000, None, None, Some(&quiet))), 0);
         assert_eq!(lit(&r.render_all(1_000_000, None, None, Some(&loud(10_000)))), 64);
-        // Orb on [LED] Kick: grows with the kick only.
-        let small = lit(&r.render_all(17_000_000, None, None, Some(&AudioInput { tracks: vec![("Kick".into(), [0.1, 0.1])], ..loud(20_000) })));
-        let big = lit(&r.render_all(17_000_000, None, None, Some(&loud(40_000))));
-        assert!(small < big, "{small} < {big}");
-        // Bars: 0.6 of 8 rows on every column (5 rows rounded).
-        assert_eq!(lit(&r.render_all(33_000_000, None, None, Some(&loud(60_000)))), 5 * 8);
+        // Orb on [LED] Kick (floor 0.7, gain 2): nothing under the floor, grows above it.
+        let under = lit(&r.render_all(17_000_000, None, None, Some(&AudioInput { tracks: vec![("Kick".into(), [0.6, 0.6])], ..loud(20_000) })));
+        let small = lit(&r.render_all(17_000_000, None, None, Some(&AudioInput { tracks: vec![("Kick".into(), [0.75, 0.75])], ..loud(40_000) })));
+        let big = lit(&r.render_all(17_000_000, None, None, Some(&loud(60_000))));
+        assert!(under == 0 && 0 < small && small < big, "{under} / {small} / {big}");
+        // Bars (floor 0.3, gain 1.2): master 0.6 → (0.3 / 0.7) × 1.2 ≈ 0.51 → 4 of 8 rows on every column.
+        assert_eq!(lit(&r.render_all(33_000_000, None, None, Some(&loud(80_000)))), 4 * 8);
     }
 
     #[test]

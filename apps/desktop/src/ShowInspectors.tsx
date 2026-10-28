@@ -396,7 +396,7 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
           <input type="color" value={p.color_high} onChange={(e) => set({ color_high: e.target.value.toUpperCase() })} />
         </label>
         <NumberField fixed label="増幅" value={p.gain} min={0.5} max={8} step={0.25} hint="0.5〜8（値は 1 まで）" onChange={(v) => set({ gain: first(v) })} />
-        <NumberField fixed label="これ未満は 0" value={p.floor} min={0} max={0.5} step={0.01} hint="0〜0.5（小さな音を無視）" onChange={(v) => set({ floor: first(v) })} />
+        <NumberField fixed label="下限（ここから反応）" value={p.floor} min={0} max={0.9} step={0.05} hint="0〜0.9。下限未満は 0、下限〜1 を 0〜1 に広げてから増幅（Live のメーターは高めに張り付くので、キックなら 0.6〜0.7 から）" onChange={(v) => set({ floor: first(v) })} />
         <NumberField fixed label="上がる速さ（ms）" value={p.attack_ms} min={0} max={500} step={10} integer hint="0〜500" onChange={(v) => set({ attack_ms: first(v) })} />
         <NumberField fixed label="下がる速さ（ms）" value={p.release_ms} min={0} max={2000} step={50} integer hint="0〜2000" onChange={(v) => set({ release_ms: first(v) })} />
         {p.mode === "bar" && (

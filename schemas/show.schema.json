@@ -3014,7 +3014,7 @@
                   "floor": {
                     "type": "number",
                     "minimum": 0,
-                    "maximum": 0.5
+                    "maximum": 0.9
                   },
                   "attack_ms": {
                     "type": "integer",

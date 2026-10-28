@@ -480,7 +480,7 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                     _ => {}
                 }
                 c.range(params.gain, 0.5, 8.0, format!("{e}/params/gain"));
-                c.range(params.floor, 0.0, 0.5, format!("{e}/params/floor"));
+                c.range(params.floor, 0.0, 0.9, format!("{e}/params/floor"));
                 if params.attack_ms > 500 {
                     c.push(format!("{e}/params/attack_ms"), "attack_ms must be within 0..=500");
                 }

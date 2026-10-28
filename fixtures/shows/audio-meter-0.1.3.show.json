@@ -50,7 +50,7 @@
           "color_low": "#200030",
           "color_high": "#FF60C0",
           "gain": 1.5,
-          "floor": 0.05,
+          "floor": 0.5,
           "attack_ms": 10,
           "release_ms": 250
         }
@@ -70,7 +70,7 @@
           "color_low": "#2040FF",
           "color_high": "#FFFFFF",
           "gain": 2,
-          "floor": 0.1,
+          "floor": 0.7,
           "attack_ms": 0,
           "release_ms": 150
         }
@@ -88,8 +88,8 @@
           "mode": "bar",
           "color_low": "#00C060",
           "color_high": "#FF2020",
-          "gain": 1,
-          "floor": 0.05,
+          "gain": 1.2,
+          "floor": 0.3,
           "attack_ms": 20,
           "release_ms": 300,
           "peak_hold_ms": 600

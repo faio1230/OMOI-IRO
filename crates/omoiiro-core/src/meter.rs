@@ -41,7 +41,10 @@ impl MeterLook {
         })
     }
 
-    /// The raw level (gain, floor, at most 1), or None without that source.
+    /// The level 0..=1, or None without that source: a gate and stretch,
+    /// `clamp((raw − floor) / (1 − floor), 0, 1) × gain`, at most 1. Live's
+    /// smoothed meters sit high (0.75..0.92 under a kick), so a floor that only
+    /// cut below it would leave nothing to react to.
     pub fn level(&self, audio: &AudioInput) -> Option<f64> {
         let [l, r] = match &self.track {
             None => audio.master,
@@ -52,8 +55,8 @@ impl MeterLook {
             MeterChannel::Left => l,
             MeterChannel::Right => r,
         } as f64;
-        let v = (v * self.gain).min(1.0);
-        Some(if v < self.floor { 0.0 } else { v })
+        let span = (1.0 - self.floor).max(1e-6);
+        Some((((v - self.floor) / span).clamp(0.0, 1.0) * self.gain).min(1.0))
     }
 }
 
@@ -120,6 +123,10 @@ pub fn paint_meter(look: &MeterLook, audio: Option<&AudioInput>, env: &mut Meter
             layer.px.iter_mut().for_each(|p| *p = s);
         }
         MeterMode::Orb => {
+            // Nothing at 0 (silence, or below the floor): no idle ball.
+            if v < 1e-3 {
+                return;
+            }
             let r = 0.5 + v * 3.5;
             let c = lerp(look.low, look.high, v);
             for (i, px) in layer.px.iter_mut().enumerate() {
@@ -157,7 +164,11 @@ mod tests {
         assert_eq!(look(|_| {}).level(&a), Some(0.4f32 as f64), "mix = the louder");
         assert_eq!(look(|p| p.channel = MeterChannel::Left).level(&a), Some(0.2f32 as f64));
         assert_eq!(look(|p| p.gain = 4.0).level(&a), Some(1.0), "at most 1");
-        assert_eq!(look(|p| p.floor = 0.5).level(&a), Some(0.0));
+        assert_eq!(look(|p| p.floor = 0.5).level(&a), Some(0.0), "gated");
+        // Stretched above the floor: 0.75 with floor 0.5 is half way, then the gain.
+        let hi = audio(0, [0.75, 0.75]);
+        assert_eq!(look(|p| p.floor = 0.5).level(&hi), Some(0.5));
+        assert_eq!(look(|p| { p.floor = 0.5; p.gain = 1.5 }).level(&hi), Some(0.75));
         let kick = look(|p| {
             p.source = MeterSource::Track;
             p.track_name = Some("Kick".into());
@@ -181,6 +192,7 @@ mod tests {
             lit(&l).len()
         };
         assert!(orb(0.0) < orb(1.0));
+        assert_eq!(orb(0.0), 0, "no idle ball at 0");
         let mut l = LayerFrame::default();
         paint_meter(&look(|_| {}), None, &mut env, 1.0, &mut l);
         assert!(lit(&l).is_empty() && env == MeterEnv::default());

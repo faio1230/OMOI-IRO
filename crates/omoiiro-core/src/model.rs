@@ -519,10 +519,10 @@ pub struct MeterParams {
     pub mode: MeterMode,
     pub color_low: String,
     pub color_high: String,
-    /// Level × gain, 0.5..=8, at most 1.
+    /// Applied after the floor, 0.5..=8; the level is at most 1.
     #[serde(serialize_with = "ser_num")]
     pub gain: f64,
-    /// Below this the level is 0, 0..=0.5.
+    /// Gate and stretch, 0..=0.9: level = clamp((raw − floor) / (1 − floor), 0, 1) × gain.
     #[serde(serialize_with = "ser_num")]
     pub floor: f64,
     /// Smoothing towards a higher / lower level (ms).
