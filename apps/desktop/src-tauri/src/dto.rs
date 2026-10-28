@@ -157,6 +157,8 @@ pub struct StatusDto {
     pub diag: Option<LiveDiag>,
     /// Preview frames replaced before the UI acknowledged the previous one.
     pub preview_skipped: u64,
+    /// 0.1.3: show time the running pad recording began at (None: not recording).
+    pub recording_since_us: Option<i64>,
     pub safety: SafetyDto,
     pub document: Option<DocumentDto>,
     /// The window was asked to close while the document has unsaved changes.
@@ -193,6 +195,7 @@ impl StatusDto {
             dropped: DroppedDto { bridge: 0, clock: 0, control: 0 },
             diag: None,
             preview_skipped: 0,
+            recording_since_us: None,
             safety: SafetyDto { max_brightness: limits.max_brightness, max_flash_hz: limits.max_flash_hz, limit_flash: limits.limit_flash, warnings: Vec::new(), muted_layers: Vec::new() },
             document: None,
             close_requested: false,
@@ -237,6 +240,7 @@ impl StatusDto {
             dropped: DroppedDto { bridge: st.dropped_bridge, clock: st.dropped_clock, control: st.dropped_control },
             diag: Some(f.diag),
             preview_skipped,
+            recording_since_us: s.recording_since(),
             safety: {
                 let l = s.shared().overrides.limits();
                 SafetyDto { max_brightness: l.max_brightness, max_flash_hz: l.max_flash_hz, limit_flash: l.limit_flash, warnings: f.safety_warnings.clone(), muted_layers: f.muted_layers.clone() }

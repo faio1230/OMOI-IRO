@@ -46,6 +46,9 @@ export const editorRedo = () => invoke<EditorView>("editor_redo");
 /** Import a 0.1.1 preset file (kind omoiiro.preset) through the history. */
 export const presetImport = (path: string, onConflict: OnConflict) => invoke<EditorView>("preset_import", { path, onConflict });
 export const framesImport = (path: string, onConflict: OnConflict) => invoke<EditorView>("frames_import", { path, onConflict });
+export const resetInput = () => invoke<void>("reset_input");
+export const recordingStart = () => invoke<number>("recording_start");
+export const recordingStop = (layerId: string, presetId: string) => invoke<EditorView>("recording_stop", { layerId, presetId });
 export const presetExport = (presetId: string, path: string, overwrite: boolean) => invoke<string>("preset_export", { presetId, path, overwrite });
 
 export const editorSave = () => invoke<EditorView>("editor_save");

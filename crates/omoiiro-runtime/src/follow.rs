@@ -67,6 +67,22 @@ pub struct FollowShared {
     /// thread after forwarding to Live, drained by the render thread.
     pub pad_tx: Sender<PadEvent>,
     pub pad_rx: Receiver<PadEvent>,
+    /// Pad events as the render thread took them, with their show time (0.1.3).
+    pub pad_log: Mutex<PadLog>,
+}
+
+/// Raw pad events kept for a recording or the JSONL record, at most
+/// `PadLog::LIMIT` each (presses and releases).
+#[derive(Debug, Default)]
+pub struct PadLog {
+    /// Recording in progress: the show time it began and the events since.
+    pub recording: Option<(i64, Vec<(i64, PadEvent)>)>,
+    /// For the JSONL record (drained by the sync thread): (monotonic, show time, event).
+    pub to_file: Option<Vec<(i64, Option<i64>, PadEvent)>>,
+}
+
+impl PadLog {
+    pub const LIMIT: usize = 4096;
 }
 
 impl FollowShared {
@@ -85,6 +101,7 @@ impl FollowShared {
             status: Mutex::new(FollowStatus::default()),
             pad_tx,
             pad_rx,
+            pad_log: Mutex::new(PadLog::default()),
         })
     }
 }
@@ -171,10 +188,24 @@ impl RenderLoop {
         self.engine.adopt(&shared.exchange);
         let snap = shared.transport.lock().unwrap().snapshot(tick.due_us.max(t0));
         // Each event is stamped with the show time it arrived at (triggered clips accept it inside them).
+        let mut log = None;
         for ev in shared.pad_rx.try_iter() {
             self.engine.pads.apply(ev, snap.show_time_us);
             self.pad_hits += matches!(ev, PadEvent::Press { .. }) as u64;
+            // Locked only when events arrived (rare next to frames).
+            let g = log.get_or_insert_with(|| shared.pad_log.lock().unwrap());
+            if let (Some((_, evs)), Some(s)) = (g.recording.as_mut(), snap.show_time_us) {
+                if evs.len() < PadLog::LIMIT {
+                    evs.push((s, ev));
+                }
+            }
+            if let Some(f) = g.to_file.as_mut() {
+                if f.len() < PadLog::LIMIT {
+                    f.push((t0, snap.show_time_us, ev));
+                }
+            }
         }
+        drop(log);
         self.engine.pads.advance(t0);
         let eval = self.engine.evaluate(&snap, &shared.overrides);
         if self.engine.safety_changed {
@@ -721,6 +752,22 @@ mod tests {
         }
         assert_eq!(r.pad_hits, 1);
         assert!(last.unwrap().eval.frame.lit() > 0, "the ring is drawn");
+
+        // 0.1.3: a recording catches presses with their show time; reset empties the input.
+        shared.pad_log.lock().unwrap().recording = Some((0, Vec::new()));
+        shared.pad_tx.send(PadEvent::Press { x: 2, y: 3, velocity: 90, t_us: time.now_us() }).unwrap();
+        while r.step(&shared, &|| clock.now_us()).is_none() {
+            feed.until(&shared, time.now_us());
+            time.advance_us(1_000);
+        }
+        let (_, evs) = shared.pad_log.lock().unwrap().recording.take().unwrap();
+        assert_eq!(evs.len(), 1);
+        assert!(matches!(evs[0].1, PadEvent::Press { x: 2, y: 3, .. }) && evs[0].0 > 0, "{evs:?}");
+        shared.pad_tx.send(PadEvent::Reset).unwrap();
+        while r.step(&shared, &|| clock.now_us()).is_none() {
+            time.advance_us(1_000);
+        }
+        assert!(r.engine.pads.hits.is_empty() && r.engine.pads.history.is_empty());
     }
 
     /// M6 preparation: a (fake) Launchpad X is identified before any LED

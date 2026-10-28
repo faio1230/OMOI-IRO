@@ -6,7 +6,9 @@
 //! The session itself (threads, start / stop) is
 //! `omoiiro_runtime::session::FollowSession`, shared with the desktop shell.
 //! This command prints the status once a second and reads stdin commands:
-//! `blackout on|off`, `brightness <0..1>`, `reload`, `reset`, `quit`.
+//! `blackout on|off`, `brightness <0..1>`, `reload`, `reset`, `reset-input`, `quit`.
+//! With `--out` the record also holds every pad press and release with its
+//! show time (`make-recording` turns them into a recorded clip).
 //!
 //! A real Launchpad X is not driven before M6: ports that look like a
 //! Launchpad are refused unless `--allow-device` is given.
@@ -124,7 +126,7 @@ pub fn run(args: FollowArgs) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(c) = &args.control_in {
         println!("control     : {c} -> {}", args.control_out);
     }
-    println!("commands    : blackout on|off, brightness <0..1>, reload, reset, quit");
+    println!("commands    : blackout on|off, brightness <0..1>, reload, reset, reset-input, quit");
 
     let (cmd_tx, cmd_rx) = crossbeam_channel::bounded::<String>(16);
     spawn_stdin(cmd_tx);
@@ -162,6 +164,10 @@ pub fn run(args: FollowArgs) -> Result<(), Box<dyn std::error::Error>> {
                 (Some("reset"), None) => {
                     session.reset_control_fault();
                     println!("control route fault reset requested");
+                }
+                (Some("reset-input"), None) => {
+                    session.reset_input();
+                    println!("pad input history cleared");
                 }
                 (Some("quit"), None) => stop_flag.store(true, Ordering::SeqCst),
                 _ => println!("unknown command {cmd:?}"),

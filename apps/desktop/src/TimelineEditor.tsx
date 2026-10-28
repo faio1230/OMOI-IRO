@@ -323,7 +323,8 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
                   {layer.clips.map((c) => {
                     const p = presetOf(c.preset_id);
                     const cp = compoundOf(c.compound_id);
-                    const label = cp ? `素材：${cp.name}${c.time_scale && c.time_scale !== 1 ? ` ×${c.time_scale}` : ""}${c.looping ? " ↻" : ""}` : p?.name ?? c.preset_id;
+                    const rec = c.recording ? ` · 記録 ${c.recording.events.length}件${c.looping ? " ↻" : ""}` : "";
+                    const label = cp ? `素材：${cp.name}${c.time_scale && c.time_scale !== 1 ? ` ×${c.time_scale}` : ""}${c.looping ? " ↻" : ""}` : `${p?.name ?? c.preset_id}${rec}`;
                     const d = drag && drag.clip.id === c.id ? drag : null;
                     const startUs = d?.kind === "move" ? Math.max(0, c.start_us + (d.dx / pxPerSec) * 1e6) : c.start_us;
                     const durUs = d?.kind === "resize" ? Math.max(1, c.duration_us + (d.dx / pxPerSec) * 1e6) : c.duration_us;
@@ -397,6 +398,16 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
           <div className="actions">
             <button className="primary" onClick={applyForm}>数値を適用</button>
             {!selected.clip.compound_id && <button onClick={() => setPresetMode({ kind: "clip", clipId: selected.clip.id, presetId: selected.clip.preset_id })}>このクリップだけ効果を編集</button>}
+            {selected.clip.recording && (
+              <>
+                <label className="inline">
+                  <input type="checkbox" checked={selected.clip.looping ?? false} onChange={(e) => apply({ op: "set_clip_recording", clip_id: selected.clip.id, recording: selected.clip.recording, looping: e.target.checked })} />
+                  記録を繰り返す（1周 {((selected.clip.recording.length_us ?? Math.max(1, ...selected.clip.recording.events.map((ev) => ev.t_us + (ev.duration_us ?? 0)))) / 1e6).toFixed(2)} s）
+                </label>
+                <button onClick={() => apply({ op: "set_clip_recording", clip_id: selected.clip.id, recording: { ...selected.clip.recording!, events: [] }, looping: null })}>記録をクリア（{selected.clip.recording.events.length}件）</button>
+                <button className="danger" onClick={() => apply({ op: "set_clip_recording", clip_id: selected.clip.id, recording: null, looping: null })}>記録を削除</button>
+              </>
+            )}
             <button onClick={() => apply({ op: "duplicate_clip", clip_id: selected.clip.id, start_us: null })} title="Ctrl+D">複製</button>
             <button className="danger" onClick={() => { apply({ op: "delete_clip", clip_id: selected.clip.id }); setSelClip(null); }} title="Delete">削除</button>
             <span className="hint">ドラッグで移動、右端で長さ。数値の開始・長さもスナップに合わせる。</span>

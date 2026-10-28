@@ -150,6 +150,8 @@ export interface StatusDto {
   dropped: DroppedDto;
   diag: LiveDiag | null;
   preview_skipped: number;
+  /** 0.1.3: show time the pad recording began at (null: not recording). */
+  recording_since_us: number | null;
   safety: SafetyDto;
   document: { path: string; dirty: boolean } | null;
   close_requested: boolean;
@@ -291,10 +293,12 @@ export type EditCommand =
   | { op: "add_compound_layer"; compound_id: string; name: string; preset_id: string | null }
   | { op: "add_compound_clip"; layer_id: string; compound_id: string; start_us: number; duration_us: number | null }
   | { op: "set_compound_clip"; clip_id: string; tint: string | null; time_scale: number | null; looping: boolean | null }
-  | { op: "detach_compound_clip"; clip_id: string };
+  | { op: "detach_compound_clip"; clip_id: string }
+  | { op: "add_recording_clip"; layer_id: string; preset_id: string; start_us: number; recording: Recording }
+  | { op: "set_clip_recording"; clip_id: string; recording: Recording | null; looping: boolean | null };
 
 export type Blend = "over" | "add" | "max";
-export type EffectType = "builtin.solid" | "builtin.chase" | "builtin.pulse" | "builtin.strobe" | "builtin.noise" | "builtin.ripple" | "builtin.rain" | "builtin.wave" | "builtin.orb" | "builtin.regions" | "builtin.tap_glow" | "builtin.cross" | "builtin.path" | "builtin.shape" | "builtin.particles" | "builtin.frames" | "builtin.text";
+export type EffectType = "builtin.solid" | "builtin.chase" | "builtin.pulse" | "builtin.strobe" | "builtin.noise" | "builtin.ripple" | "builtin.rain" | "builtin.wave" | "builtin.orb" | "builtin.regions" | "builtin.tap_glow" | "builtin.cross" | "builtin.path" | "builtin.shape" | "builtin.particles" | "builtin.frames" | "builtin.text" | "builtin.pads" | "builtin.cycle" | "builtin.constellation";
 export type OnConflict = "error" | "rename";
 
 export type Ease = "linear" | "step" | "ease_in" | "ease_out" | "ease_in_out";
@@ -314,13 +318,19 @@ export type Effect =
   | { type: "builtin.wave"; version: number; params: { color: K<string>; axis: "x" | "y"; wavelength: K<number>; amplitude: K<number>; center: K<number>; speed: K<number>; thickness: K<number>; beat_amplitude: boolean; phase?: K<number> } }
   | { type: "builtin.orb"; version: number; params: { color: K<string>; center_x: K<number>; center_y: K<number>; radius: K<number>; edge: K<number>; light_angle: K<number>; shading: K<number>; dither: K<number>; dither_rate_hz: K<number>; seed: K<number>; motion: "none" | "orbit" | "bounce"; speed: K<number>; orbit_radius: K<number>; bounce_angle: K<number>; orbit_phase?: K<number> } }
   | { type: "builtin.regions"; version: number; params: { pattern: RegionPattern; color: K<string>; color_b?: K<string>; step_mode: "beat" | "seconds"; step_beats: K<number>; step_ms: K<number>; order: "forward" | "reverse" | "pingpong"; soft: K<number>; duty: K<number>; groups?: number[][]; offset?: number[] } }
-  | { type: "builtin.tap_glow"; version: number; params: { color_start: K<string>; color_mid: K<string>; color_end: K<string>; lifetime_ms: K<number>; radius: K<number>; repeats: K<number>; repeat_interval_ms: K<number>; repeat_decay: K<number> } }
+  | { type: "builtin.tap_glow"; version: number; params: { color_start: K<string>; color_mid: K<string>; color_end: K<string>; lifetime_ms: K<number>; radius: K<number>; repeats: K<number>; repeat_interval_ms: K<number>; repeat_decay: K<number>; charge?: boolean } }
   | { type: "builtin.cross"; version: number; params: { color: K<string>; speed: K<number>; length: K<number>; lifetime_ms: K<number> } }
   | { type: "builtin.path"; version: number; params: { color: K<string>; path: PathKind; points?: [number, number][]; from_x?: K<number>; from_y?: K<number>; to_x?: K<number>; to_y?: K<number>; center_x?: K<number>; center_y?: K<number>; orbit_radius?: K<number>; speed: K<number>; size: K<number>; tail: K<number>; loop: boolean; phase: K<number>; mirror: Mirror } }
   | { type: "builtin.shape"; version: number; params: { shape: ShapeKind; color: K<string>; fill: boolean; stroke: K<number>; center_x: K<number>; center_y: K<number>; size: K<number>; size_y?: K<number>; angle: K<number>; edge: K<number>; invert?: K<boolean> } }
   | { type: "builtin.particles"; version: number; params: ParticlesParams }
   | { type: "builtin.frames"; version: number; params: FramesParams }
-  | { type: "builtin.text"; version: number; params: TextParams };
+  | { type: "builtin.text"; version: number; params: TextParams }
+  | { type: "builtin.pads"; version: number; params: PadsParams }
+  | { type: "builtin.cycle"; version: number; params: { palette: string[]; scope: "global" | "per_pad"; lifetime_ms: number; radius: number } }
+  | { type: "builtin.constellation"; version: number; params: { color: string; stroke: number; lifetime_ms: number; fade: "linear" | "exp"; max_segments: number; dots: boolean } };
+
+export type PadsMode = "heat" | "plant" | "paint";
+export interface PadsParams { mode: PadsMode; color_low?: string; color_high?: string; color?: string; palette?: string[]; gain?: number; decay_ms?: number; attack_ms?: number; sustain_ms?: number; release_ms?: number; size?: number }
 
 /** 0.1.3: frames of 64 colors as 384 hex digits (top row first). */
 export interface FramesParams { frames: string[]; fps: number; loop: boolean; hold_last: boolean; hold_ms?: number; anchor: "board" | "pad"; color?: string; opacity_key?: boolean }
@@ -354,7 +364,12 @@ export interface ClipDto {
   tint: string | null;
   time_scale: number | null;
   looping: boolean | null;
+  /** 0.1.3 triggered clips: recorded presses (clip-local times). */
+  recording: Recording | null;
 }
+
+export interface RecordedPad { t_us: number; x: number; y: number; velocity: number; duration_us?: number }
+export interface Recording { events: RecordedPad[]; length_us?: number }
 
 /** A compound: inner layers (no target) and the clips placing it. */
 export interface CompoundDto {

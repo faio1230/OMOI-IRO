@@ -491,6 +491,132 @@ pub enum Effect {
     /// 0.1.3 stage 7: ASCII text in a built-in 5 × 7 or 3 × 5 font.
     #[serde(rename = "builtin.text")]
     Text { version: u32, params: TextParams },
+    /// 0.1.3 stage 8: one cell per pad, from the input history (heat / plant / paint).
+    #[serde(rename = "builtin.pads")]
+    Pads { version: u32, params: PadsParams },
+    /// 0.1.3 stage 8: each press lights its pad in the next palette color.
+    #[serde(rename = "builtin.cycle")]
+    Cycle { version: u32, params: CycleParams },
+    /// 0.1.3 stage 8: lines from each press to the one before.
+    #[serde(rename = "builtin.constellation")]
+    Constellation { version: u32, params: ConstellationParams },
+}
+
+/// Pad states computed from the input history each frame (not seekable:
+/// they depend on what was pressed since the last reset). Unset fields use
+/// the defaults of their mode.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PadsParams {
+    pub mode: PadsMode,
+    /// heat: color at value 0 and 1.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color_low: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color_high: Option<String>,
+    /// plant / paint: the color.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    /// paint: 2..=8 colors, the next one each time the same pad is pressed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub palette: Option<Vec<String>>,
+    /// heat: added per press, 0.05..=1.
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_num")]
+    pub gain: Option<f64>,
+    /// heat / paint: time from 1 back to 0, 200..=60000 ms (paint: 0 = stays).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub decay_ms: Option<u32>,
+    /// plant: grow, keep, fade (ms).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attack_ms: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sustain_ms: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub release_ms: Option<u32>,
+    /// plant: radius when grown, 0.5..=3.
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_num")]
+    pub size: Option<f64>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PadsMode {
+    /// The more a pad is hit, the hotter (Σ gain × (1 − age / decay), at most 1).
+    Heat,
+    /// The pressed place grows, stays and fades.
+    Plant,
+    /// The pressed place keeps a color.
+    Paint,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CycleParams {
+    /// 2..=8 colors: press n lights in palette[n mod len].
+    pub palette: Vec<String>,
+    pub scope: CycleScope,
+    /// How long a press stays lit, 0..=10000 ms (0 = until the next press).
+    pub lifetime_ms: u32,
+    /// Radius around the pad, 0..=3 cells.
+    #[serde(serialize_with = "ser_num")]
+    pub radius: f64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CycleScope {
+    /// Presses counted over all pads.
+    Global,
+    /// Each pad counts its own presses.
+    PerPad,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConstellationParams {
+    pub color: String,
+    /// Line width 0.5..=2 cells.
+    #[serde(serialize_with = "ser_num")]
+    pub stroke: f64,
+    /// 200..=10000 ms.
+    pub lifetime_ms: u32,
+    pub fade: RippleFade,
+    /// Newest lines kept, 1..=16.
+    pub max_segments: u32,
+    /// End points brighter.
+    pub dots: bool,
+}
+
+/// A recorded performance on a triggered clip (0.1.3 stage 8): presses at
+/// clip-local times, played as if pressed (seekable: time alone decides).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Recording {
+    /// At most 1024, in time order.
+    pub events: Vec<RecordedPad>,
+    /// Length of one pass (the loop period); absent = the end of the last event.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub length_us: Option<u64>,
+}
+
+impl Recording {
+    /// One pass: `length_us`, or the latest event end (at least 1 µs).
+    pub fn length(&self) -> u64 {
+        self.length_us.unwrap_or_else(|| self.events.iter().map(|e| e.t_us + e.duration_us.unwrap_or(0)).max().unwrap_or(0)).max(1)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecordedPad {
+    /// Clip-local time of the press.
+    pub t_us: u64,
+    pub x: u8,
+    pub y: u8,
+    pub velocity: u8,
+    /// Held this long (absent = released at once).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration_us: Option<u64>,
 }
 
 /// Frames: frame `floor(local_s × fps)`. Nothing here is keyframed (the
@@ -673,6 +799,10 @@ pub struct TapGlowParams {
     /// Brightness factor per repeat, 0..=1.
     #[serde(serialize_with = "ser_param_num")]
     pub repeat_decay: Param<f64>,
+    /// 0.1.3: while held the glow grows from 0 to `radius` over the lifetime;
+    /// on release it bursts (full brightness at the reached size) and cools.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub charge: Option<bool>,
 }
 
 /// Four heads running from a pressed pad with linear tails.
@@ -909,6 +1039,9 @@ impl Effect {
             Effect::Particles { .. } => "builtin.particles",
             Effect::Frames { .. } => "builtin.frames",
             Effect::Text { .. } => "builtin.text",
+            Effect::Pads { .. } => "builtin.pads",
+            Effect::Cycle { .. } => "builtin.cycle",
+            Effect::Constellation { .. } => "builtin.constellation",
         }
     }
 
@@ -930,14 +1063,17 @@ impl Effect {
             | Effect::Cross { version, .. }
             | Effect::Particles { version, .. }
             | Effect::Frames { version, .. }
-            | Effect::Text { version, .. } => *version,
+            | Effect::Text { version, .. }
+            | Effect::Pads { version, .. }
+            | Effect::Cycle { version, .. }
+            | Effect::Constellation { version, .. } => *version,
         }
     }
 
     /// Fired by any trigger of a triggered layer (position and age): ripple,
-    /// tap_glow, cross, particles and frames. Others are drawn only on `hold`.
+    /// tap_glow, cross, particles, frames, pads, cycle and constellation. Others are drawn only on `hold`.
     pub fn takes_instances(&self) -> bool {
-        matches!(self, Effect::Ripple { .. } | Effect::TapGlow { .. } | Effect::Cross { .. } | Effect::Particles { .. } | Effect::Frames { .. })
+        matches!(self, Effect::Ripple { .. } | Effect::TapGlow { .. } | Effect::Cross { .. } | Effect::Particles { .. } | Effect::Frames { .. } | Effect::Pads { .. } | Effect::Cycle { .. } | Effect::Constellation { .. })
     }
 
     /// Compiled-in effect (`builtin.*`), as opposed to a future graph reference.
@@ -1323,10 +1459,13 @@ pub struct Clip {
     /// Compound clips: inner time = local time × this, 0.25..=4 (absent = 1).
     #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_num")]
     pub time_scale: Option<f64>,
-    /// Compound clips longer than the compound: repeat it (absent = false:
-    /// nothing is drawn after its end).
+    /// Compound clips longer than the compound, and recordings longer than
+    /// one pass: repeat (absent = false: nothing after the end).
     #[serde(rename = "loop", default, skip_serializing_if = "Option::is_none")]
     pub looping: Option<bool>,
+    /// 0.1.3 stage 8, triggered clips: presses played back with the input.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recording: Option<Recording>,
 }
 
 impl Clip {
@@ -1344,7 +1483,7 @@ pub(crate) fn demo_for_tests() -> Show {
     s
 }
 
-step_only!(Axis, Waveform, StrobeMode, RippleFade, RippleTrigger, RippleShape, RainDirection, OrbMotion, RegionPattern, StepMode, StepOrder, PathKind, Mirror, ShapeKind, ParticleMode, EdgeMode, FrameAnchor, TextFont, TextMode);
+step_only!(Axis, Waveform, StrobeMode, RippleFade, RippleTrigger, RippleShape, RainDirection, OrbMotion, RegionPattern, StepMode, StepOrder, PathKind, Mirror, ShapeKind, ParticleMode, EdgeMode, FrameAnchor, TextFont, TextMode, PadsMode, CycleScope);
 
 #[cfg(test)]
 mod keyframe_tests {

@@ -27,6 +27,8 @@ pub const MAX_COMPOUND_LAYERS: usize = 4;
 pub const MAX_COMPOUNDS: usize = 64;
 /// Frames of one `builtin.frames` preset.
 pub const MAX_FRAMES: usize = 240;
+/// Presses in one recording.
+pub const MAX_RECORDED: usize = 1024;
 pub const MAX_PRESETS: usize = 256;
 pub const MAX_CLIPS_PER_TIMELINE: usize = 4096;
 pub const MAX_NAME_CHARS: usize = 128;
@@ -469,6 +471,57 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                     c.unit(*v, format!("{e}/params/repeat_decay"));
                 }
             }
+            Effect::Pads { params, .. } => {
+                for (name, v) in [("color_low", &params.color_low), ("color_high", &params.color_high), ("color", &params.color)] {
+                    if let Some(v) = v {
+                        c.color(v, format!("{e}/params/{name}"));
+                    }
+                }
+                if let Some(p) = &params.palette {
+                    if !(2..=8).contains(&p.len()) {
+                        c.push(format!("{e}/params/palette"), "2..=8 colors");
+                    }
+                    p.iter().for_each(|v| c.color(v, format!("{e}/params/palette")));
+                }
+                if let Some(g) = params.gain {
+                    c.range(g, 0.05, 1.0, format!("{e}/params/gain"));
+                }
+                if let Some(d) = params.decay_ms {
+                    // paint may stay (0); heat needs a decay.
+                    let ok = (200..=60_000).contains(&d) || (d == 0 && params.mode == crate::model::PadsMode::Paint);
+                    if !ok {
+                        c.push(format!("{e}/params/decay_ms"), "decay_ms must be within 200..=60000 (paint: 0 = stays)");
+                    }
+                }
+                for (name, v) in [("attack_ms", params.attack_ms), ("sustain_ms", params.sustain_ms), ("release_ms", params.release_ms)] {
+                    if v.is_some_and(|v| v > 60_000) {
+                        c.push(format!("{e}/params/{name}"), "must be within 0..=60000");
+                    }
+                }
+                if let Some(s) = params.size {
+                    c.range(s, 0.5, 3.0, format!("{e}/params/size"));
+                }
+            }
+            Effect::Cycle { params, .. } => {
+                if !(2..=8).contains(&params.palette.len()) {
+                    c.push(format!("{e}/params/palette"), "2..=8 colors");
+                }
+                params.palette.iter().for_each(|v| c.color(v, format!("{e}/params/palette")));
+                if params.lifetime_ms > 10_000 {
+                    c.push(format!("{e}/params/lifetime_ms"), "lifetime_ms must be within 0..=10000");
+                }
+                c.range(params.radius, 0.0, 3.0, format!("{e}/params/radius"));
+            }
+            Effect::Constellation { params, .. } => {
+                c.color(&params.color, format!("{e}/params/color"));
+                c.range(params.stroke, 0.5, 2.0, format!("{e}/params/stroke"));
+                if !(200..=10_000).contains(&params.lifetime_ms) {
+                    c.push(format!("{e}/params/lifetime_ms"), "lifetime_ms must be within 200..=10000");
+                }
+                if !(1..=16).contains(&params.max_segments) {
+                    c.push(format!("{e}/params/max_segments"), "max_segments must be within 1..=16");
+                }
+            }
             Effect::Frames { params, .. } => {
                 if !(1..=MAX_FRAMES).contains(&params.frames.len()) {
                     c.push(format!("{e}/params/frames"), format!("1..={MAX_FRAMES} frames (got {})", params.frames.len()));
@@ -700,8 +753,11 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                             if !preset_ids.contains_key(clip.preset_id.as_str()) {
                                 c.push(format!("{cp}/preset_id"), format!("unknown preset {:?}", clip.preset_id));
                             }
-                            if clip.tint.is_some() || clip.time_scale.is_some() || clip.looping.is_some() {
-                                c.push(cp.clone(), "tint, time_scale and loop are for compound clips");
+                            if clip.tint.is_some() || clip.time_scale.is_some() {
+                                c.push(cp.clone(), "tint and time_scale are for compound clips");
+                            }
+                            if clip.looping.is_some() && clip.recording.is_none() {
+                                c.push(format!("{cp}/loop"), "loop is for compound clips and recordings");
                             }
                         }
                         Some(id) => {
@@ -726,6 +782,27 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                     }
                     if clip.duration_us == 0 {
                         c.push(format!("{cp}/duration_us"), "duration_us must be positive");
+                    }
+                    // 0.1.3 stage 8: recordings on triggered clips only.
+                    if let Some(rec) = &clip.recording {
+                        let rp = format!("{cp}/recording");
+                        if !matches!(l.content, Content::Triggered { .. }) {
+                            c.push(rp.clone(), "recordings are on triggered layers");
+                        }
+                        if rec.events.len() > MAX_RECORDED {
+                            c.push(format!("{rp}/events"), format!("at most {MAX_RECORDED} events (got {})", rec.events.len()));
+                        }
+                        for (ei, ev) in rec.events.iter().enumerate() {
+                            if ev.x > 7 || ev.y > 7 || !(1..=127).contains(&ev.velocity) || ev.t_us > MAX_SAFE_INTEGER || ev.duration_us.is_some_and(|d| d > MAX_SAFE_INTEGER) {
+                                c.push(format!("{rp}/events/{ei}"), "x and y within 0..=7, velocity 1..=127, times within the safe integer range");
+                            }
+                        }
+                        if rec.events.windows(2).any(|w| w[1].t_us < w[0].t_us) {
+                            c.push(format!("{rp}/events"), "events in time order");
+                        }
+                        if rec.length_us.is_some_and(|l| l == 0 || l > MAX_SAFE_INTEGER) {
+                            c.push(format!("{rp}/length_us"), "length_us must be positive");
+                        }
                     }
                     match clip.start_us.checked_add(clip.duration_us) {
                         Some(end) if end <= MAX_SAFE_INTEGER => {
@@ -1034,6 +1111,28 @@ mod tests {
         s.presets.push(Preset { id: "t".into(), name: "t".into(), effect: t });
         let p = pointers(&s);
         for want in ["/presets/3/effect/params/frames/1", "/presets/3/effect/params/fps", "/presets/3/effect/params/color", "/presets/4/effect/params/text", "/presets/4/effect/params/speed", "/presets/4/effect/params/gap"] {
+            assert!(p.contains(&want.to_string()), "{want} in {p:?}");
+        }
+    }
+
+    #[test]
+    fn input_state_rules() {
+        use crate::model::{CycleParams, CycleScope, ConstellationParams, PadsMode, PadsParams, Preset, RecordedPad, Recording, RippleFade};
+        let mut s = demo();
+        let pads = PadsParams { mode: PadsMode::Heat, color_low: None, color_high: Some("red".into()), color: None, palette: Some(vec!["#FFFFFF".into()]), gain: Some(2.0), decay_ms: Some(0), attack_ms: None, sustain_ms: None, release_ms: None, size: None };
+        s.presets.push(Preset { id: "p".into(), name: "p".into(), effect: Effect::Pads { version: 1, params: pads } });
+        s.presets.push(Preset { id: "c".into(), name: "c".into(), effect: Effect::Cycle { version: 1, params: CycleParams { palette: vec!["#FFFFFF".into()], scope: CycleScope::Global, lifetime_ms: 20_000, radius: 4.0 } } });
+        s.presets.push(Preset { id: "k".into(), name: "k".into(), effect: Effect::Constellation { version: 1, params: ConstellationParams { color: "#FFFFFF".into(), stroke: 3.0, lifetime_ms: 100, fade: RippleFade::Linear, max_segments: 20, dots: false } } });
+        if let Content::Timeline { clips } = &mut s.layers[0].content {
+            clips[0].recording = Some(Recording { events: vec![RecordedPad { t_us: 5, x: 8, y: 0, velocity: 0, duration_us: None }, RecordedPad { t_us: 1, x: 0, y: 0, velocity: 1, duration_us: None }], length_us: Some(0) });
+        }
+        let p = pointers(&s);
+        for want in [
+            "/presets/3/effect/params/color_high", "/presets/3/effect/params/palette", "/presets/3/effect/params/gain", "/presets/3/effect/params/decay_ms",
+            "/presets/4/effect/params/palette", "/presets/4/effect/params/lifetime_ms", "/presets/4/effect/params/radius",
+            "/presets/5/effect/params/stroke", "/presets/5/effect/params/lifetime_ms", "/presets/5/effect/params/max_segments",
+            "/layers/0/content/clips/0/recording", "/layers/0/content/clips/0/recording/events/0", "/layers/0/content/clips/0/recording/events", "/layers/0/content/clips/0/recording/length_us",
+        ] {
             assert!(p.contains(&want.to_string()), "{want} in {p:?}");
         }
     }

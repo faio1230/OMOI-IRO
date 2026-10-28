@@ -179,6 +179,21 @@ fn reset_control_fault(state: State<'_, AppState>) -> CmdResult<()> {
     with_session(&state, |s| s.reset_control_fault())
 }
 
+/// Forget every pad press (input history of pads / cycle / constellation).
+#[tauri::command]
+fn reset_input(state: State<'_, AppState>) -> CmdResult<()> {
+    with_session(&state, |s| s.reset_input())
+}
+
+/// Start recording pad presses from the current show time.
+#[tauri::command]
+fn recording_start(state: State<'_, AppState>) -> CmdResult<i64> {
+    match state.session.lock().unwrap().as_ref() {
+        Some(s) => s.start_recording().map_err(|e| CommandError::new("recording", e)),
+        None => Err(CommandError::new("not_running", "the runtime is not running")),
+    }
+}
+
 fn with_session(state: &State<'_, AppState>, f: impl FnOnce(&FollowSession)) -> CmdResult<()> {
     match state.session.lock().unwrap().as_ref() {
         Some(s) => {
@@ -289,6 +304,9 @@ pub fn run() {
             editor::editor_redo,
             editor::preset_import,
             editor::frames_import,
+            editor::recording_stop,
+            reset_input,
+            recording_start,
             editor::preset_export,
             editor::editor_save,
             editor::editor_save_as,

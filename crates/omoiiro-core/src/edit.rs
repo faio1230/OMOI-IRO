@@ -13,7 +13,7 @@
 //!   never reused within a show.
 
 use crate::model::{
-    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Compound, Content, Effect, EdgeMode, FrameAnchor, FramesParams, Layer, TextFont, TextMode, TextParams, LayerMask, Loss, ParticleMode, ParticlesParams, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
+    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Compound, ConstellationParams, Content, CycleParams, CycleScope, Effect, EdgeMode, PadsMode, PadsParams, Recording, FrameAnchor, FramesParams, Layer, TextFont, TextMode, TextParams, LayerMask, Loss, ParticleMode, ParticlesParams, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
     StopBehavior, StrobeMode, StrobeParams, Sync, TriggerOn, TriggerSpec, Target, TimecodeSettings, TimecodeSource, Waveform, SCHEMA_VERSION,
 };
 use crate::surface::GRID64_PROFILE;
@@ -120,6 +120,11 @@ pub enum EditCommand {
     /// 0.1.3 stage 7: a frames preset from an external asset (the store
     /// reads the file). An ID conflict is an error or a rename.
     ImportFrames { asset: crate::assets::FramesAsset, on_conflict: OnConflict },
+    /// 0.1.3 stage 8: a new triggered clip holding a recording (its length,
+    /// at least 1 µs) drawn with `preset_id`.
+    AddRecordingClip { layer_id: String, preset_id: String, start_us: i64, recording: Recording },
+    /// Replace (null: remove) the recording of a clip; `looping` null leaves loop as it is.
+    SetClipRecording { clip_id: String, recording: Option<Recording>, looping: Option<bool> },
     /// Copy a compound clip out into independent layers above its layer
     /// (refused unless its time scale is 1: effect speeds cannot be scaled).
     DetachCompoundClip { clip_id: String },
@@ -337,6 +342,18 @@ pub fn default_effect(effect_type: &str) -> Option<Effect> {
             version: 1,
             params: TextParams { text: "OMOI-IRO".into(), font: TextFont::F5x7, color: "#FFFFFF".to_string().into(), mode: TextMode::ScrollLeft, speed: 6.0, gap: 1, beat_step: None, looping: true },
         },
+        "builtin.pads" => Effect::Pads {
+            version: 1,
+            params: PadsParams { mode: PadsMode::Heat, color_low: Some("#200040".into()), color_high: Some("#FF4020".into()), color: None, palette: None, gain: Some(0.25), decay_ms: Some(3000), attack_ms: None, sustain_ms: None, release_ms: None, size: None },
+        },
+        "builtin.cycle" => Effect::Cycle {
+            version: 1,
+            params: CycleParams { palette: vec!["#FF2060".into(), "#FFC020".into(), "#20E0A0".into(), "#4060FF".into()], scope: CycleScope::Global, lifetime_ms: 600, radius: 0.0 },
+        },
+        "builtin.constellation" => Effect::Constellation {
+            version: 1,
+            params: ConstellationParams { color: "#A0C0FF".into(), stroke: 1.0, lifetime_ms: 2000, fade: RippleFade::Linear, max_segments: 6, dots: true },
+        },
         "builtin.shape" => Effect::Shape {
             version: 1,
             params: ShapeParams {
@@ -356,6 +373,7 @@ pub fn default_effect(effect_type: &str) -> Option<Effect> {
         "builtin.tap_glow" => Effect::TapGlow {
             version: 1,
             params: TapGlowParams {
+                charge: None,
                 color_start: "#FFFFFF".to_string().into(),
                 color_mid: "#FFB040".to_string().into(),
                 color_end: "#400000".to_string().into(),
@@ -451,6 +469,8 @@ impl EditCommand {
             EditCommand::SetCompoundClip { .. } => "素材の色と速さ",
             EditCommand::DetachCompoundClip { .. } => "素材を展開して独立",
             EditCommand::ImportFrames { .. } => "フレーム列を読み込み",
+            EditCommand::AddRecordingClip { .. } => "録音を追加",
+            EditCommand::SetClipRecording { .. } => "録音の設定",
         }
     }
 }
@@ -930,6 +950,26 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             }
             out.compound_id = Some(cid);
         }
+        EditCommand::AddRecordingClip { layer_id, preset_id, start_us, recording } => {
+            non_negative("start_us", *start_us)?;
+            let id = fresh_id("clip", all_clip_ids(&s));
+            let clip = Clip { id: id.clone(), preset_id: preset_id.clone(), start_us: at(*start_us), duration_us: recording.length(), recording: Some(recording.clone()), ..Default::default() };
+            clips_mut(&mut s, layer_id)?.push(clip);
+            out.clip_id = Some(id);
+            out.layer_id = Some(layer_id.clone());
+        }
+        EditCommand::SetClipRecording { clip_id, recording, looping } => {
+            let (lid, ci) = find_clip(&s, clip_id)?;
+            let c = &mut clips_mut(&mut s, &lid)?[ci];
+            c.recording = recording.clone();
+            if let Some(l) = looping {
+                c.looping = l.then_some(true);
+            }
+            if c.recording.is_none() && c.compound_id.is_none() {
+                c.looping = None;
+            }
+            out.clip_id = Some(clip_id.clone());
+        }
         EditCommand::ImportFrames { asset, on_conflict } => {
             let params = asset.to_params().map_err(|e| EditError::Invalid(format!("フレーム列 {:?} を読み込めない：{e}", asset.id())))?;
             let mut id = asset.id().to_string();
@@ -1070,10 +1110,7 @@ mod tests {
 
     fn clip<'a>(s: &'a Show, id: &str) -> &'a Clip {
         let (lid, ci) = find_clip(s, id).unwrap();
-        match &all_layers(s).find(|l| l.id == lid).unwrap().content {
-            Content::Timeline { clips } => &clips[ci],
-            _ => unreachable!(),
-        }
+        &all_layers(s).find(|l| l.id == lid).unwrap().content.clips().unwrap()[ci]
     }
 
     #[test]
@@ -1298,6 +1335,25 @@ mod tests {
         assert!(d.presets.iter().any(|p| p.id.starts_with("sweep-cyan-tint")), "tinted copy");
         // Unused now: the compound can go.
         assert!(apply(&d, &EditCommand::DeleteCompound { compound_id: cp }, Snap::None).is_ok());
+    }
+
+    #[test]
+    fn recordings_become_triggered_clips() {
+        use crate::model::{RecordedPad, Recording};
+        let (s, o) = apply(&demo(), &EditCommand::AddTriggeredLayer { name: "rec".into(), on: TriggerOn::Press, index: None }, Snap::None).unwrap();
+        let layer = o.layer_id.unwrap();
+        let (s, o) = apply(&s, &EditCommand::AddPreset { name: "x".into(), effect_type: "builtin.cross".into() }, Snap::None).unwrap();
+        let preset = o.preset_id.unwrap();
+        let rec = Recording { events: vec![RecordedPad { t_us: 0, x: 1, y: 1, velocity: 100, duration_us: None }, RecordedPad { t_us: 1_500_000, x: 2, y: 2, velocity: 100, duration_us: Some(500_000) }], length_us: None };
+        let (s, o) = apply(&s, &EditCommand::AddRecordingClip { layer_id: layer.clone(), preset_id: preset.clone(), start_us: 8_000_000, recording: rec.clone() }, Snap::None).unwrap();
+        let id = o.clip_id.unwrap();
+        assert_eq!((clip(&s, &id).start_us, clip(&s, &id).duration_us), (8_000_000, 2_000_000), "as long as the recording");
+        let (s, _) = apply(&s, &EditCommand::SetClipRecording { clip_id: id.clone(), recording: Some(rec.clone()), looping: Some(true) }, Snap::None).unwrap();
+        assert_eq!(clip(&s, &id).looping, Some(true));
+        let (s, _) = apply(&s, &EditCommand::SetClipRecording { clip_id: id.clone(), recording: None, looping: None }, Snap::None).unwrap();
+        assert_eq!((clip(&s, &id).recording.is_none(), clip(&s, &id).looping), (true, None), "loop goes with the recording");
+        // Not on a timeline layer.
+        assert!(matches!(apply(&s, &EditCommand::AddRecordingClip { layer_id: "motion".into(), preset_id: preset, start_us: 0, recording: rec }, Snap::None), Err(EditError::Rejected(_))));
     }
 
     #[test]

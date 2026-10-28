@@ -230,6 +230,8 @@ impl FollowSession {
             meta["origin"] = json!(tcfg.origin.to_string());
             meta["input_offset_us"] = json!(tcfg.input_offset_us);
             w.write(clock.now_us(), "meta", "start", meta).map_err(|e| e.to_string())?;
+            // Pad events go to the record too (make-recording reads them).
+            shared.pad_log.lock().unwrap().to_file = Some(Vec::new());
         }
 
         let (ev_tx, ev_rx) = bounded::<String>(256);
@@ -309,6 +311,29 @@ impl FollowSession {
         let (x, y, t_us) = (x.min(7), y.min(7), self.clock.now_us());
         let ev = if pressed { omoiiro_core::render::PadEvent::Press { x, y, velocity: 127, t_us } } else { omoiiro_core::render::PadEvent::Release { x, y, t_us } };
         let _ = self.shared.pad_tx.try_send(ev);
+    }
+
+    /// Forget every press (the input history and the instance window).
+    pub fn reset_input(&self) {
+        let _ = self.shared.pad_tx.try_send(omoiiro_core::render::PadEvent::Reset);
+    }
+
+    /// Start recording pad events from the current show time (refused while
+    /// the show time is unknown). Returns that show time.
+    pub fn start_recording(&self) -> Result<i64, String> {
+        let t = self.shared.status.lock().unwrap().show_time_us.ok_or("曲の時刻が分からない（Live の再生とブリッジを確認）")?;
+        self.shared.pad_log.lock().unwrap().recording = Some((t, Vec::new()));
+        Ok(t)
+    }
+
+    /// Stop recording: the start show time and the events (None if not recording).
+    pub fn stop_recording(&self) -> Option<(i64, Vec<(i64, omoiiro_core::render::PadEvent)>)> {
+        self.shared.pad_log.lock().unwrap().recording.take()
+    }
+
+    /// Show time the running recording began at.
+    pub fn recording_since(&self) -> Option<i64> {
+        self.shared.pad_log.lock().unwrap().recording.as_ref().map(|r| r.0)
     }
 
     pub fn set_brightness(&self, b: f32) {
@@ -473,6 +498,17 @@ fn sync_loop(
         shared.transport.lock().unwrap().poll_clock(now, &mut cev);
         if now >= next_state {
             if let Some(w) = w.as_deref_mut() {
+                let pads = shared.pad_log.lock().unwrap().to_file.as_mut().map(std::mem::take).unwrap_or_default();
+                for (t, show_us, ev) in pads {
+                    use omoiiro_core::render::PadEvent;
+                    let (kind, payload) = match ev {
+                        PadEvent::Press { x, y, velocity, .. } => ("press", json!({"show_us": show_us, "x": x, "y": y, "velocity": velocity})),
+                        PadEvent::Release { x, y, .. } => ("release", json!({"show_us": show_us, "x": x, "y": y})),
+                        PadEvent::ReleaseAll { .. } => ("release_all", json!({"show_us": show_us})),
+                        PadEvent::Reset => ("reset", json!({"show_us": show_us})),
+                    };
+                    w.write(t, "pad", kind, payload).map_err(io)?;
+                }
                 let snap = shared.transport.lock().unwrap().snapshot(now);
                 let st = shared.status.lock().unwrap().clone();
                 w.write(now, "follow", "state", json!({

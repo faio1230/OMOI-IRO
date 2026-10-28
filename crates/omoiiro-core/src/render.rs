@@ -100,7 +100,7 @@ pub enum CompiledEffect {
         bounce_dir: (f64, f64),
         orbit_phase: f64,
     },
-    TapGlow { start: Rgb, mid: Rgb, end: Rgb, lifetime_us: i64, radius: f64, repeats: u32, repeat_us: i64, decay: f64 },
+    TapGlow { start: Rgb, mid: Rgb, end: Rgb, lifetime_us: i64, radius: f64, repeats: u32, repeat_us: i64, decay: f64, charge: bool },
     Cross { color: Rgb, speed: f64, length: f64, lifetime_us: i64 },
     /// 0.1.3: particles; layers turn time or pads into events (`particles`).
     Particles(ParticleLook),
@@ -108,6 +108,10 @@ pub enum CompiledEffect {
     Frames(FramesLook),
     /// 0.1.3: text in a built-in font.
     Text(TextLook),
+    /// 0.1.3 stage 8: from the input history (`history`).
+    Pads(crate::history::PadsLook),
+    Cycle(crate::history::CycleLook),
+    Constellation(crate::history::ConstellationLook),
     Regions { pattern: RegionPattern, color: Rgb, color_b: Option<Rgb>, mode: StepMode, step_beats: f64, step_s: f64, order: StepOrder, soft: f64, duty: f64, custom: Option<CustomGroups> },
     Path(PathLook),
     Shape { kind: ShapeKind, color: Rgb, fill: bool, stroke: f64, center: (f64, f64), size: (f64, f64), angle: f64, edge: f64, invert: bool },
@@ -170,13 +174,19 @@ pub enum PadEvent {
     Release { x: u8, y: u8, t_us: i64 },
     /// The input went away (unplugged, reconnect): release every held pad.
     ReleaseAll { t_us: i64 },
+    /// 0.1.3: forget every press (the "reset input" command).
+    Reset,
 }
 
 /// Pad hits seen by the renderer at monotonic time `now_us` (oldest first).
+/// `hits` is the short window the instance effects use (as in 0.1.2);
+/// `history` is everything since the last reset (bounded) for the effects
+/// that read pad states (pads, cycle, constellation).
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PadInput {
     pub now_us: i64,
     pub hits: Vec<PadHit>,
+    pub history: Vec<PadHit>,
 }
 
 impl PadInput {
@@ -186,12 +196,20 @@ impl PadInput {
     /// 5 s lifetime + 7 repeats × 2 s).
     pub const MAX_AGE_US: i64 = 20_000_000;
 
-    /// Add a hit; drop the oldest beyond `CAPACITY`. No allocation once full.
+    /// History kept at most (0.1.3): presses since the last reset, newest 1024 within 60 s.
+    pub const HISTORY_CAPACITY: usize = 1024;
+    pub const HISTORY_AGE_US: i64 = 60_000_000;
+
+    /// Add a hit; drop the oldest beyond `CAPACITY` (and `HISTORY_CAPACITY`).
     pub fn push(&mut self, hit: PadHit) {
         if self.hits.len() == Self::CAPACITY {
             self.hits.remove(0);
         }
         self.hits.push(hit);
+        if self.history.len() == Self::HISTORY_CAPACITY {
+            self.history.remove(0);
+        }
+        self.history.push(hit);
     }
 
     /// A hold is cut (released) after 10 s.
@@ -203,11 +221,21 @@ impl PadInput {
             PadEvent::Press { x, y, velocity, t_us } => self.push(PadHit { show_us, ..PadHit::press(x, y, velocity, t_us) }),
             // The newest held press of that pad.
             PadEvent::Release { x, y, t_us } => {
-                if let Some(h) = self.hits.iter_mut().rev().find(|h| h.x == x && h.y == y && h.release_us.is_none()) {
-                    h.release_us = Some(t_us);
+                for list in [&mut self.hits, &mut self.history] {
+                    if let Some(h) = list.iter_mut().rev().find(|h| h.x == x && h.y == y && h.release_us.is_none()) {
+                        h.release_us = Some(t_us);
+                    }
                 }
             }
-            PadEvent::ReleaseAll { t_us } => self.hits.iter_mut().filter(|h| h.release_us.is_none()).for_each(|h| h.release_us = Some(t_us)),
+            PadEvent::ReleaseAll { t_us } => {
+                for list in [&mut self.hits, &mut self.history] {
+                    list.iter_mut().filter(|h| h.release_us.is_none()).for_each(|h| h.release_us = Some(t_us));
+                }
+            }
+            PadEvent::Reset => {
+                self.hits.clear();
+                self.history.clear();
+            }
         }
     }
 
@@ -215,6 +243,7 @@ impl PadInput {
     pub fn advance(&mut self, now_us: i64) {
         self.now_us = now_us;
         self.hits.retain(|h| now_us - h.t_us <= Self::MAX_AGE_US);
+        self.history.retain(|h| now_us - h.t_us <= Self::HISTORY_AGE_US);
     }
 }
 
@@ -330,6 +359,7 @@ impl CompiledEffect {
                 repeats: (params.repeats.at(t)).clamp(1, 8),
                 repeat_us: params.repeat_interval_ms.at(t) as i64 * 1000,
                 decay: params.repeat_decay.at(t),
+                charge: params.charge.unwrap_or(false),
             },
             Effect::Cross { params, .. } => CompiledEffect::Cross {
                 color: col(&params.color, t)?,
@@ -356,6 +386,9 @@ impl CompiledEffect {
             Effect::Particles { params, .. } => CompiledEffect::Particles(ParticleLook::compile(params, t, col)?),
             Effect::Frames { params, .. } => CompiledEffect::Frames(FramesLook::compile(params)?),
             Effect::Text { params, .. } => CompiledEffect::Text(TextLook::compile(params, t)?),
+            Effect::Pads { params, .. } => CompiledEffect::Pads(crate::history::PadsLook::compile(params)?),
+            Effect::Cycle { params, .. } => CompiledEffect::Cycle(crate::history::CycleLook::compile(params)?),
+            Effect::Constellation { params, .. } => CompiledEffect::Constellation(crate::history::ConstellationLook::compile(params)?),
             Effect::Shape { params, .. } => {
                 let size = params.size.at(t);
                 CompiledEffect::Shape {
@@ -457,6 +490,8 @@ impl CompiledEffect {
             CompiledEffect::Ripple { interval: None, .. } => {}
             // Pad driven: drawn by `paint_input`.
             CompiledEffect::TapGlow { .. } | CompiledEffect::Cross { .. } => {}
+            // They need the input history (`paint_history`).
+            CompiledEffect::Pads(_) | CompiledEffect::Cycle(_) | CompiledEffect::Constellation(_) => {}
             CompiledEffect::Frames(ref f) => {
                 if let Some(frame) = f.frame_at(local_us) {
                     paint_frame(frame, (0, 0), alpha, layer);
@@ -609,6 +644,46 @@ impl CompiledEffect {
         }
     }
 
+    /// True for effects drawn from the input itself (0.1.3): pads, cycle,
+    /// constellation (the history) and a charging tap_glow (held / released).
+    pub fn reads_history(&self) -> bool {
+        matches!(self, CompiledEffect::Pads(_) | CompiledEffect::Cycle(_) | CompiledEffect::Constellation(_) | CompiledEffect::TapGlow { charge: true, .. })
+    }
+
+    /// Draw from `input` (one clock: `input.now_us`). Others draw nothing here.
+    pub fn paint_history(&self, input: &PadInput, alpha: f64, layer: &mut LayerFrame) {
+        let now = input.now_us;
+        match self {
+            CompiledEffect::Pads(l) => crate::history::paint_pads(l, &input.history, now, alpha, layer),
+            CompiledEffect::Cycle(l) => crate::history::paint_cycle(l, &input.history, now, alpha, layer),
+            CompiledEffect::Constellation(l) => crate::history::paint_constellation(l, &input.history, now, alpha, layer),
+            &CompiledEffect::TapGlow { start, mid, end, lifetime_us, radius, repeats, repeat_us, decay, charge: true } => {
+                for h in &input.hits {
+                    let grow = |held: i64| radius * (held as f64 / lifetime_us as f64).min(1.0);
+                    match h.release_us {
+                        // Held: grows from the pad towards `radius` (the tap_glow profile:
+                        // 1 at the pad, 0 at the radius), brightening.
+                        None => {
+                            let r = grow(now - h.t_us);
+                            let k = 0.3 + 0.7 * (r / radius.max(1e-9)).min(1.0);
+                            for (i, px) in layer.px.iter_mut().enumerate() {
+                                let d = ((i % GRID_W) as f64 - h.x as f64).hypot((i / GRID_W) as f64 - h.y as f64);
+                                let shape = if r > 0.0 { (1.0 - d / r).max(0.0) } else { (d == 0.0) as u8 as f64 };
+                                let a = shape * k * alpha;
+                                if a > 0.0 {
+                                    over(px, Rgba::from_color(start, a as f32));
+                                }
+                            }
+                        }
+                        // Released: a full glow at the size reached, cooling from the release.
+                        Some(rel) => paint_tap_glow(&[(h.x as f64, h.y as f64, now - rel)], [start, mid, end], lifetime_us, grow(rel - h.t_us), repeats, repeat_us, decay, alpha, layer),
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
     /// True for effects drawn from instances (position + age).
     pub fn takes_instances(&self) -> bool {
         matches!(self, CompiledEffect::Ripple { .. } | CompiledEffect::TapGlow { .. } | CompiledEffect::Cross { .. } | CompiledEffect::Frames(_))
@@ -618,7 +693,7 @@ impl CompiledEffect {
     pub fn paint_instances(&self, inst: &[Instance], alpha: f64, layer: &mut LayerFrame) {
         match *self {
             CompiledEffect::Ripple { look, .. } => paint_ripple(inst.iter().copied(), look, alpha, layer),
-            CompiledEffect::TapGlow { start, mid, end, lifetime_us, radius, repeats, repeat_us, decay } => {
+            CompiledEffect::TapGlow { start, mid, end, lifetime_us, radius, repeats, repeat_us, decay, .. } => {
                 paint_tap_glow(inst, [start, mid, end], lifetime_us, radius, repeats, repeat_us, decay, alpha, layer)
             }
             CompiledEffect::Cross { color, speed, length, lifetime_us } => paint_cross(inst, color, speed, length, lifetime_us, alpha, layer),
@@ -1508,7 +1583,8 @@ enum LayerContent {
     Continuous { effect: usize },
     /// `uses[i]`: the compound placement of clip i (index into `Renderer::uses`).
     Timeline { index: ClipIndex, effects: Vec<usize>, uses: Vec<Option<usize>> },
-    Triggered { index: ClipIndex, effects: Vec<usize>, on: TriggerOn, interval_us: i64, origin: (f64, f64) },
+    /// `recordings[i]`: clip i's recording and loop.
+    Triggered { index: ClipIndex, effects: Vec<usize>, on: TriggerOn, interval_us: i64, origin: (f64, f64), recordings: Vec<Option<(crate::model::Recording, bool)>> },
 }
 
 /// Content of a compound's inner layer.
@@ -1589,10 +1665,18 @@ fn blend_into(dst: &mut LayerFrame, src: &LayerFrame, blend: Blend, opacity: f32
 
 /// Timeline clips at `t` (layer time) into `buf`: presets only (particles included).
 #[allow(clippy::too_many_arguments)]
-fn paint_timeline_presets(effects: &[CompiledEffect], keyed: &[Option<Effect>], fx: &[usize], active: &[ClipSpan], t: ShowTimeUs, beat: Option<BeatState>, input: Option<&PadInput>, buf: &mut LayerFrame, show_left: &mut usize) {
+fn paint_timeline_presets(effects: &[CompiledEffect], keyed: &[Option<Effect>], fx: &[usize], active: &[ClipSpan], t: ShowTimeUs, beat: Option<BeatState>, input: Option<&PadInput>, buf: &mut LayerFrame, show_left: &mut usize, scratch: &mut PadInput) {
     for span in active {
         let local = span.local_us(t);
         let ei = fx[span.order];
+        // Input states count the presses inside this clip only.
+        if effects[ei].reads_history() {
+            if let Some(input) = input {
+                crate::history::clip_input(Some(input), span, local as i64, None, scratch);
+                sample(effects, keyed, ei, local).paint_history(scratch, span.fade(t), buf);
+            }
+            continue;
+        }
         if matches!(effects[ei], CompiledEffect::Particles(_)) {
             // One event from the clip start; parameters as at the start.
             let Some(l) = particle_look(effects, keyed, ei, 0) else { continue };
@@ -1607,7 +1691,7 @@ fn paint_timeline_presets(effects: &[CompiledEffect], keyed: &[Option<Effect>], 
 /// A compound at its inner time `t` into `out` (cleared): each inner layer
 /// drawn into `layer`, masked, then blended with its blend and opacity.
 #[allow(clippy::too_many_arguments)]
-fn paint_compound(effects: &[CompiledEffect], keyed: &[Option<Effect>], u: &CompoundUse, t: u64, beat: Option<BeatState>, input: Option<&PadInput>, active: &mut Vec<ClipSpan>, events: &mut Vec<Event>, layer: &mut LayerFrame, out: &mut LayerFrame, show_left: &mut usize) {
+fn paint_compound(effects: &[CompiledEffect], keyed: &[Option<Effect>], u: &CompoundUse, t: u64, beat: Option<BeatState>, input: Option<&PadInput>, active: &mut Vec<ClipSpan>, events: &mut Vec<Event>, layer: &mut LayerFrame, out: &mut LayerFrame, show_left: &mut usize, scratch: &mut PadInput) {
     out.clear();
     for l in &u.layers {
         if !l.enabled || l.opacity <= 0.0 {
@@ -1626,7 +1710,8 @@ fn paint_compound(effects: &[CompiledEffect], keyed: &[Option<Effect>], u: &Comp
             }
             InnerContent::Timeline { index, effects: fx } => {
                 index.active(t as ShowTimeUs, active);
-                paint_timeline_presets(effects, keyed, fx, active, t as ShowTimeUs, beat, input, layer, show_left);
+                // Inner clips are on the compound's clock: show-time input does not reach them.
+                paint_timeline_presets(effects, keyed, fx, active, t as ShowTimeUs, beat, None, layer, show_left, scratch);
                 active.first().map(|s| s.local_us(t as ShowTimeUs))
             }
         };
@@ -1681,6 +1766,8 @@ pub struct Renderer {
     keyed: Vec<Option<Effect>>,
     /// Particle events of one layer (reused, at most `MAX_EVENTS` kept).
     events: Vec<Event>,
+    /// Input of one clip on its own clock (with its recording), reused.
+    clip_pads: PadInput,
     /// Compound placements, and the buffers and clip list they draw with.
     uses: Vec<CompoundUse>,
     inner_active: Vec<ClipSpan>,
@@ -1764,6 +1851,7 @@ impl Renderer {
                             on: trigger.on,
                             interval_us: trigger.interval_ms.unwrap_or(1000).max(1) as i64 * 1000,
                             origin: (trigger.origin_x.unwrap_or(3.5), trigger.origin_y.unwrap_or(3.5)),
+                            recordings: clips.iter().map(|c| c.recording.clone().map(|r| (r, c.looping.unwrap_or(false)))).collect(),
                         }
                     }
                 };
@@ -1780,6 +1868,7 @@ impl Renderer {
             inst: Vec::with_capacity(MAX_INSTANCES),
             keyed,
             events: Vec::with_capacity(4 * MAX_EVENTS),
+            clip_pads: PadInput { now_us: 0, hits: Vec::with_capacity(PadInput::CAPACITY), history: Vec::with_capacity(PadInput::HISTORY_CAPACITY) },
             uses,
             inner_active: Vec::with_capacity(max_inner_clips),
             inner_buf: LayerFrame::default(),
@@ -1821,6 +1910,11 @@ impl Renderer {
                     continuous_particle_events(&|x| particle_look(effects, keyed, ei, x), t as u64, &mut self.events);
                     paint_particles(effects, keyed, ei, &self.events, 1.0, &mut self.buf, &mut show_left);
                 }
+                LayerContent::Continuous { effect } if self.effects[*effect].reads_history() => {
+                    if let Some(input) = input {
+                        sample(&self.effects, &self.keyed, *effect, t as u64).paint_history(input, 1.0, &mut self.buf);
+                    }
+                }
                 LayerContent::Continuous { effect } => {
                     let e = sample(&self.effects, &self.keyed, *effect, t as u64);
                     match (&self.keyed[*effect], input) {
@@ -1837,7 +1931,7 @@ impl Renderer {
                     index.active(t, &mut self.active);
                     for span in &self.active {
                         let Some(u) = uses[span.order] else {
-                            paint_timeline_presets(&self.effects, &self.keyed, effects, std::slice::from_ref(span), t, beat, input, &mut self.buf, &mut show_left);
+                            paint_timeline_presets(&self.effects, &self.keyed, effects, std::slice::from_ref(span), t, beat, input, &mut self.buf, &mut show_left, &mut self.clip_pads);
                             continue;
                         };
                         // A compound: inner time = local × time_scale; past its
@@ -1850,15 +1944,24 @@ impl Renderer {
                             }
                             inner %= u.length_us;
                         }
-                        paint_compound(&self.effects, &self.keyed, u, inner, beat, input, &mut self.inner_active, &mut self.events, &mut self.inner_buf, &mut self.compound_buf, &mut show_left);
+                        paint_compound(&self.effects, &self.keyed, u, inner, beat, input, &mut self.inner_active, &mut self.events, &mut self.inner_buf, &mut self.compound_buf, &mut show_left, &mut self.clip_pads);
                         blend_into(&mut self.buf, &self.compound_buf, Blend::Over, span.fade(t) as f32);
                     }
                 }
-                LayerContent::Triggered { index, effects, on, interval_us, origin } => {
+                LayerContent::Triggered { index, effects, on, interval_us, origin, recordings } => {
                     index.active(t, &mut self.active);
                     for span in &self.active {
                         let local = span.local_us(t) as i64;
                         let ei = effects[span.order];
+                        // This clip's input on its own clock, its recording played in
+                        // (without one, the same presses and ages as the input).
+                        let rec = recordings[span.order].as_ref().map(|(r, l)| (r, *l));
+                        crate::history::clip_input(input, span, local, rec, &mut self.clip_pads);
+                        let input = Some(&self.clip_pads);
+                        if self.effects[ei].reads_history() {
+                            sample(&self.effects, &self.keyed, ei, local as u64).paint_history(&self.clip_pads, span.fade(t), &mut self.buf);
+                            continue;
+                        }
                         if matches!(self.effects[ei], CompiledEffect::Particles(_)) {
                             let (fx, keyed) = (&self.effects, &self.keyed);
                             triggered_particle_events(*on, *interval_us, span, local, input, &|x| particle_look(fx, keyed, ei, x), &mut self.events);
@@ -2338,7 +2441,7 @@ mod tests {
     #[test]
     fn tap_glow_cools_through_three_colors_and_repeats() {
         let (s, m, e) = (Rgb::new(1.0, 1.0, 1.0), Rgb::new(1.0, 0.5, 0.0), Rgb::new(0.2, 0.0, 0.0));
-        let glow = |radius, repeats| CompiledEffect::TapGlow { start: s, mid: m, end: e, lifetime_us: 1_000_000, radius, repeats, repeat_us: 300_000, decay: 0.5 };
+        let glow = |radius, repeats| CompiledEffect::TapGlow { start: s, mid: m, end: e, lifetime_us: 1_000_000, radius, repeats, repeat_us: 300_000, decay: 0.5, charge: false };
         // At the pad: start color at 0, mid at half the lifetime.
         let l = pad_layer(&glow(1.5, 1), 3, 3, 0);
         assert!((l.px[3 * 8 + 3].g - 1.0).abs() < 1e-6);
@@ -2735,6 +2838,66 @@ mod tests {
         // 120 bpm, 1.25 s into the clip at beat 10.5: the clip began on beat 8, two beats ago → "3".
         let three = text_effect("3", F3x5, Static, |_| {});
         assert_eq!(alpha_grid(&by_beat, 1_250_000, Some(BeatState::new(10.5, 120.0))), alpha_grid(&three, 0, None));
+    }
+    #[test]
+    fn recorded_clips_play_by_time_and_loop() {
+        use crate::model::{RecordedPad, Recording};
+        let cross = crate::edit::default_effect("builtin.cross").unwrap();
+        let mut s = triggered_show(cross, on(TriggerOn::Press)); // clip 1 s .. 5 s
+        if let Content::Triggered { clips, .. } = &mut s.layers[0].content {
+            clips[0].recording = Some(Recording { events: vec![RecordedPad { t_us: 0, x: 3, y: 3, velocity: 100, duration_us: None }], length_us: Some(1_000_000) });
+            clips[0].looping = Some(true);
+        }
+        let mut r = Renderer::new(&s).unwrap();
+        // No input at all: the recording fires at the clip start and every second after.
+        let a = r.render(1_100_000, None);
+        assert!(lit(&a) > 0);
+        assert_eq!(r.render(3_100_000, None), a, "same age in a later pass");
+        let _ = r.render(4_500_000, None);
+        assert_eq!(r.render(1_100_000, None), a, "seek back: same frame");
+        assert_eq!(lit(&r.render(5_200_000, None)), 0, "after the clip");
+        // Without loop only the first pass.
+        if let Content::Triggered { clips, .. } = &mut s.layers[0].content {
+            clips[0].looping = None;
+        }
+        let mut once = Renderer::new(&s).unwrap();
+        assert_eq!(lit(&once.render(3_100_000, None)), 0);
+    }
+
+    #[test]
+    fn pad_states_count_presses_inside_the_clip_only() {
+        let heat = crate::edit::default_effect("builtin.pads").unwrap();
+        let mut r = Renderer::new(&triggered_show(heat, on(TriggerOn::Press))).unwrap(); // clip 1 s .. 5 s
+        let mut input = PadInput::default();
+        input.apply(PadEvent::Press { x: 0, y: 0, velocity: 100, t_us: 0 }, Some(500_000)); // before the clip
+        input.apply(PadEvent::Press { x: 7, y: 7, velocity: 100, t_us: 10_000 }, Some(2_000_000));
+        input.advance(20_000);
+        let f = r.render_input(2_010_000, None, Some(&input));
+        assert!(f.leds[63].r > 0.0 && f.leds[0] == Rgb::new(0.0, 0.0, 0.0));
+        // Reset forgets everything.
+        input.apply(PadEvent::Reset, None);
+        assert_eq!(lit(&r.render_input(2_010_000, None, Some(&input))), 0);
+    }
+
+    #[test]
+    fn charging_tap_glow_grows_while_held_and_bursts_on_release() {
+        let mut e = crate::edit::default_effect("builtin.tap_glow").unwrap();
+        let Effect::TapGlow { params, .. } = &mut e else { unreachable!() };
+        params.charge = Some(true);
+        params.radius = 3.0.into();
+        params.lifetime_ms = 1000.into();
+        let mut r = Renderer::new(&triggered_show(e, on(TriggerOn::Hold))).unwrap();
+        let mut input = PadInput::default();
+        input.apply(PadEvent::Press { x: 3, y: 3, velocity: 100, t_us: 0 }, Some(2_000_000));
+        let size = |r: &mut Renderer, input: &mut PadInput, now| {
+            input.advance(now);
+            lit(&r.render_input(2_000_000 + now, None, Some(input)))
+        };
+        let (early, later) = (size(&mut r, &mut input, 100_000), size(&mut r, &mut input, 900_000));
+        assert!(early < later, "{early} < {later}");
+        input.apply(PadEvent::Release { x: 3, y: 3, t_us: 1_000_000 }, Some(3_000_000));
+        assert!(size(&mut r, &mut input, 1_050_000) >= later, "burst at the reached size");
+        assert_eq!(size(&mut r, &mut input, 9_000_000), 0, "cooled");
     }
     #[test]
     fn hold_draws_while_held_and_release_fires_on_release() {

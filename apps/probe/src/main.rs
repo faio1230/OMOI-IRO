@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use omoiiro_probe::{bench_cmd, bridge, follow_cmd, import_frames_cmd, q01_cmd, gen, lpx, monitor, mtc_out, ports_cmd, render_cmd, replay_cmd, route, synth, transport_cmd};
+use omoiiro_probe::{bench_cmd, bridge, follow_cmd, import_frames_cmd, make_recording_cmd, q01_cmd, gen, lpx, monitor, mtc_out, ports_cmd, render_cmd, replay_cmd, route, synth, transport_cmd};
 use omoiiro_midi::ports;
 use omoiiro_runtime::sync::bridge_ingress;
 use std::path::PathBuf;
@@ -60,6 +60,9 @@ enum Cmd {
     /// Add an omoiiro.frames / omoiiro.bitmap asset to a show as a frames preset.
     #[command(name = "import-frames")]
     ImportFrames(import_frames_cmd::ImportFramesArgs),
+    /// Turn the pad events of a follow --out record into a recorded triggered clip.
+    #[command(name = "make-recording")]
+    MakeRecording(make_recording_cmd::MakeRecordingArgs),
     /// Headless follow mode: OmoiIroBridge -> Transport -> render -> virtual LPX (or a port), optional control route.
     Follow(follow_cmd::FollowArgs),
     /// NFR03: render time of 64 pads x 8 layers at 30 fps show times (p95 limit 5 ms).
@@ -150,6 +153,7 @@ fn main() {
         Cmd::BridgeReport { file, json } => bridge::run_report(&file, json),
         Cmd::Render(args) => render_cmd::run(args),
         Cmd::ImportFrames(args) => import_frames_cmd::run(args),
+        Cmd::MakeRecording(args) => make_recording_cmd::run(args),
         Cmd::Follow(args) => follow_cmd::run(args),
         Cmd::BenchRender(args) => bench_cmd::run(args),
         Cmd::Q01(args) => q01_cmd::run(args),

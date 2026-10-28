@@ -8,6 +8,7 @@ pub mod bridge;
 pub mod follow_cmd;
 pub mod gen;
 pub mod import_frames_cmd;
+pub mod make_recording_cmd;
 pub mod lpx;
 pub mod monitor;
 pub mod mtc_out;

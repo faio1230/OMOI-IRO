@@ -22,6 +22,7 @@
 pub mod assets;
 pub mod edit;
 pub mod font;
+pub mod history;
 pub mod model;
 pub mod particles;
 pub mod render;

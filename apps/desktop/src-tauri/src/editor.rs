@@ -48,6 +48,8 @@ pub struct ClipDto {
     pub tint: Option<String>,
     pub time_scale: Option<f64>,
     pub looping: Option<bool>,
+    /// 0.1.3 triggered clips: recorded presses.
+    pub recording: Option<omoiiro_core::model::Recording>,
 }
 
 /// A compound with its inner layers (same shape as the show's layers).
@@ -158,6 +160,9 @@ fn color_of(e: &Effect) -> String {
             .or_else(|| params.frames.first().and_then(|f| f.as_bytes().chunks(6).find(|c| *c != b"000000").map(|c| format!("#{}", String::from_utf8_lossy(c)))))
             .unwrap_or_else(|| "#FFFFFF".into()),
         Effect::Text { params, .. } => params.color.value().clone(),
+        Effect::Pads { params, .. } => params.color_high.clone().or_else(|| params.color.clone()).unwrap_or_else(|| "#FF4020".into()),
+        Effect::Cycle { params, .. } => params.palette.first().cloned().unwrap_or_else(|| "#FFFFFF".into()),
+        Effect::Constellation { params, .. } => params.color.clone(),
     }
 }
 
@@ -196,6 +201,7 @@ fn layer_dto(l: &omoiiro_core::model::Layer) -> LayerDto {
             tint: c.tint.clone(),
             time_scale: c.time_scale,
             looping: c.looping,
+            recording: c.recording.clone(),
         })
                 .collect(),
             None => Vec::new(),
@@ -400,6 +406,22 @@ pub fn preset_import(ed: State<'_, EditorState>, app: State<'_, AppState>, ps: S
     let text = std::fs::read_to_string(&p).map_err(|e| CommandError::new("import", format!("{}: {e}", p.display())))?;
     let preset = omoiiro_store::presets::parse_preset_file(&text).map_err(|e| files::load_error(&p, e))?;
     editor_apply(ed, app, ps, EditCommand::InsertPreset { preset, on_conflict }, Snap::None)
+}
+
+/// Stop the pad recording and add it as a new clip of the triggered layer
+/// `layer_id`, drawn with `preset_id`, through the history (0.1.3).
+#[tauri::command(async)]
+pub fn recording_stop(ed: State<'_, EditorState>, app: State<'_, AppState>, ps: State<'_, Arc<PreviewState>>, layer_id: String, preset_id: String) -> CmdResult<EditorView> {
+    let taken = match app.session.lock().unwrap().as_ref() {
+        Some(s) => s.stop_recording(),
+        None => return Err(CommandError::new("not_running", "the runtime is not running")),
+    };
+    let (start, events) = taken.ok_or_else(|| CommandError::new("recording", "録音していない"))?;
+    let recording = omoiiro_core::history::recording_from(&events, start);
+    if recording.events.is_empty() {
+        return Err(CommandError::new("recording", "録音中にパッドが押されなかった（クリップは作らない）"));
+    }
+    editor_apply(ed, app, ps, EditCommand::AddRecordingClip { layer_id, preset_id, start_us: start, recording }, Snap::None)
 }
 
 /// Read a frame asset (`omoiiro.frames` / `omoiiro.bitmap`) and add it as a

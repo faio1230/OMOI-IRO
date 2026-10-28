@@ -3,7 +3,7 @@
 // hand-off as the timeline); ranges shown here follow the show schema.
 import { useEffect, useState, type ReactElement } from "react";
 import * as ipc from "./ipc/commands";
-import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, PathKind, Mirror, ShapeKind, LayerMask, ParticleMode, TextMode, TriggerOn, TriggerSpec, K, Keyframe, Ease } from "./ipc/types";
+import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, PathKind, Mirror, ShapeKind, LayerMask, ParticleMode, TextMode, PadsMode, TriggerOn, TriggerSpec, K, Keyframe, Ease } from "./ipc/types";
 
 const TYPE_JA: Record<EffectType, string> = {
   "builtin.solid": "単色（Solid）",
@@ -23,6 +23,9 @@ const TYPE_JA: Record<EffectType, string> = {
   "builtin.particles": "粒子（Particles）",
   "builtin.frames": "フレーム列（Frames）",
   "builtin.text": "文字（Text）",
+  "builtin.pads": "パッドの状態（Pads）",
+  "builtin.cycle": "叩くたびに色（Cycle）",
+  "builtin.constellation": "星座（Constellation）",
 };
 
 const isKeyed = <T,>(v: K<T>): v is { keyframes: Keyframe<T>[] } => typeof v === "object" && v !== null && "keyframes" in v;
@@ -265,7 +268,11 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
         <NumberField label="繰り返し回数" value={p.repeats} min={1} max={8} step={1} hint="1〜8" integer onChange={(repeats) => set({ repeats })} />
         <NumberField label="繰り返しの間隔（ms）" value={p.repeat_interval_ms} min={50} max={2000} step={50} hint="50〜2000" integer onChange={(repeat_interval_ms) => set({ repeat_interval_ms })} />
         <SliderField label="繰り返すたびの明るさ" value={p.repeat_decay} min={0} max={1} step={0.05} percent onChange={(v) => onChange({ ...effect, params: { ...p, repeat_decay: v } } as Effect)} />
-        <p className="hint">パッドを押した位置が光って冷めていく。操作入力がないと何も出ない（プレビュー盤のクリックでも確認できる）。</p>
+        <label className="field check">
+          <input type="checkbox" checked={p.charge ?? false} onChange={(e) => set({ charge: e.target.checked || undefined })} />
+          <span>長押しチャージ（押している間に広がり、離すと光る。発火レイヤーの「押している間」と使う）</span>
+        </label>
+        <p className="hint">パッドを押した位置が光って冷めていく。操作入力がないと何も出ない（プレビュー盤のクリックでも確認できる）。{p.charge ? "チャージは入力履歴に依存（巻き戻しでは再現しない）。" : ""}</p>
       </div>
     );
   }
@@ -341,6 +348,106 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
             <span>終点で折り返して往復する（切ると終点で止まる）</span>
           </label>
         )}
+      </div>
+    );
+  }
+  if (effect.type === "builtin.pads") {
+    const p = effect.params;
+    const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
+    const color = (label: string, key: "color_low" | "color_high" | "color", d: string) => (
+      <label className="field">
+        <span>{label}</span>
+        <input type="color" value={p[key] ?? d} onChange={(e) => set({ [key]: e.target.value.toUpperCase() })} />
+      </label>
+    );
+    return (
+      <div className="insp-grid">
+        <label className="field">
+          <span>状態</span>
+          <select value={p.mode} onChange={(e) => set({ mode: e.target.value as PadsMode })}>
+            <option value="heat">叩くほど溜まる（heat）</option>
+            <option value="plant">押した所が育って消える（plant）</option>
+            <option value="paint">押した所に色を置く（paint）</option>
+          </select>
+        </label>
+        {p.mode === "heat" && (
+          <>
+            {color("冷えた色", "color_low", "#200040")}
+            {color("熱い色", "color_high", "#FF4020")}
+            <NumberField fixed label="1回で溜まる量" value={p.gain ?? 0.25} min={0.05} max={1} step={0.05} hint="0.05〜1（合計は 1 まで）" onChange={(v) => set({ gain: first(v) })} />
+            <NumberField fixed label="冷めるまで（ms）" value={p.decay_ms ?? 3000} min={200} max={60000} step={100} integer hint="200〜60000" onChange={(v) => set({ decay_ms: first(v) })} />
+          </>
+        )}
+        {p.mode === "plant" && (
+          <>
+            {color("色", "color", "#40FF80")}
+            <NumberField fixed label="育つ（ms）" value={p.attack_ms ?? 300} min={0} max={60000} step={100} integer onChange={(v) => set({ attack_ms: first(v) })} />
+            <NumberField fixed label="保つ（ms）" value={p.sustain_ms ?? 1000} min={0} max={60000} step={100} integer onChange={(v) => set({ sustain_ms: first(v) })} />
+            <NumberField fixed label="消える（ms）" value={p.release_ms ?? 1500} min={0} max={60000} step={100} integer onChange={(v) => set({ release_ms: first(v) })} />
+            <NumberField fixed label="育った半径（セル）" value={p.size ?? 1.5} min={0.5} max={3} step={0.25} hint="0.5〜3" onChange={(v) => set({ size: first(v) })} />
+          </>
+        )}
+        {p.mode === "paint" && (
+          <>
+            {color("色", "color", "#FFFFFF")}
+            <ListField label="叩くたびの色（任意）" value={p.palette} format={(x) => (x ?? []).join(" ")} parse={(s) => {
+              const v = s.split(/[\s,]+/).filter(Boolean).map((c) => c.toUpperCase());
+              if (v.length === 0) return undefined;
+              return v.length >= 2 && v.length <= 8 && v.every((c) => /^#[0-9A-F]{6}$/.test(c)) ? v : "#RRGGBB を 2〜8 個（空欄で1色）";
+            }} hint="同じパッドを叩くたびに次の色。空欄なら上の1色" onChange={(palette) => set({ palette })} />
+            <NumberField fixed label="消えるまで（ms）" value={p.decay_ms ?? 0} min={0} max={60000} step={100} integer hint="0 で消えない、200〜60000" onChange={(v) => set({ decay_ms: first(v) || undefined })} />
+          </>
+        )}
+        <p className="hint">1パッド = 1セル。入力履歴（最後の「入力をリセット」以降、クリップの区間内の押下）から毎フレーム計算する。巻き戻しでは再現しない。</p>
+      </div>
+    );
+  }
+  if (effect.type === "builtin.cycle") {
+    const p = effect.params;
+    const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
+    return (
+      <div className="insp-grid">
+        <ListField label="色の順番（#RRGGBB を 2〜8 個）" value={p.palette} format={(x) => x.join(" ")} parse={(s) => {
+          const v = s.split(/[\s,]+/).filter(Boolean).map((c) => c.toUpperCase());
+          return v.length >= 2 && v.length <= 8 && v.every((c) => /^#[0-9A-F]{6}$/.test(c)) ? v : "#RRGGBB を 2〜8 個";
+        }} onChange={(palette) => set({ palette })} />
+        <label className="field">
+          <span>数え方</span>
+          <select value={p.scope} onChange={(e) => set({ scope: e.target.value as "global" | "per_pad" })}>
+            <option value="global">全体で数える</option>
+            <option value="per_pad">パッドごとに数える</option>
+          </select>
+        </label>
+        <NumberField fixed label="点灯の長さ（ms）" value={p.lifetime_ms} min={0} max={10000} step={100} integer hint="0 で次の入力まで" onChange={(v) => set({ lifetime_ms: first(v) })} />
+        <NumberField fixed label="広がり（セル）" value={p.radius} min={0} max={3} step={0.5} hint="0 で押したパッドだけ" onChange={(v) => set({ radius: first(v) })} />
+        <p className="hint">入力履歴に依存（巻き戻しでは再現しない）。</p>
+      </div>
+    );
+  }
+  if (effect.type === "builtin.constellation") {
+    const p = effect.params;
+    const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
+    return (
+      <div className="insp-grid">
+        <label className="field">
+          <span>色</span>
+          <input type="color" value={p.color} onChange={(e) => set({ color: e.target.value.toUpperCase() })} />
+        </label>
+        <NumberField fixed label="線の太さ（セル）" value={p.stroke} min={0.5} max={2} step={0.25} hint="0.5〜2" onChange={(v) => set({ stroke: first(v) })} />
+        <NumberField fixed label="消えるまで（ms）" value={p.lifetime_ms} min={200} max={10000} step={100} integer hint="200〜10000" onChange={(v) => set({ lifetime_ms: first(v) })} />
+        <label className="field">
+          <span>消え方</span>
+          <select value={p.fade} onChange={(e) => set({ fade: e.target.value as "linear" | "exp" })}>
+            <option value="linear">一定の速さで</option>
+            <option value="exp">はじめに速く</option>
+          </select>
+        </label>
+        <NumberField fixed label="残す線の数" value={p.max_segments} min={1} max={16} step={1} integer hint="1〜16（新しい順）" onChange={(v) => set({ max_segments: first(v) })} />
+        <label className="field check">
+          <input type="checkbox" checked={p.dots} onChange={(e) => set({ dots: e.target.checked })} />
+          <span>端点を明るく</span>
+        </label>
+        <p className="hint">直前に押した位置と今回の位置を線で結ぶ。入力履歴に依存（巻き戻しでは再現しない）。</p>
       </div>
     );
   }

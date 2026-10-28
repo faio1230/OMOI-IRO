@@ -165,6 +165,8 @@ pub fn effect_flash(e: &Effect) -> Option<FlashSource> {
         Effect::Shape { .. } => None,
         // Continuous motion, not a flash (docs/14 §4-5).
         Effect::Particles { .. } => None,
+        // Input states (docs/14 §4-8): out of scope like particles.
+        Effect::Pads { .. } | Effect::Cycle { .. } | Effect::Constellation { .. } => None,
         // Checking every cell between frames is costly: fast frames are warned about only.
         Effect::Frames { params, .. } => (params.fps >= 6.0).then_some(FlashSource::Frames { hz: params.fps / 2.0 }),
         Effect::Text { params, .. } => matches!(params.mode, crate::model::TextMode::ScrollLeft | crate::model::TextMode::ScrollUp).then_some(FlashSource::Text { hz: params.speed * 2.0 }),

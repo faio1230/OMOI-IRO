@@ -183,7 +183,7 @@ impl Engine {
             warnings: Vec::new(),
             muted_layers: Vec::new(),
             safety_changed: false,
-            pads: PadInput { now_us: 0, hits: Vec::with_capacity(PadInput::CAPACITY) },
+            pads: PadInput { now_us: 0, hits: Vec::with_capacity(PadInput::CAPACITY), history: Vec::with_capacity(PadInput::HISTORY_CAPACITY) },
         }
     }
 

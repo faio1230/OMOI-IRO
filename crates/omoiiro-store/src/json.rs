@@ -335,6 +335,30 @@ mod tests {
     }
 
     #[test]
+    fn input_states_fixture_loads_replays_and_reacts() {
+        use omoiiro_core::render::{PadEvent, PadInput, Renderer};
+        let text = include_str!("../../../fixtures/shows/input-states-0.1.3.show.json");
+        let show = load_str(text).unwrap();
+        assert_eq!(serde_json::from_str::<Value>(&to_canonical_string(&show)).unwrap(), serde_json::from_str::<Value>(text).unwrap());
+        let mut r = Renderer::new(&show).unwrap();
+        let lit = |f: &omoiiro_core::surface::Frame| (0..64).filter(|i| f.leds[*i].r + f.leds[*i].g + f.leds[*i].b > 0.0).count();
+        // 60: the recording alone (no input); from the second bar on (the glow of the
+        // previous bar's last corner included) every bar looks the same, after a seek too.
+        assert!(lit(&r.render(48_600_000, None)) > 0);
+        let a = r.render(52_600_000, None);
+        assert_eq!(r.render(50_600_000, None), a);
+        // 15: heat under the presses made in its window only.
+        let mut input = PadInput::default();
+        for k in 0..3 {
+            input.apply(PadEvent::Press { x: 4, y: 4, velocity: 100, t_us: k * 10_000 }, Some(9_000_000));
+        }
+        input.advance(40_000);
+        let hot = r.render_input(9_040_000, None, Some(&input)).leds[4 * 8 + 4];
+        input.apply(PadEvent::Reset, None);
+        assert!(hot.r > 0.0 && lit(&r.render_input(9_040_000, None, Some(&input))) == 0);
+    }
+
+    #[test]
     fn triggered_layer_round_trips_and_needs_its_interval() {
         let mut v = demo_value();
         v["layers"][0]["content"] = json!({"kind": "triggered", "clips": [], "trigger": {"on": "interval"}});
@@ -356,7 +380,7 @@ mod tests {
     #[test]
     fn new_0_1_2_presets_round_trip() {
         let mut show = load_str(DEMO).unwrap();
-        for (id, t) in [("fr", "builtin.frames"), ("tx", "builtin.text"), ("pt", "builtin.particles"), ("pa", "builtin.path"), ("sh", "builtin.shape"), ("tg", "builtin.tap_glow"), ("x", "builtin.cross"), ("rg", "builtin.regions"), ("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
+        for (id, t) in [("pd", "builtin.pads"), ("cy", "builtin.cycle"), ("cn", "builtin.constellation"), ("fr", "builtin.frames"), ("tx", "builtin.text"), ("pt", "builtin.particles"), ("pa", "builtin.path"), ("sh", "builtin.shape"), ("tg", "builtin.tap_glow"), ("x", "builtin.cross"), ("rg", "builtin.regions"), ("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
             let effect = omoiiro_core::edit::default_effect(t).unwrap();
             show.presets.push(omoiiro_core::model::Preset { id: id.into(), name: id.into(), effect });
         }
