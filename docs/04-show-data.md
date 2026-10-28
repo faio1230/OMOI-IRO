@@ -73,6 +73,7 @@ layerはtarget、enabled、opacity、blend、contentを持つ。配列順が下�
 - `timeline`：clipsを持ち、現在時刻に有効なclipだけを評価する。
 - `continuous`：preset IDを1つ持ち、show時刻が非負である限り有効。常時の拍反応レイヤーに使用する。
 - `triggered`（0.1.3）：clipsと `trigger { on: press | release | hold | clip_start | interval, interval_ms?, origin_x?, origin_y? }` を持つ。クリップの区間が有効範囲。press / release / hold はパッド入力の到着時刻（モノトニック）基準でseekでは再現しない（消えもしない）。clip_start / interval はクリップのローカル時刻基準で決定的。holdは10 sで打ち切り、入力経路の切断と「全ポートを再接続」でrelease-allを合成する。インスタンスはクリップごとに最大64。位置を受けるEffect（ripple / tap_glow / cross）以外はholdでのみ使える（押している間だけ全面）。
+- 複合素材 `compounds`（0.1.3）：{ id, name, duration_us?, layers[1..4] }。内部レイヤーはtarget_idなし、timeline / continuousのみ、入れ子不可。clipは `compound_id`（preset_idと排他）+ `tint` / `time_scale`（0.25〜4）/ `loop`。内部時刻 = ローカル時刻 × time_scale、長さ超過はloopなら繰り返し、なければ描かない。内部はpremultipliedバッファに合成してから外側のblend / opacity / maskを適用。拍駆動はtime_scaleの影響を受けない。安全解析は置いた外側レイヤーの分として数え、時間駆動の周波数にtime_scaleを掛ける。DetachCompoundClipはtime_scale=1のときだけ（tintはプリセット複製）。レイヤーIDとクリップIDはショー全体で一意。負荷：外8×内4の通常構成でrender p95 23 µs、内部を全部fountainにした最悪は15.6 ms（上限超過）→ 粒子はショー全体で768個の上限を追加予定。
 - レイヤーの `mask`（0.1.3、任意）：shape（circle / rect / diamond / wipe）、center、size、size_y、angle、edge、invert。そのレイヤーのpremultipliedな色とalphaにmaskのalphaを掛けるだけで、合成器は不変。時間基準はcontentと同じ（クリップが重なるときは先頭のクリップ）。
 - キーフレーム（0.1.3）：`Param<T>` の `{ "keyframes": [ { t_us, v, ease? } ] }`。数値と色は補間（色はsRGB各チャンネルをf32で補間、量子化は出力直前）、個数の整数・enum・boolはstepのみ。時間基準はクリップのローカル時刻 / show時刻 / インスタンスのage。安全解析は最悪値。速度や周期をキーフレームで変えたときの位相は「その時点の値×経過時間」（積分ではない）。
 

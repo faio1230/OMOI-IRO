@@ -81,6 +81,29 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 - 個数の整数（seed、repeats、max_concurrent、chase の width）と enum と bool は `step` だけ。長さの整数（period_us、lifetime_ms など）は補間される。
 - 安全解析はキーフレームの最悪値（最大の rate など）で判定する。
 
+## 3c. 複合素材（compounds、0.1.3）
+
+複数のレイヤーをまとめて1つの素材にし、クリップとして置ける。
+
+```json
+"compounds": [
+  { "id": "ribbon", "name": "ネオン・リボン", "duration_us": 4000000,
+    "layers": [ { "id": "ribbon-shadow", "name": "影", "enabled": true, "opacity": 1, "blend": "over",
+                  "content": { "kind": "timeline", "clips": [ { "id": "rs1", "preset_id": "wave-thick", "start_us": 0, "duration_us": 4000000, "fade_in_us": 0, "fade_out_us": 0 } ] } },
+                { "id": "ribbon-core", "name": "芯", "enabled": true, "opacity": 1, "blend": "add",
+                  "content": { "kind": "continuous", "preset_id": "wave-thin" } } ] }
+],
+"layers": [ { "id": "main", "name": "本線", "target_id": "main-pad", "enabled": true, "opacity": 1, "blend": "over",
+  "content": { "kind": "timeline", "clips": [
+    { "id": "c1", "compound_id": "ribbon", "start_us": 0, "duration_us": 8000000, "fade_in_us": 0, "fade_out_us": 0, "tint": "#40C0FF", "time_scale": 0.5, "loop": true } ] } } ]
+```
+
+- 内部レイヤーは外側の layer と同じ形だが、`target_id` を書かない（置いた側を継承）。content は timeline か continuous。triggered と素材の入れ子は不可。内部レイヤーは 1〜4 枚、素材は 64 個まで。
+- クリップは `preset_id` か `compound_id` のどちらか一方。`tint`（色の差し替え。主の色を tint にし、他の色は明るさの比で派生。白にも効くので、白を残したい素材では使わない）、`time_scale`（0.25〜4。拍に合わせる演出には効かない）、`loop`。
+- クリップが素材の長さより長いとき：`loop` が true なら繰り返し、false なら終端以降は何も描かない。短いときは途中で切る。速さを変えたいときは `time_scale` を明示する（勝手に伸縮しない）。
+- GUI：「素材（複合）」欄で作成・配置・削除、タイムラインの「編集対象」で素材の中身を編集。「展開して独立」は time_scale が 1 のときだけ。
+- 例：`fixtures/shows/compounds-0.1.3.show.json`（リボン、着地、交通を3回ずつ）。
+
 ## 4. 書き方の規則
 
 - `id` は `^[a-z][a-z0-9_-]{0,63}$`。英小文字で始め、英数字とハイフン・下線。ショー内で一意。プリセットの id は `<種類>-<特徴>`（例：`noise-blue-dense`、`strobe-beat-white`）。
