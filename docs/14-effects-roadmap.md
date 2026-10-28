@@ -105,7 +105,7 @@
 | §4-9 音反応（ブリッジ v3 の meter、builtin.meter、`[LED]` トラック） | 完了（Rust 307件 + Python 8件。Windows の Live 12.4.7 で実測：再生中 24.6 Hz、Mac は未確認） | 5f43a36 |
 | 固め（回帰 29/29、check-shows、重いshowの10分soak、Liveのmeter実測、panic安全、fuzz 18,000件、転送遅延、本番用雛形とパレット） | 完了（312件） | 5cc4384 |
 | 素材バンク（Schema 0.1.4：プリセット・複合素材の `metadata` category / tags / favorite、GUI の素材ライブラリー：検索・カテゴリ・タグ・お気に入り・24コマのサンプル表示・レイヤーに配置）、録音反復の有界化（最新1,024件）とペイント・色順の累積状態の分離、LED プレビューの切り替え文言（実機出力／手元で再生）。Codex 制作、Opus 文言、設計確認 | 完了（Rust 324件、check-shows 18ファイル。実機未確認） | fa4bf74、707ca43、7cdbc98、a9b4985 |
-| ライブラリー用ショー 8 テーマ（seabed / furnace / neon-city / moon / machine-room / monochrome / flower-ink / omoi-iro。各 18 プリセット + 2 複合素材、計 160。カテゴリ：背景 4・タップ 4・アクセント 3・トランジション 2・グラフィック 2・照明 3）。Codex 制作（prompts/codex-presets.md）、設計担当が check-shows --write で検査・整形 | 完了（check-shows 10 ファイル 0 失敗。実機未確認） | db3c517 |
+| ライブラリー用ショー 8 テーマ（seabed / furnace / neon-city / moon / machine-room / monochrome / flower-ink / omoi-iro。各 18 プリセット + 2 複合素材、計 160。カテゴリ：背景 4・タップ 4・アクセント 3・トランジション 2・グラフィック 2・照明 3）。Codex 制作（prompts/codex-presets.md）、設計担当が check-shows --write で検査・整形 | 完了（check-shows 10 ファイル 0 失敗。実機未確認） | e17997f |
 | 素材の共通ライブラリー（A20）：登録した `.show.json` の素材を一覧し編集中のショーへ複製（`InsertCompound`、同じ内容は重複させない）、端末設定 `library_shows`、ライブラリーファイルは書かない | 完了（327件。GUI・実機未確認） | 25853d3、7e1964c |
 | タイムラインの再生操作バー（先頭へ・再生・停止・位置・テンポ・表示元、Space、ルーラーで位置移動、プレビュー状態の集約） | 完了（GUI・実機未確認） | f11c9fc、6b3cec2 |
 | 手元の時計（A21）：Runtime の時刻源 `local`（LocalClock で動き、bridge・Clock・Link・MTC を開かない）、`runtime_transport_*`、演奏タブの時刻源選択、操作バーとの接続 | 完了（328件。実機未確認） | d336208、6b3cec2 |
