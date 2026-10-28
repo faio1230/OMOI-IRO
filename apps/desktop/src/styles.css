@@ -139,6 +139,11 @@ select { background: var(--bg); color: var(--text); border: 1px solid var(--line
 .tl { border: 1px solid var(--line); border-radius: 6px; background: #0c0e12; }
 .tl-scroll { position: relative; overflow-x: auto; overflow-y: hidden; }
 .tl-ruler { position: relative; height: 22px; border-bottom: 1px solid var(--line); }
+.tl-ruler.seek { cursor: pointer; }
+.tl-transport { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 10px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; }
+.tl-transport > button { min-width: 36px; }
+.tl-transport-time { font-size: 15px; min-width: 150px; }
+.tl-transport-bpm { width: 56px; }
 .tl-head-spacer { position: sticky; left: 0; z-index: 3; height: 22px; line-height: 22px; padding-left: 8px; font-size: 11px; color: var(--muted); background: #0c0e12; border-right: 1px solid var(--line); }
 .tl-tick { position: absolute; top: 0; height: 22px; border-left: 1px solid var(--line); padding-left: 3px; font-size: 10px; color: var(--muted); line-height: 22px; }
 .tl-row { position: relative; display: flex; border-bottom: 1px solid var(--line); }

@@ -8,6 +8,8 @@ import type { ClipDto, EditCommand, EditorView, LayerDto, Recording, Snap } from
 import { LayerInspector, PresetPanel, ShowSyncPanel, TRIGGER_JA, type PresetEditMode } from "./ShowInspectors";
 import UnsavedChoice from "./UnsavedChoice";
 import MaterialBrowser from "./MaterialBrowser";
+import * as preview from "./previewStore";
+import { Playhead, TransportBar } from "./Transport";
 import { CompoundClipFields, CompoundPanel } from "./Compounds";
 
 const ROW_H = 46;
@@ -44,8 +46,8 @@ function RecordingLength({ clipId, recording, apply }: { clipId: string; recordi
   );
 }
 
-export default function TimelineEditor(props: { showPath: string; playheadUs: number | null; docKey: string; newRequested: boolean; onNewHandled: () => void }) {
-  const { showPath, playheadUs, docKey, newRequested, onNewHandled } = props;
+export default function TimelineEditor(props: { showPath: string; playheadUs: number | null; running: boolean; docKey: string; newRequested: boolean; onNewHandled: () => void }) {
+  const { showPath, playheadUs, running, docKey, newRequested, onNewHandled } = props;
   const [view, setView] = useState<EditorView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [snap, setSnap] = useState<Snap>("frame30");
@@ -64,6 +66,13 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
   useEffect(() => {
     ipc.editorView().then((v) => v && setView(v)).catch(() => {});
   }, [docKey]);
+
+  // The transport bar works at once: load the edited show into the local clock
+  // ("" = a new show without a file); shown locally unless the runtime runs.
+  const viewPath = view?.path ?? null;
+  useEffect(() => {
+    if (viewPath !== null) preview.open(viewPath, !running);
+  }, [viewPath]);
 
   const accept = (v: EditorView) => {
     setView(v);
@@ -343,6 +352,8 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
         <span className={view.flash_warnings.length ? "badge warn" : "badge"}>点滅 {view.flash_warnings.length} 件（{view.preview_bpm} bpm、上限 {view.max_flash_hz} Hz）</span>
       </div>
 
+      <TransportBar running={running} blocked={compound ? "素材の中では再生位置は使えない" : null} />
+
       {view.flash_warnings.length > 0 && (
         <ul className="issues">
           {view.flash_warnings.map((w) => (
@@ -352,7 +363,12 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
       )}
       <div className="tl" style={{ ["--head" as string]: `${HEAD_W}px` }}>
         <div className="tl-scroll">
-          <div className="tl-ruler" style={{ width: HEAD_W + widthPx }}>
+          <div className={compound ? "tl-ruler" : "tl-ruler seek"} style={{ width: HEAD_W + widthPx }} title={compound ? undefined : "クリックで再生位置を移動"}
+            onPointerDown={(e) => {
+              // Ruler click moves the local clock (the show's time; not inside a compound).
+              const x = e.clientX - e.currentTarget.getBoundingClientRect().left - HEAD_W;
+              if (!compound && x >= 0) preview.seek((x / pxPerSec) * 1e6);
+            }}>
             <div className="tl-head-spacer" style={{ width: HEAD_W }}>上ほど手前に合成</div>
             {ticks.map((t) => (
               <div key={t} className="tl-tick" style={{ left: HEAD_W + t * pxPerSec }}>{t % 60 === 0 ? `${t / 60}:00` : `${t}s`}</div>
@@ -414,7 +430,7 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
               </div>
             );
           })}
-          {playhead !== null && <div className="tl-playhead" style={{ left: HEAD_W + (playhead / 1e6) * pxPerSec }} />}
+          {!compound && <Playhead left={HEAD_W} pxPerSec={pxPerSec} fallbackUs={playheadUs} />}
         </div>
       </div>
 

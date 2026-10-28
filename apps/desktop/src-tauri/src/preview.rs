@@ -221,12 +221,15 @@ pub fn preview_ack(ps: State<'_, Arc<PreviewState>>, seq: u64) {
 }
 
 #[tauri::command(async)]
-pub fn preview_open(ps: State<'_, Arc<PreviewState>>, show_path: String) -> CmdResult<PreviewInfo> {
+/// The edited show is used when it is this file (unsaved edits included);
+/// an empty path is the edited new show that has no file yet.
+pub fn preview_open(ps: State<'_, Arc<PreviewState>>, ed: State<'_, crate::editor::EditorState>, show_path: String) -> CmdResult<PreviewInfo> {
     let path = show_path.trim().to_string();
-    if path.is_empty() {
-        return Err(CommandError::new("invalid", "choose a show file"));
-    }
-    let show = omoiiro_store::load_path(std::path::Path::new(&path)).map_err(|e| CommandError::new("show", e.to_string()))?;
+    let show = match crate::editor::current_show_for(&ed, std::path::Path::new(&path)) {
+        Some(s) => s,
+        None if path.is_empty() => return Err(CommandError::new("invalid", "choose a show file")),
+        None => omoiiro_store::load_path(std::path::Path::new(&path)).map_err(|e| CommandError::new("show", e.to_string()))?,
+    };
     let local = LocalPreview::new(&show).map_err(|i| CommandError::new("show", format!("{i:?}")))?;
     let mut inner = ps.inner.lock().unwrap();
     inner.local = Some(local);

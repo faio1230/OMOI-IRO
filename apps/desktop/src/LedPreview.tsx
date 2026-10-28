@@ -1,9 +1,10 @@
 // U03: LED preview. Shows only frames computed in Rust (Channel, capacity 1,
-// at most 30 fps). The local clock (play / scrub / preview tempo) moves the
+// at most 30 fps; one subscription shared with the transport bar, previewStore). The local clock (play / scrub / preview tempo) moves the
 // local preview only; it never changes Live's or a device's position.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import * as ipc from "./ipc/commands";
-import type { PreviewFrame, PreviewInfo, PreviewSource } from "./ipc/types";
+import type { PreviewSource } from "./ipc/types";
+import * as preview from "./previewStore";
 
 function fmt(us: number | null): string {
   if (us === null) return "--";
@@ -14,54 +15,18 @@ function fmt(us: number | null): string {
 
 export default function LedPreview(props: { showPath: string; running: boolean; onError: (e: string | null) => void }) {
   const { showPath, running, onError } = props;
-  const [frame, setFrame] = useState<PreviewFrame | null>(null);
-  const [info, setInfo] = useState<PreviewInfo | null>(null);
-  const [mode, setMode] = useState<PreviewSource>("runtime");
+  const { frame, info, error } = preview.usePreview();
+  const mode: PreviewSource = info?.mode ?? "runtime";
   const [scrubUs, setScrubUs] = useState<number | null>(null);
   const [bpmText, setBpmText] = useState("");
   const [jumpText, setJumpText] = useState("");
-  const pending = useRef<PreviewFrame | null>(null);
+  useEffect(() => { if (info?.bpm) setBpmText(String(info.bpm)); }, [info?.bpm]);
+  useEffect(() => { onError(error); }, [error, onError]);
 
-  // Subscribe once; draw the newest frame at the next animation frame, then ack.
-  useEffect(() => {
-    let raf = 0;
-    ipc
-      .previewSubscribe((f) => {
-        pending.current = f;
-        if (raf) return;
-        raf = requestAnimationFrame(() => {
-          raf = 0;
-          const p = pending.current;
-          if (!p) return;
-          setFrame(p);
-          ipc.previewAck(p.seq).catch(() => {});
-        });
-      })
-      .catch((e) => onError(ipc.errorText(e)));
-    return () => cancelAnimationFrame(raf);
-  }, [onError]);
-
-  const call = async (f: () => Promise<PreviewInfo>) => {
-    try {
-      const i = await f();
-      setInfo(i);
-      setMode(i.mode);
-      if (i.bpm) setBpmText(String(i.bpm));
-      onError(null);
-      return i;
-    } catch (e) {
-      onError(ipc.errorText(e));
-      return null;
-    }
-  };
-
-  const openLocal = () => call(() => ipc.previewOpen(showPath));
-  const switchMode = (m: PreviewSource) => call(() => ipc.previewMode(m));
+  const openLocal = () => preview.open(showPath);
+  const switchMode = (m: PreviewSource) => preview.setMode(m);
   // Scrubbing while the runtime follows switches to the independent local preview.
-  const scrub = async (us: number) => {
-    if (mode === "runtime") await switchMode("local");
-    await call(() => ipc.previewSeek(us));
-  };
+  const scrub = (us: number) => preview.seek(us);
 
   const showing: PreviewSource | null = frame?.source ?? null;
   const length = info?.length_us ?? 0;
@@ -101,7 +66,7 @@ export default function LedPreview(props: { showPath: string; running: boolean; 
           </div>
           <div className="actions">
             <button onClick={openLocal} disabled={!showPath}>ショーを読み込む</button>
-            <button disabled={!info} onClick={() => call(() => ipc.previewPlay(!(info?.playing ?? false)))}>{info?.playing ? "一時停止" : "再生"}</button>
+            <button disabled={!info} onClick={() => preview.play(!(info?.playing ?? false))}>{info?.playing ? "一時停止" : "再生"}</button>
           </div>
           <label className="scrub">
             <span>位置（ローカル時計）</span>
@@ -134,7 +99,7 @@ export default function LedPreview(props: { showPath: string; running: boolean; 
           </label>
           <label className="bpm">
             <span>プレビューのテンポ</span>
-            <input value={bpmText} disabled={!info || running} onChange={(e) => setBpmText(e.target.value)} onBlur={() => bpmText && call(() => ipc.previewSetBpm(Number(bpmText)))} />
+            <input value={bpmText} disabled={!info || running} onChange={(e) => setBpmText(e.target.value)} onBlur={() => bpmText && Number(bpmText) !== info?.bpm && preview.setBpm(Number(bpmText))} />
             <span className="hint">{running ? "追従中は変更できない（showの値 " + (info?.show_bpm ?? "--") + "）" : `bpm（showの値 ${info?.show_bpm ?? "--"}）`}</span>
           </label>
           <div className="hint">表示 seq {frame?.seq ?? 0} · 間引き {frame?.skipped ?? 0}</div>

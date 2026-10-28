@@ -367,7 +367,7 @@ export default function App() {
       ) : tab === "timeline" ? (
         <div className="columns editor-columns">
           <div className="col">
-            <TimelineEditor showPath={req.show_path} playheadUs={running ? s?.show_time_us ?? null : null} docKey={`${s?.document?.path ?? ""}|${s?.document?.dirty ?? ""}`} newRequested={newRequested} onNewHandled={() => setNewRequested(false)} />
+            <TimelineEditor showPath={req.show_path} playheadUs={running ? s?.show_time_us ?? null : null} running={running} docKey={`${s?.document?.path ?? ""}|${s?.document?.dirty ?? ""}`} newRequested={newRequested} onNewHandled={() => setNewRequested(false)} />
           </div>
           <div className="col">
             <LedPreview showPath={req.show_path} running={running} onError={setPreviewError} />
