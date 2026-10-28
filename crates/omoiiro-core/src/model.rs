@@ -265,6 +265,39 @@ pub fn ser_opt_param_num<S: Serializer>(v: &Option<Param<f64>>, s: S) -> Result<
         None => s.serialize_none(),
     }
 }
+/// `ser_num` for a list of numbers.
+struct Nums<'a>(&'a [f64]);
+impl Serialize for Nums<'_> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeSeq;
+        struct Num(f64);
+        impl Serialize for Num {
+            fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                ser_num(&self.0, s)
+            }
+        }
+        let mut q = s.serialize_seq(Some(self.0.len()))?;
+        self.0.iter().try_for_each(|x| q.serialize_element(&Num(*x)))?;
+        q.end()
+    }
+}
+
+/// `ser_num` for an optional list (regions `offset`).
+pub fn ser_opt_nums<S: Serializer>(v: &Option<Vec<f64>>, s: S) -> Result<S::Ok, S::Error> {
+    match v {
+        Some(v) => Nums(v).serialize(s),
+        None => s.serialize_none(),
+    }
+}
+
+/// `ser_num` for optional `[x, y]` points (path `points`).
+pub fn ser_opt_points<S: Serializer>(v: &Option<Vec<[f64; 2]>>, s: S) -> Result<S::Ok, S::Error> {
+    match v {
+        Some(v) => s.collect_seq(v.iter().map(|p| Nums(p))),
+        None => s.serialize_none(),
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Show {
@@ -408,6 +441,12 @@ pub enum Effect {
     /// 0.1.2: groups of cells lit in turn, by beat or by time.
     #[serde(rename = "builtin.regions")]
     Regions { version: u32, params: RegionsParams },
+    /// 0.1.3: a spot that runs along a path, with a tail and mirrored twins.
+    #[serde(rename = "builtin.path")]
+    Path { version: u32, params: PathParams },
+    /// 0.1.3: a static shape (move / scale / turn it with keyframes).
+    #[serde(rename = "builtin.shape")]
+    Shape { version: u32, params: ShapeParams },
     /// 0.1.2, input driven: a glow that cools down where a pad was pressed.
     #[serde(rename = "builtin.tap_glow")]
     TapGlow { version: u32, params: TapGlowParams },
@@ -474,6 +513,13 @@ pub struct RegionsParams {
     /// Lit fraction of each step, 0.05..=1.
     #[serde(serialize_with = "ser_param_num")]
     pub duty: Param<f64>,
+    /// `custom` only (required there): the groups as cell indexes (`y * 8 + x`),
+    /// 1..=32 groups of 1..=64 cells; a cell may be in several groups.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub groups: Option<Vec<Vec<u8>>>,
+    /// `custom` only: phase delay of each group in steps, 0..=1 (one per group).
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_nums")]
+    pub offset: Option<Vec<f64>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -487,6 +533,112 @@ pub enum RegionPattern {
     Rows,
     Perimeter,
     Fan,
+    /// 0.1.3: the groups listed in `groups`.
+    Custom,
+}
+
+/// A spot moving along a path (time only, seek safe).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PathParams {
+    pub color: Param<String>,
+    pub path: Param<PathKind>,
+    /// `points`: 2..=32 points [x, y] of a polyline run at constant speed.
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_points")]
+    pub points: Option<Vec<[f64; 2]>>,
+    /// `line`: from / to, 0..=7 cells.
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub from_x: Option<Param<f64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub from_y: Option<Param<f64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub to_x: Option<Param<f64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub to_y: Option<Param<f64>>,
+    /// `orbit` / `figure8`: centre, 0..=7 cells (absent = 3.5).
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub center_x: Option<Param<f64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub center_y: Option<Param<f64>>,
+    /// `orbit`: radius; `figure8`: half width (the height is half of it); 0..=4 cells (absent = 3).
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub orbit_radius: Option<Param<f64>>,
+    /// `line` / `points`: cells per second 0.5..=16; `perimeter` / `orbit` / `figure8`: laps per second 0.05..=4.
+    #[serde(serialize_with = "ser_param_num")]
+    pub speed: Param<f64>,
+    /// Spot radius 0.5..=3 (alpha falls linearly to the edge).
+    #[serde(serialize_with = "ser_param_num")]
+    pub size: Param<f64>,
+    /// Tail behind the spot, 0..=8 cells (linear fade).
+    #[serde(serialize_with = "ser_param_num")]
+    pub tail: Param<f64>,
+    /// false: stop at the end; true: bounce back (line / points) or go round.
+    #[serde(rename = "loop")]
+    pub looping: Param<bool>,
+    /// Start position along the path, 0..=1.
+    #[serde(serialize_with = "ser_param_num")]
+    pub phase: Param<f64>,
+    /// Mirrored twins: across x (left / right), y (top / bottom) or both.
+    pub mirror: Param<Mirror>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PathKind {
+    Line,
+    /// The 28 border cells clockwise from the bottom-left (as regions perimeter).
+    Perimeter,
+    Orbit,
+    Figure8,
+    Points,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Mirror {
+    None,
+    X,
+    Y,
+    Xy,
+}
+
+/// A static shape drawn with the shared signed distance (`shape`).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ShapeParams {
+    pub shape: Param<ShapeKind>,
+    pub color: Param<String>,
+    /// Filled, or only the outline `stroke` wide (a line is always a stroke).
+    pub fill: Param<bool>,
+    /// Outline width 0.5..=3 cells.
+    #[serde(serialize_with = "ser_param_num")]
+    pub stroke: Param<f64>,
+    /// 0..=7 cells.
+    #[serde(serialize_with = "ser_param_num")]
+    pub center_x: Param<f64>,
+    #[serde(serialize_with = "ser_param_num")]
+    pub center_y: Param<f64>,
+    /// Radius or half side (line: half length), 0.5..=6 cells.
+    #[serde(serialize_with = "ser_param_num")]
+    pub size: Param<f64>,
+    /// `rect` only: half height (absent = `size`).
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub size_y: Option<Param<f64>>,
+    /// Degrees (line, rect, diamond).
+    #[serde(serialize_with = "ser_param_num")]
+    pub angle: Param<f64>,
+    /// Soft edge 0..=2 cells.
+    #[serde(serialize_with = "ser_param_num")]
+    pub edge: Param<f64>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ShapeKind {
+    Line,
+    Circle,
+    Rect,
+    Diamond,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -517,6 +669,8 @@ impl Effect {
             Effect::Wave { .. } => "builtin.wave",
             Effect::Orb { .. } => "builtin.orb",
             Effect::Regions { .. } => "builtin.regions",
+            Effect::Path { .. } => "builtin.path",
+            Effect::Shape { .. } => "builtin.shape",
             Effect::TapGlow { .. } => "builtin.tap_glow",
             Effect::Cross { .. } => "builtin.cross",
         }
@@ -534,6 +688,8 @@ impl Effect {
             | Effect::Wave { version, .. }
             | Effect::Orb { version, .. }
             | Effect::Regions { version, .. }
+            | Effect::Path { version, .. }
+            | Effect::Shape { version, .. }
             | Effect::TapGlow { version, .. }
             | Effect::Cross { version, .. } => *version,
         }
@@ -927,7 +1083,7 @@ pub(crate) fn demo_for_tests() -> Show {
     s
 }
 
-step_only!(Axis, Waveform, StrobeMode, RippleFade, RippleTrigger, RippleShape, RainDirection, OrbMotion, RegionPattern, StepMode, StepOrder);
+step_only!(Axis, Waveform, StrobeMode, RippleFade, RippleTrigger, RippleShape, RainDirection, OrbMotion, RegionPattern, StepMode, StepOrder, PathKind, Mirror, ShapeKind);
 
 #[cfg(test)]
 mod keyframe_tests {

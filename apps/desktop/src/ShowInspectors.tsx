@@ -3,7 +3,7 @@
 // hand-off as the timeline); ranges shown here follow the show schema.
 import { useEffect, useState, type ReactElement } from "react";
 import * as ipc from "./ipc/commands";
-import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, TriggerOn, TriggerSpec, K, Keyframe, Ease } from "./ipc/types";
+import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, PathKind, Mirror, ShapeKind, TriggerOn, TriggerSpec, K, Keyframe, Ease } from "./ipc/types";
 
 const TYPE_JA: Record<EffectType, string> = {
   "builtin.solid": "単色（Solid）",
@@ -18,6 +18,8 @@ const TYPE_JA: Record<EffectType, string> = {
   "builtin.regions": "領域ステップ（Regions）",
   "builtin.tap_glow": "余熱（TapGlow）",
   "builtin.cross": "十字（Cross）",
+  "builtin.path": "経路（Path）",
+  "builtin.shape": "図形（Shape）",
 };
 
 const isKeyed = <T,>(v: K<T>): v is { keyframes: Keyframe<T>[] } => typeof v === "object" && v !== null && "keyframes" in v;
@@ -118,6 +120,45 @@ function ColorField({ value, onChange, label = "色（#RRGGBB）" }: { value: K<
     </label>
   );
 }
+/** Text list edited as a string and parsed on blur; an unparsable entry keeps the previous value and shows the error. */
+function ListField<T>(props: { label: string; value: T; format: (v: T) => string; parse: (s: string) => T | string; hint?: string; onChange: (v: T) => void }) {
+  const [text, setText] = useState(props.format(props.value));
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => setText(props.format(props.value)), [props.value]); // eslint-disable-line react-hooks/exhaustive-deps
+  const commit = () => {
+    const r = props.parse(text);
+    if (typeof r === "string") setErr(r);
+    else { setErr(null); props.onChange(r); }
+  };
+  return (
+    <label className="field wide">
+      <span>{props.label}</span>
+      <input value={text} spellCheck={false} onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => e.key === "Enter" && commit()} />
+      {err ? <span className="hint error">{err}</span> : props.hint && <span className="hint">{props.hint}</span>}
+    </label>
+  );
+}
+
+const nums = (s: string) => s.split(/[\s,]+/).filter(Boolean).map(Number);
+const parsePoints = (s: string): [number, number][] | string => {
+  const pts = s.split(";").map((x) => nums(x)).filter((x) => x.length > 0);
+  if (pts.some((x) => x.length !== 2 || x.some((v) => !(v >= 0 && v <= 7)))) return "各点は「x,y」（0〜7）を ; で区切る";
+  if (pts.length < 2 || pts.length > 32) return "点は 2〜32 個";
+  return pts as [number, number][];
+};
+const parseGroups = (s: string): number[][] | string => {
+  const gs = s.split(";").map(nums).filter((g) => g.length > 0);
+  if (gs.some((g) => g.some((v) => !Number.isInteger(v) || v < 0 || v > 63))) return "セル番号は 0〜63 の整数";
+  if (gs.length < 1 || gs.length > 32 || gs.some((g) => g.length > 64)) return "グループは 1〜32 個（各 64 セルまで）";
+  return gs;
+};
+const parseOffsets = (n: number) => (s: string): number[] | undefined | string => {
+  const v = nums(s);
+  if (v.length === 0) return undefined;
+  if (v.length !== n || v.some((x) => !(x >= 0 && x <= 1))) return `ずれは 0〜1 をグループ数（${n}）だけ`;
+  return v;
+};
+
 /** Parameter form for one effect. Ranges and units follow schemas/show.schema.json. */
 export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e: Effect) => void }) {
   if (effect.type === "builtin.solid") {
@@ -210,6 +251,107 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
       </div>
     );
   }
+  if (effect.type === "builtin.path") {
+    const p = effect.params;
+    const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
+    const cell = (label: string, key: "from_x" | "from_y" | "to_x" | "to_y" | "center_x" | "center_y", dflt: number) => (
+      <NumberField label={label} value={p[key] ?? dflt} min={0} max={7} step={0.5} hint="0〜7" onChange={(v) => set({ [key]: v })} />
+    );
+    const closed = p.path === "perimeter" || p.path === "orbit" || p.path === "figure8";
+    const setPath = (path: PathKind) => {
+      const patch: Partial<typeof p> = { path };
+      if (path === "line") Object.assign(patch, { from_x: p.from_x ?? 0, from_y: p.from_y ?? 0, to_x: p.to_x ?? 7, to_y: p.to_y ?? 7 });
+      if (path === "points" && !p.points) patch.points = [[0, 0], [7, 0], [7, 7]] as [number, number][];
+      if (path === "orbit" || path === "figure8") Object.assign(patch, { center_x: p.center_x ?? 3.5, center_y: p.center_y ?? 3.5, orbit_radius: p.orbit_radius ?? 3 });
+      const isClosed = path !== "line" && path !== "points";
+      if (isClosed !== closed) patch.speed = isClosed ? 0.25 : 4;
+      set(patch);
+    };
+    return (
+      <div className="insp-grid">
+        <ColorField value={p.color} onChange={(color) => set({ color })} />
+        <label className="field">
+          <span>経路</span>
+          <select value={p.path} onChange={(e) => setPath(e.target.value as PathKind)}>
+            <option value="line">直線（始点→終点）</option>
+            <option value="perimeter">外周（左下から時計回り）</option>
+            <option value="orbit">円</option>
+            <option value="figure8">8の字</option>
+            <option value="points">点を順にたどる</option>
+          </select>
+        </label>
+        {p.path === "line" && (<>{cell("始点 x", "from_x", 0)}{cell("始点 y", "from_y", 0)}{cell("終点 x", "to_x", 7)}{cell("終点 y", "to_y", 7)}</>)}
+        {(p.path === "orbit" || p.path === "figure8") && (
+          <>
+            {cell("中心 x", "center_x", 3.5)}
+            {cell("中心 y", "center_y", 3.5)}
+            <NumberField label={p.path === "orbit" ? "半径（セル）" : "横の半幅（セル）"} value={p.orbit_radius ?? 3} min={0} max={4} step={0.25} hint="0〜4" onChange={(orbit_radius) => set({ orbit_radius })} />
+          </>
+        )}
+        {p.path === "points" && (
+          <ListField<[number, number][]> label="通る点" value={p.points ?? [[0, 0], [7, 7]]} format={(ps) => ps.map(([x, y]) => `${x},${y}`).join("; ")} parse={parsePoints} hint="「x,y」を ; で区切る（左下が 0,0）。2〜32 点" onChange={(points) => set({ points })} />
+        )}
+        <NumberField label={closed ? "速さ（周/秒）" : "速さ（セル/秒）"} value={p.speed} min={closed ? 0.05 : 0.5} max={closed ? 4 : 16} step={closed ? 0.05 : 0.5} hint={closed ? "0.05〜4 周/秒" : "0.5〜16 セル/秒"} onChange={(speed) => set({ speed })} />
+        <NumberField label="光の大きさ（セル）" value={p.size} min={0.5} max={3} step={0.25} hint="0.5〜3" onChange={(size) => set({ size })} />
+        <NumberField label="尾の長さ（セル）" value={p.tail} min={0} max={8} step={0.5} hint="0〜8" onChange={(tail) => set({ tail })} />
+        <SliderField label="開始位置のずらし" value={p.phase} min={0} max={1} step={0.05} percent hint="経路の長さに対する割合" onChange={(v) => onChange({ ...effect, params: { ...p, phase: v } } as Effect)} />
+        <label className="field">
+          <span>鏡写し</span>
+          <select value={p.mirror} onChange={(e) => set({ mirror: e.target.value as Mirror })}>
+            <option value="none">なし</option>
+            <option value="x">左右に写す</option>
+            <option value="y">上下に写す</option>
+            <option value="xy">上下左右（4つ）</option>
+          </select>
+        </label>
+        {!closed && (
+          <label className="field check">
+            <input type="checkbox" checked={p.loop} onChange={(e) => set({ loop: e.target.checked })} />
+            <span>終点で折り返して往復する（切ると終点で止まる）</span>
+          </label>
+        )}
+      </div>
+    );
+  }
+  if (effect.type === "builtin.shape") {
+    const p = effect.params;
+    const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
+    return (
+      <div className="insp-grid">
+        <label className="field">
+          <span>図形</span>
+          <select value={p.shape} onChange={(e) => set({ shape: e.target.value as ShapeKind })}>
+            <option value="circle">円</option>
+            <option value="rect">長方形</option>
+            <option value="diamond">ひし形</option>
+            <option value="line">線</option>
+          </select>
+        </label>
+        <ColorField value={p.color} onChange={(color) => set({ color })} />
+        {p.shape !== "line" && (
+          <label className="field check">
+            <input type="checkbox" checked={p.fill} onChange={(e) => set({ fill: e.target.checked })} />
+            <span>塗りつぶす（切ると輪郭だけ）</span>
+          </label>
+        )}
+        {(!p.fill || p.shape === "line") && <NumberField label="線の太さ（セル）" value={p.stroke} min={0.5} max={3} step={0.25} hint="0.5〜3" onChange={(stroke) => set({ stroke })} />}
+        <NumberField label="中心 x" value={p.center_x} min={0} max={7} step={0.5} hint="0〜7（左が 0）" onChange={(center_x) => set({ center_x })} />
+        <NumberField label="中心 y" value={p.center_y} min={0} max={7} step={0.5} hint="0〜7（下が 0）" onChange={(center_y) => set({ center_y })} />
+        <NumberField label={p.shape === "circle" || p.shape === "diamond" ? "半径（セル）" : "横の半分の長さ（セル）"} value={p.size} min={0.5} max={6} step={0.25} hint="0.5〜6" onChange={(size) => set({ size })} />
+        {p.shape === "rect" && (
+          <>
+            <label className="field check">
+              <input type="checkbox" checked={p.size_y !== undefined} onChange={(e) => set({ size_y: e.target.checked ? first(p.size) : undefined })} />
+              <span>縦の長さを別にする（切ると正方形）</span>
+            </label>
+            {p.size_y !== undefined && <NumberField label="縦の半分の長さ（セル）" value={p.size_y} min={0.5} max={6} step={0.25} hint="0.5〜6" onChange={(size_y) => set({ size_y })} />}
+          </>
+        )}
+        <NumberField label="回転（度）" value={p.angle} min={0} max={360} step={15} hint="0〜360（反時計回り）" onChange={(angle) => set({ angle })} />
+        <NumberField label="ふちのぼかし（セル）" value={p.edge} min={0} max={2} step={0.25} hint="0 でくっきり" onChange={(edge) => set({ edge })} />
+      </div>
+    );
+  }
   if (effect.type === "builtin.regions") {
     const p = effect.params;
     const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
@@ -217,7 +359,11 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
       <div className="insp-grid">
         <label className="field">
           <span>分け方</span>
-          <select value={p.pattern} onChange={(e) => set({ pattern: e.target.value as RegionPattern })}>
+          <select value={p.pattern} onChange={(e) => {
+            const pattern = e.target.value as RegionPattern;
+            // groups / offset belong to custom only.
+            set(pattern === "custom" ? { pattern, groups: p.groups ?? [[0, 1, 8, 9], [54, 55, 62, 63]] } : { pattern, groups: undefined, offset: undefined });
+          }}>
             <option value="halves_lr">左右の半分</option>
             <option value="halves_tb">上下の半分</option>
             <option value="checker">市松</option>
@@ -226,8 +372,15 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
             <option value="rows">8行</option>
             <option value="perimeter">外周（左下から時計回り）</option>
             <option value="fan">中央から外へ</option>
+            <option value="custom">自分で決めたグループ</option>
           </select>
         </label>
+        {p.pattern === "custom" && (
+          <>
+            <ListField label="グループ（セル番号）" value={p.groups ?? [[0]]} format={(g) => g.map((x) => x.join(" ")).join("; ")} parse={parseGroups} hint="セル番号 = 行×8 + 列（左下 0、右上 63）。グループを ; で区切り、この順に点く。重なったセルは明るい方" onChange={(groups) => set({ groups, offset: p.offset && p.offset.length === groups.length ? p.offset : undefined })} />
+            <ListField label="グループごとのずれ（段）" value={p.offset} format={(o) => (o ?? []).join(" ")} parse={parseOffsets((p.groups ?? [[0]]).length)} hint="空欄でずれなし。0〜1 段だけ遅らせる" onChange={(offset) => set({ offset })} />
+          </>
+        )}
         <ColorField value={p.color} onChange={(color) => set({ color })} />
         <label className="field check">
           <input type="checkbox" checked={p.color_b !== undefined} onChange={(e) => set({ color_b: e.target.checked ? "#000040" : undefined })} />

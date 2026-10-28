@@ -213,6 +213,30 @@ mod tests {
     }
 
     #[test]
+    fn paths_shapes_fixture_loads_and_round_trips() {
+        let text = include_str!("../../../fixtures/shows/paths-shapes-0.1.3.show.json");
+        let show = load_str(text).unwrap();
+        let saved = to_canonical_string(&show);
+        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), serde_json::from_str::<Value>(text).unwrap());
+        let mut a = omoiiro_core::render::Renderer::new(&show).unwrap();
+        let mut b = omoiiro_core::render::Renderer::new(&load_str(&saved).unwrap()).unwrap();
+        for t in [0, 3_100_000, 9_000_000, 17_500_000, 26_000_000, 33_000_000, 38_700_000] {
+            let frame = a.render(t, None);
+            assert_eq!(frame, b.render(t, None), "at {t}");
+        }
+        // Points save whole numbers as integers like every other number.
+        let mut v: Value = serde_json::from_str(text).unwrap();
+        v["presets"][1]["effect"]["params"]["path"] = json!("points");
+        v["presets"][1]["effect"]["params"]["points"] = json!([[0, 0], [7, 0.5], [3, 7]]);
+        v["presets"][1]["effect"]["params"]["speed"] = json!(4);
+        let saved = to_canonical_string(&load_str(&v.to_string()).unwrap());
+        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), v);
+        // Custom groups: offset count must match the groups.
+        let mut v: Value = serde_json::from_str(text).unwrap();
+        v["presets"][4]["effect"]["params"]["offset"] = json!([0, 0.5]);
+        assert!(load_str(&v.to_string()).is_err());
+    }
+    #[test]
     fn triggered_layer_round_trips_and_needs_its_interval() {
         let mut v = demo_value();
         v["layers"][0]["content"] = json!({"kind": "triggered", "clips": [], "trigger": {"on": "interval"}});
@@ -234,7 +258,7 @@ mod tests {
     #[test]
     fn new_0_1_2_presets_round_trip() {
         let mut show = load_str(DEMO).unwrap();
-        for (id, t) in [("tg", "builtin.tap_glow"), ("x", "builtin.cross"), ("rg", "builtin.regions"), ("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
+        for (id, t) in [("pa", "builtin.path"), ("sh", "builtin.shape"), ("tg", "builtin.tap_glow"), ("x", "builtin.cross"), ("rg", "builtin.regions"), ("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
             let effect = omoiiro_core::edit::default_effect(t).unwrap();
             show.presets.push(omoiiro_core::model::Preset { id: id.into(), name: id.into(), effect });
         }

@@ -180,13 +180,11 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 for v in params.color.values() {
                     c.color(v, format!("{e}/params/color"));
                 }
-            },
+            }
             Effect::Chase { params, .. } => {
-                {
                 for v in params.color.values() {
                     c.color(v, format!("{e}/params/color"));
                 }
-            };
                 if !params.period_us.values().all(|v| (1_000..=3_600_000_000).contains(v)) {
                     c.push(format!("{e}/params/period_us"), "period_us must be within 1000..=3600000000");
                 }
@@ -196,11 +194,9 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 c.step_only(&params.width, format!("{e}/params/width"));
             }
             Effect::Pulse { params, .. } => {
-                {
                 for v in params.color.values() {
                     c.color(v, format!("{e}/params/color"));
                 }
-            };
                 if !params.beats_per_cycle.values().all(|v| [0.25, 0.5, 1.0].contains(v)) {
                     c.push(format!("{e}/params/beats_per_cycle"), "beats_per_cycle must be 0.25, 0.5 or 1");
                 }
@@ -209,11 +205,9 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 }
             }
             Effect::Strobe { params, .. } => {
-                {
                 for v in params.color.values() {
                     c.color(v, format!("{e}/params/color"));
                 }
-            };
                 for v in params.rate_hz.values() {
                     c.range(*v, 0.5, 30.0, format!("{e}/params/rate_hz"));
                 }
@@ -228,11 +222,9 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 }
             }
             Effect::Rain { params, .. } => {
-                {
                 for v in params.color.values() {
                     c.color(v, format!("{e}/params/color"));
                 }
-            };
                 if let Some(h) = &params.head_color {
                     for v in h.values() {
                         c.color(v, format!("{e}/params/head_color"));
@@ -256,11 +248,9 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 }
             }
             Effect::Wave { params, .. } => {
-                {
                 for v in params.color.values() {
                     c.color(v, format!("{e}/params/color"));
                 }
-            };
                 for v in params.wavelength.values() {
                     c.range(*v, 2.0, 16.0, format!("{e}/params/wavelength"));
                 }
@@ -283,11 +273,9 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 }
             }
             Effect::Orb { params, .. } => {
-                {
                 for v in params.color.values() {
                     c.color(v, format!("{e}/params/color"));
                 }
-            };
                 for v in params.center_x.values() {
                     c.range(*v, 0.0, 7.0, format!("{e}/params/center_x"));
                 }
@@ -339,11 +327,9 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 }
             }
             Effect::Regions { params, .. } => {
-                {
                 for v in params.color.values() {
                     c.color(v, format!("{e}/params/color"));
                 }
-            };
                 if let Some(b) = &params.color_b {
                     for v in b.values() {
                         c.color(v, format!("{e}/params/color_b"));
@@ -360,6 +346,94 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 }
                 for v in params.duty.values() {
                     c.range(*v, 0.05, 1.0, format!("{e}/params/duty"));
+                }
+                // custom: its groups (and optional offsets) are required; other patterns have none.
+                let custom = params.pattern.values().any(|p| *p == crate::model::RegionPattern::Custom);
+                match (&params.groups, custom) {
+                    (None, true) => c.push(format!("{e}/params/groups"), "required when pattern is custom"),
+                    (Some(_), false) => c.push(format!("{e}/params/groups"), "only for pattern custom"),
+                    (Some(g), true) => {
+                        if !(1..=32).contains(&g.len()) {
+                            c.push(format!("{e}/params/groups"), "groups needs 1..=32 groups");
+                        }
+                        for (gi, cells) in g.iter().enumerate() {
+                            if !(1..=64).contains(&cells.len()) || cells.iter().any(|&i| i > 63) {
+                                c.push(format!("{e}/params/groups/{gi}"), "a group has 1..=64 cell indexes within 0..=63");
+                            }
+                        }
+                        if let Some(o) = &params.offset {
+                            if o.len() != g.len() {
+                                c.push(format!("{e}/params/offset"), format!("offset needs one value per group ({})", g.len()));
+                            }
+                            for v in o {
+                                c.unit(*v, format!("{e}/params/offset"));
+                            }
+                        }
+                    }
+                    (None, false) => {
+                        if params.offset.is_some() {
+                            c.push(format!("{e}/params/offset"), "only for pattern custom");
+                        }
+                    }
+                }
+            }
+            Effect::Path { params, .. } => {
+                use crate::model::PathKind;
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
+                }
+                let kinds: Vec<PathKind> = params.path.values().copied().collect();
+                if kinds.contains(&PathKind::Points) {
+                    match &params.points {
+                        Some(pts) if (2..=32).contains(&pts.len()) => {
+                            for p in pts.iter().flatten() {
+                                c.range(*p, 0.0, 7.0, format!("{e}/params/points"));
+                            }
+                        }
+                        Some(_) => c.push(format!("{e}/params/points"), "points needs 2..=32 points"),
+                        None => c.push(format!("{e}/params/points"), "required when path is points"),
+                    }
+                }
+                let line = kinds.contains(&PathKind::Line);
+                for (name, v) in [("from_x", &params.from_x), ("from_y", &params.from_y), ("to_x", &params.to_x), ("to_y", &params.to_y), ("center_x", &params.center_x), ("center_y", &params.center_y)] {
+                    match v {
+                        Some(v) => v.values().for_each(|x| c.range(*x, 0.0, 7.0, format!("{e}/params/{name}"))),
+                        None if line && (name.starts_with("from") || name.starts_with("to")) => c.push(format!("{e}/params/{name}"), "required when path is line"),
+                        None => {}
+                    }
+                }
+                if let Some(r) = &params.orbit_radius {
+                    r.values().for_each(|x| c.range(*x, 0.0, 4.0, format!("{e}/params/orbit_radius")));
+                }
+                // Speed: cells/s for line / points, laps/s for the closed paths.
+                let (lo, hi) = kinds.iter().fold((f64::MAX, 0.0f64), |(lo, hi), k| match k {
+                    PathKind::Line | PathKind::Points => (lo.min(0.5), hi.max(16.0)),
+                    _ => (lo.min(0.05), hi.max(4.0)),
+                });
+                for v in params.speed.values() {
+                    c.range(*v, lo, hi, format!("{e}/params/speed"));
+                }
+                for v in params.size.values() {
+                    c.range(*v, 0.5, 3.0, format!("{e}/params/size"));
+                }
+                for v in params.tail.values() {
+                    c.range(*v, 0.0, 8.0, format!("{e}/params/tail"));
+                }
+                for v in params.phase.values() {
+                    c.unit(*v, format!("{e}/params/phase"));
+                }
+            }
+            Effect::Shape { params, .. } => {
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
+                }
+                for (name, p, lo, hi) in [("stroke", &params.stroke, 0.5, 3.0), ("center_x", &params.center_x, 0.0, 7.0), ("center_y", &params.center_y, 0.0, 7.0), ("size", &params.size, 0.5, 6.0), ("angle", &params.angle, 0.0, 360.0), ("edge", &params.edge, 0.0, 2.0)] {
+                    for v in p.values() {
+                        c.range(*v, lo, hi, format!("{e}/params/{name}"));
+                    }
+                }
+                if let Some(p) = &params.size_y {
+                    p.values().for_each(|v| c.range(*v, 0.5, 6.0, format!("{e}/params/size_y")));
                 }
             }
             Effect::TapGlow { params, .. } => {
@@ -386,11 +460,9 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 }
             }
             Effect::Cross { params, .. } => {
-                {
                 for v in params.color.values() {
                     c.color(v, format!("{e}/params/color"));
                 }
-            };
                 for v in params.speed.values() {
                     c.range(*v, 1.0, 32.0, format!("{e}/params/speed"));
                 }
@@ -402,11 +474,9 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 }
             }
             Effect::Ripple { params, .. } => {
-                {
                 for v in params.color.values() {
                     c.color(v, format!("{e}/params/color"));
                 }
-            };
                 for v in params.speed.values() {
                     c.range(*v, 0.5, 16.0, format!("{e}/params/speed"));
                 }
@@ -435,16 +505,12 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 }
             }
             Effect::Noise { params, .. } => {
-                {
                 for v in params.base_color.values() {
                     c.color(v, format!("{e}/params/base_color"));
                 }
-            };
-                {
                 for v in params.highlight_color.values() {
                     c.color(v, format!("{e}/params/highlight_color"));
                 }
-            };
                 for v in params.density.values() {
                     c.unit(*v, format!("{e}/params/density"));
                 }
@@ -674,6 +740,56 @@ mod tests {
         let mut s = demo();
         s.name = "x".repeat(129);
         assert!(pointers(&s).contains(&"/name".to_string()));
+    }
+
+    #[test]
+    fn path_shape_and_custom_regions_rules() {
+        use crate::model::{PathKind, Preset, RegionPattern};
+        let mut s = demo();
+        let n = s.presets.len();
+        let mut add = |t: &str, f: &dyn Fn(&mut Effect)| {
+            let mut e = crate::edit::default_effect(t).unwrap();
+            f(&mut e);
+            s.presets.push(Preset { id: format!("p{}", s.presets.len()), name: "x".into(), effect: e });
+        };
+        add("builtin.path", &|e| {
+            let Effect::Path { params, .. } = e else { unreachable!() };
+            params.path = PathKind::Points.into(); // no points; speed 0.25 is below the cells/s range
+        });
+        add("builtin.path", &|e| {
+            let Effect::Path { params, .. } = e else { unreachable!() };
+            params.path = PathKind::Line.into(); // no from / to
+            params.speed = 4.0.into();
+        });
+        add("builtin.shape", &|e| {
+            let Effect::Shape { params, .. } = e else { unreachable!() };
+            params.angle = 400.0.into();
+        });
+        add("builtin.regions", &|e| {
+            let Effect::Regions { params, .. } = e else { unreachable!() };
+            params.pattern = RegionPattern::Custom.into(); // no groups
+        });
+        add("builtin.regions", &|e| {
+            let Effect::Regions { params, .. } = e else { unreachable!() };
+            params.pattern = RegionPattern::Custom.into();
+            params.groups = Some(vec![vec![0, 64], vec![]]);
+            params.offset = Some(vec![0.5]);
+        });
+        add("builtin.regions", &|e| {
+            let Effect::Regions { params, .. } = e else { unreachable!() };
+            params.groups = Some(vec![vec![0]]); // not custom
+        });
+        let p = pointers(&s);
+        let at = |i: usize, rest: &str| format!("/presets/{}/effect/params/{rest}", n + i);
+        for want in [at(0, "points"), at(0, "speed"), at(1, "from_x"), at(1, "to_y"), at(2, "angle"), at(3, "groups"), at(4, "groups/0"), at(4, "groups/1"), at(4, "offset"), at(5, "groups")] {
+            assert!(p.contains(&want), "{want} in {p:?}");
+        }
+        // The defaults are valid.
+        let mut ok = demo();
+        for t in ["builtin.path", "builtin.shape"] {
+            ok.presets.push(Preset { id: t.replace("builtin.", ""), name: t.into(), effect: crate::edit::default_effect(t).unwrap() });
+        }
+        assert!(pointers(&ok).is_empty(), "{:?}", pointers(&ok));
     }
 
     #[test]

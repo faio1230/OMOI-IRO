@@ -286,7 +286,7 @@ export type EditCommand =
   | { op: "set_layer_trigger"; layer_id: string; trigger: TriggerSpec };
 
 export type Blend = "over" | "add" | "max";
-export type EffectType = "builtin.solid" | "builtin.chase" | "builtin.pulse" | "builtin.strobe" | "builtin.noise" | "builtin.ripple" | "builtin.rain" | "builtin.wave" | "builtin.orb" | "builtin.regions" | "builtin.tap_glow" | "builtin.cross";
+export type EffectType = "builtin.solid" | "builtin.chase" | "builtin.pulse" | "builtin.strobe" | "builtin.noise" | "builtin.ripple" | "builtin.rain" | "builtin.wave" | "builtin.orb" | "builtin.regions" | "builtin.tap_glow" | "builtin.cross" | "builtin.path" | "builtin.shape";
 export type OnConflict = "error" | "rename";
 
 export type Ease = "linear" | "step" | "ease_in" | "ease_out" | "ease_in_out";
@@ -305,11 +305,17 @@ export type Effect =
   | { type: "builtin.rain"; version: number; params: { color: K<string>; head_color?: K<string>; direction: "down" | "up" | "left" | "right"; speed: K<number>; density: K<number>; tail: K<number>; seed: K<number>; flicker: K<number> } }
   | { type: "builtin.wave"; version: number; params: { color: K<string>; axis: "x" | "y"; wavelength: K<number>; amplitude: K<number>; center: K<number>; speed: K<number>; thickness: K<number>; beat_amplitude: boolean; phase?: K<number> } }
   | { type: "builtin.orb"; version: number; params: { color: K<string>; center_x: K<number>; center_y: K<number>; radius: K<number>; edge: K<number>; light_angle: K<number>; shading: K<number>; dither: K<number>; dither_rate_hz: K<number>; seed: K<number>; motion: "none" | "orbit" | "bounce"; speed: K<number>; orbit_radius: K<number>; bounce_angle: K<number>; orbit_phase?: K<number> } }
-  | { type: "builtin.regions"; version: number; params: { pattern: RegionPattern; color: K<string>; color_b?: K<string>; step_mode: "beat" | "seconds"; step_beats: K<number>; step_ms: K<number>; order: "forward" | "reverse" | "pingpong"; soft: K<number>; duty: K<number> } }
+  | { type: "builtin.regions"; version: number; params: { pattern: RegionPattern; color: K<string>; color_b?: K<string>; step_mode: "beat" | "seconds"; step_beats: K<number>; step_ms: K<number>; order: "forward" | "reverse" | "pingpong"; soft: K<number>; duty: K<number>; groups?: number[][]; offset?: number[] } }
   | { type: "builtin.tap_glow"; version: number; params: { color_start: K<string>; color_mid: K<string>; color_end: K<string>; lifetime_ms: K<number>; radius: K<number>; repeats: K<number>; repeat_interval_ms: K<number>; repeat_decay: K<number> } }
-  | { type: "builtin.cross"; version: number; params: { color: K<string>; speed: K<number>; length: K<number>; lifetime_ms: K<number> } };
+  | { type: "builtin.cross"; version: number; params: { color: K<string>; speed: K<number>; length: K<number>; lifetime_ms: K<number> } }
+  | { type: "builtin.path"; version: number; params: { color: K<string>; path: PathKind; points?: [number, number][]; from_x?: K<number>; from_y?: K<number>; to_x?: K<number>; to_y?: K<number>; center_x?: K<number>; center_y?: K<number>; orbit_radius?: K<number>; speed: K<number>; size: K<number>; tail: K<number>; loop: boolean; phase: K<number>; mirror: Mirror } }
+  | { type: "builtin.shape"; version: number; params: { shape: ShapeKind; color: K<string>; fill: boolean; stroke: K<number>; center_x: K<number>; center_y: K<number>; size: K<number>; size_y?: K<number>; angle: K<number>; edge: K<number> } };
 
-export type RegionPattern = "halves_lr" | "halves_tb" | "checker" | "quadrants" | "columns" | "rows" | "perimeter" | "fan";
+export type PathKind = "line" | "perimeter" | "orbit" | "figure8" | "points";
+export type Mirror = "none" | "x" | "y" | "xy";
+export type ShapeKind = "line" | "circle" | "rect" | "diamond";
+
+export type RegionPattern = "halves_lr" | "halves_tb" | "checker" | "quadrants" | "columns" | "rows" | "perimeter" | "fan" | "custom";
 
 export interface ClipDto {
   id: string;

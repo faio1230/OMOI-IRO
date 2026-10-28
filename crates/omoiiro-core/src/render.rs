@@ -61,7 +61,7 @@
 //! brightness scales the result.
 
 use crate::model::{
-    Axis, Blend, Content, Effect, OrbMotion, TriggerOn, RainDirection, RegionPattern, RippleFade, RippleShape, RippleTrigger, Show, StepMode, StepOrder, StrobeMode, Waveform,
+    Axis, Blend, Content, Effect, Mirror, OrbMotion, PathKind, ShapeKind, TriggerOn, RainDirection, RegionPattern, RippleFade, RippleShape, RippleTrigger, Show, StepMode, StepOrder, StrobeMode, Waveform,
 };
 use crate::surface::{Frame, LayerFrame, Rgb, Rgba, GRID_H, GRID_LEDS, GRID_W};
 use crate::time::{BeatState, ShowTimeUs};
@@ -100,7 +100,35 @@ pub enum CompiledEffect {
     },
     TapGlow { start: Rgb, mid: Rgb, end: Rgb, lifetime_us: i64, radius: f64, repeats: u32, repeat_us: i64, decay: f64 },
     Cross { color: Rgb, speed: f64, length: f64, lifetime_us: i64 },
-    Regions { pattern: RegionPattern, color: Rgb, color_b: Option<Rgb>, mode: StepMode, step_beats: f64, step_s: f64, order: StepOrder, soft: f64, duty: f64 },
+    Regions { pattern: RegionPattern, color: Rgb, color_b: Option<Rgb>, mode: StepMode, step_beats: f64, step_s: f64, order: StepOrder, soft: f64, duty: f64, custom: Option<CustomGroups> },
+    Path(PathLook),
+    Shape { kind: ShapeKind, color: Rgb, fill: bool, stroke: f64, center: (f64, f64), size: (f64, f64), angle: f64, edge: f64 },
+}
+
+/// The groups of a `custom` regions pattern as cell bit masks, with each group's phase delay.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CustomGroups {
+    pub n: usize,
+    pub masks: [u64; 32],
+    pub offset: [f64; 32],
+}
+
+/// A compiled `builtin.path`: the path as at most 32 points plus how the spot runs on it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PathLook {
+    pub color: Rgb,
+    pub kind: PathKind,
+    /// `line` / `points`: the polyline; `orbit` / `figure8`: centre in [0] and (radius, 0) in [1].
+    pub pts: [(f64, f64); 32],
+    pub n: usize,
+    /// Length of the path in cells.
+    pub length: f64,
+    pub speed: f64,
+    pub size: f64,
+    pub tail: f64,
+    pub looping: bool,
+    pub phase: f64,
+    pub mirror: Mirror,
 }
 
 /// One pad press for input-driven effects: grid cell (bottom-left origin),
@@ -314,7 +342,22 @@ impl CompiledEffect {
                 order: params.order.at(t),
                 soft: params.soft.at(t),
                 duty: params.duty.at(t),
+                custom: custom_groups(params),
             },
+            Effect::Path { params, .. } => CompiledEffect::Path(compile_path(params, t)?),
+            Effect::Shape { params, .. } => {
+                let size = params.size.at(t);
+                CompiledEffect::Shape {
+                    kind: params.shape.at(t),
+                    color: col(&params.color, t)?,
+                    fill: params.fill.at(t),
+                    stroke: params.stroke.at(t),
+                    center: (params.center_x.at(t), params.center_y.at(t)),
+                    size: (size, params.size_y.as_ref().map(|p| p.at(t)).unwrap_or(size)),
+                    angle: params.angle.at(t),
+                    edge: params.edge.at(t),
+                }
+            }
             Effect::Noise { params, .. } => CompiledEffect::Noise {
                 base: col(&params.base_color, t)?,
                 highlight: col(&params.highlight_color, t)?,
@@ -402,7 +445,7 @@ impl CompiledEffect {
             CompiledEffect::Ripple { interval: None, .. } => {}
             // Pad driven: drawn by `paint_input`.
             CompiledEffect::TapGlow { .. } | CompiledEffect::Cross { .. } => {}
-            CompiledEffect::Regions { pattern, color, color_b, mode, step_beats, step_s, order, soft, duty } => {
+            CompiledEffect::Regions { pattern, color, color_b, mode, step_beats, step_s, order, soft, duty, custom } => {
                 let pos = match mode {
                     StepMode::Seconds => local_us as f64 / 1e6 / step_s,
                     StepMode::Beat => match beat.filter(|b| b.phase_valid && b.beat.is_finite()) {
@@ -410,17 +453,30 @@ impl CompiledEffect {
                         None => return,
                     },
                 };
-                let n = region_count(pattern);
-                // Brightness of each group: the steps around `pos` that light it.
-                let mut level = [0.0f64; 28];
-                let k0 = pos.floor() as i64;
-                for k in k0 - 2..=k0 + 2 {
-                    let g = step_group(k, n, order);
-                    level[g] = level[g].max(step_level(pos - k as f64, duty, soft));
+                let n = custom.map(|c| c.n).unwrap_or_else(|| region_count(pattern));
+                // Brightness of each group: the steps around its (delayed) position that light it.
+                let mut level = [0.0f64; 32];
+                for (g, lv) in level.iter_mut().enumerate().take(n) {
+                    let pg = pos - custom.map(|c| c.offset[g]).unwrap_or(0.0);
+                    let k0 = pg.floor() as i64;
+                    for k in k0 - 2..=k0 + 2 {
+                        if step_group(k, n, order) == g {
+                            *lv = lv.max(step_level(pg - k as f64, duty, soft));
+                        }
+                    }
                 }
                 for (i, px) in layer.px.iter_mut().enumerate() {
-                    let Some(g) = region_of(pattern, i % GRID_W, i / GRID_W) else { continue };
-                    let a = level[g];
+                    let a = match custom {
+                        // A cell in several groups takes the brightest.
+                        Some(c) => match (0..c.n).filter(|&g| c.masks[g] >> i & 1 == 1).map(|g| level[g]).reduce(f64::max) {
+                            Some(a) => a,
+                            None => continue,
+                        },
+                        None => match region_of(pattern, i % GRID_W, i / GRID_W) {
+                            Some(g) => level[g],
+                            None => continue,
+                        },
+                    };
                     match color_b {
                         Some(b) => {
                             let c = Rgb::new(b.r + (color.r - b.r) * a as f32, b.g + (color.g - b.g) * a as f32, b.b + (color.b - b.b) * a as f32);
@@ -430,7 +486,19 @@ impl CompiledEffect {
                         None => {}
                     }
                 }
-            }            CompiledEffect::Rain { color, head, direction, speed, density, tail, seed, flicker } => {
+            }
+            CompiledEffect::Path(look) => paint_path(&look, local_us, alpha, layer),
+            CompiledEffect::Shape { kind, color, fill, stroke, center, size, angle, edge } => {
+                for (i, px) in layer.px.iter_mut().enumerate() {
+                    let sd = shape_sd(kind, (i % GRID_W) as f64 - center.0, (i / GRID_W) as f64 - center.1, size, angle);
+                    // A line has no inside: always its stroke.
+                    let a = if fill && kind != ShapeKind::Line { crate::shape::fill_alpha(sd, edge) } else { crate::shape::stroke_alpha(sd, stroke, edge) };
+                    if a > 0.0 {
+                        over(px, Rgba::from_color(color, (a * alpha) as f32));
+                    }
+                }
+            }
+            CompiledEffect::Rain { color, head, direction, speed, density, tail, seed, flicker } => {
                 paint_rain(local_us, color, head, direction, speed, density, tail, seed, flicker, alpha, layer);
             }
             CompiledEffect::Wave { color, axis, wavelength, amplitude, center, speed, thickness, beat_amplitude, phase } => {
@@ -623,6 +691,15 @@ pub struct RippleLook {
     pub shape: RippleShape,
 }
 
+/// The shared shape metric of a ripple ring shape.
+fn ripple_metric(s: RippleShape) -> crate::shape::Metric {
+    match s {
+        RippleShape::Circle => crate::shape::Metric::Circle,
+        RippleShape::Diamond => crate::shape::Metric::Diamond,
+        RippleShape::Square => crate::shape::Metric::Square,
+    }
+}
+
 /// Rings from `(x, y, age_us)` sources, newest first; live ones only, at most `max_concurrent`.
 fn paint_ripple(sources: impl Iterator<Item = (f64, f64, i64)>, look: RippleLook, alpha: f64, layer: &mut LayerFrame) {
     let RippleLook { color, speed, ring_width, lifetime_us, fade, max_concurrent, shape } = look;
@@ -641,12 +718,7 @@ fn paint_ripple(sources: impl Iterator<Item = (f64, f64, i64)>, look: RippleLook
         };
         let radius = speed * age / 1e6;
         for (i, a) in cell_a.iter_mut().enumerate() {
-            let (dx, dy) = (((i % GRID_W) as f64 - x).abs(), ((i / GRID_W) as f64 - y).abs());
-            let dist = match shape {
-                RippleShape::Circle => (dx * dx + dy * dy).sqrt(),
-                RippleShape::Diamond => dx + dy,
-                RippleShape::Square => dx.max(dy),
-            };
+            let dist = crate::shape::metric(ripple_metric(shape), (i % GRID_W) as f64 - x, (i / GRID_W) as f64 - y);
             let off = (dist - radius).abs();
             let ring = if off <= half { 1.0 } else { (1.0 - (off - half) / half).max(0.0) };
             *a = a.max(ring * f);
@@ -666,6 +738,8 @@ pub fn region_count(p: RegionPattern) -> usize {
         RegionPattern::Quadrants | RegionPattern::Fan => 4,
         RegionPattern::Columns | RegionPattern::Rows => 8,
         RegionPattern::Perimeter => 28,
+        // Counted from `groups` (`CustomGroups::n`).
+        RegionPattern::Custom => 1,
     }
 }
 
@@ -694,6 +768,8 @@ pub fn region_of(p: RegionPattern, x: usize, y: usize) -> Option<usize> {
         },
         // The two middle columns first, then outwards in mirrored pairs.
         RegionPattern::Fan => if x < 4 { 3 - x } else { x - 4 },
+        // Membership is in `CustomGroups` (a cell may be in several groups).
+        RegionPattern::Custom => return None,
     })
 }
 
@@ -730,6 +806,174 @@ fn col(p: &crate::model::Param<String>, t: u64) -> Option<Rgb> {
     match p.segment(t) {
         (a, None) => Rgb::from_hex(a),
         (a, Some((b, f))) => Some(lerp_rgb(Rgb::from_hex(a)?, Rgb::from_hex(b)?, f as f32)),
+    }
+}
+
+fn custom_groups(p: &crate::model::RegionsParams) -> Option<CustomGroups> {
+    let groups = p.groups.as_ref()?;
+    let mut c = CustomGroups { n: groups.len().min(32), masks: [0; 32], offset: [0.0; 32] };
+    for (g, cells) in groups.iter().take(32).enumerate() {
+        for &cell in cells {
+            if (cell as usize) < GRID_LEDS {
+                c.masks[g] |= 1 << cell;
+            }
+        }
+        c.offset[g] = p.offset.as_ref().and_then(|o| o.get(g)).copied().unwrap_or(0.0);
+    }
+    Some(c)
+}
+
+/// Signed distance from a cell (offset from the shape centre) to a shape of
+/// half sizes `size` turned by `angle` degrees.
+pub fn shape_sd(kind: ShapeKind, dx: f64, dy: f64, size: (f64, f64), angle: f64) -> f64 {
+    use crate::shape::{metric, sd_rect, segment_distance, unrotate, Metric};
+    let (ux, uy) = unrotate(dx, dy, angle);
+    match kind {
+        ShapeKind::Circle => metric(Metric::Circle, dx, dy) - size.0,
+        ShapeKind::Diamond => metric(Metric::Diamond, ux, uy) - size.0,
+        ShapeKind::Rect => sd_rect(ux, uy, size.0, size.1),
+        ShapeKind::Line => segment_distance(ux, uy, -size.0, 0.0, size.0, 0.0),
+    }
+}
+
+/// The 28 border cells clockwise from the bottom-left, as a closed square (length 28).
+const PERIMETER: [(f64, f64); 5] = [(0.0, 0.0), (0.0, 7.0), (7.0, 7.0), (7.0, 0.0), (0.0, 0.0)];
+
+fn compile_path(p: &crate::model::PathParams, t: u64) -> Option<PathLook> {
+    let at = |v: &Option<crate::model::Param<f64>>, d: f64| v.as_ref().map(|x| x.at(t)).unwrap_or(d);
+    let kind = p.path.at(t);
+    let mut pts = [(0.0, 0.0); 32];
+    let n = match kind {
+        PathKind::Line => {
+            pts[0] = (at(&p.from_x, 0.0), at(&p.from_y, 0.0));
+            pts[1] = (at(&p.to_x, 7.0), at(&p.to_y, 7.0));
+            2
+        }
+        PathKind::Points => {
+            let src = p.points.as_ref()?;
+            for (o, s) in pts.iter_mut().zip(src.iter()) {
+                *o = (s[0], s[1]);
+            }
+            src.len().min(32)
+        }
+        PathKind::Perimeter => {
+            pts[..5].copy_from_slice(&PERIMETER);
+            5
+        }
+        PathKind::Orbit | PathKind::Figure8 => {
+            pts[0] = (at(&p.center_x, 3.5), at(&p.center_y, 3.5));
+            pts[1] = (at(&p.orbit_radius, 3.0), 0.0);
+            2
+        }
+    };
+    let mut look = PathLook {
+        color: col(&p.color, t)?,
+        kind,
+        pts,
+        n,
+        length: 0.0,
+        speed: p.speed.at(t),
+        size: p.size.at(t),
+        tail: p.tail.at(t),
+        looping: p.looping.at(t),
+        phase: p.phase.at(t),
+        mirror: p.mirror.at(t),
+    };
+    look.length = match kind {
+        PathKind::Orbit => TAU * pts[1].0,
+        // Figure eight: measured on 64 chords.
+        PathKind::Figure8 => (0..64).map(|i| dist2(path_point(&look, i as f64 / 64.0), path_point(&look, (i + 1) as f64 / 64.0))).sum(),
+        _ => polyline_len(&pts[..n]),
+    };
+    Some(look)
+}
+
+fn dist2(a: (f64, f64), b: (f64, f64)) -> f64 {
+    ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2)).sqrt()
+}
+
+fn polyline_len(pts: &[(f64, f64)]) -> f64 {
+    pts.windows(2).map(|w| dist2(w[0], w[1])).sum()
+}
+
+/// Point at fraction `u` (0..=1) of the path's length.
+fn path_point(l: &PathLook, u: f64) -> (f64, f64) {
+    match l.kind {
+        PathKind::Orbit => {
+            let (c, r) = (l.pts[0], l.pts[1].0);
+            (c.0 + r * (TAU * u).cos(), c.1 + r * (TAU * u).sin())
+        }
+        PathKind::Figure8 => {
+            let (c, w) = (l.pts[0], l.pts[1].0);
+            (c.0 + w * (TAU * u).sin(), c.1 + w / 2.0 * (2.0 * TAU * u).sin())
+        }
+        _ => {
+            let pts = &l.pts[..l.n];
+            let total = polyline_len(pts);
+            let mut d = u.clamp(0.0, 1.0) * total;
+            for w in pts.windows(2) {
+                let s = dist2(w[0], w[1]);
+                if d <= s && s > 0.0 {
+                    let f = d / s;
+                    return (w[0].0 + (w[1].0 - w[0].0) * f, w[0].1 + (w[1].1 - w[0].1) * f);
+                }
+                d -= s;
+            }
+            pts[pts.len() - 1]
+        }
+    }
+}
+
+/// Position after travelling `d` cells from the start (None before the start).
+fn path_at_distance(l: &PathLook, d: f64) -> Option<(f64, f64)> {
+    if d < 0.0 || l.length <= 0.0 {
+        return (l.length <= 0.0).then(|| path_point(l, 0.0));
+    }
+    let closed = matches!(l.kind, PathKind::Perimeter | PathKind::Orbit | PathKind::Figure8);
+    let len = l.length;
+    let u = match (closed, l.looping) {
+        (true, true) => (d / len).fract(),
+        (false, true) => {
+            // Back and forth: period 2 × length.
+            let x = d.rem_euclid(2.0 * len);
+            (if x <= len { x } else { 2.0 * len - x }) / len
+        }
+        (_, false) => (d / len).min(1.0),
+    };
+    Some(path_point(l, u))
+}
+
+/// The spot (radius `size`, linear edge) and its tail sampled back along the
+/// path, plus mirrored twins. A function of the local time only.
+fn paint_path(l: &PathLook, local_us: u64, alpha: f64, layer: &mut LayerFrame) {
+    let closed = matches!(l.kind, PathKind::Perimeter | PathKind::Orbit | PathKind::Figure8);
+    // Travelled distance in cells (closed paths: speed is laps per second).
+    let per_s = if closed { l.speed * l.length } else { l.speed };
+    let head = local_us as f64 / 1e6 * per_s + l.phase * l.length;
+    let steps = (l.tail * 3.0).ceil() as usize;
+    let mut cell_a = [0.0f64; GRID_LEDS];
+    for j in 0..=steps {
+        let back = if steps == 0 { 0.0 } else { l.tail * j as f64 / steps as f64 };
+        let Some(p) = path_at_distance(l, head - back) else { continue };
+        let fade = if l.tail > 0.0 { 1.0 - back / (l.tail + 1e-9) } else { 1.0 };
+        let twins = match l.mirror {
+            Mirror::None => [Some(p), None, None, None],
+            Mirror::X => [Some(p), Some((7.0 - p.0, p.1)), None, None],
+            Mirror::Y => [Some(p), Some((p.0, 7.0 - p.1)), None, None],
+            Mirror::Xy => [Some(p), Some((7.0 - p.0, p.1)), Some((p.0, 7.0 - p.1)), Some((7.0 - p.0, 7.0 - p.1))],
+        };
+        for q in twins.into_iter().flatten() {
+            for (i, a) in cell_a.iter_mut().enumerate() {
+                let d = crate::shape::metric(crate::shape::Metric::Circle, (i % GRID_W) as f64 - q.0, (i / GRID_W) as f64 - q.1);
+                let spot = (1.0 - d / l.size.max(1e-6)).max(0.0);
+                *a = a.max(spot * fade);
+            }
+        }
+    }
+    for (px, a) in layer.px.iter_mut().zip(cell_a) {
+        if a > 0.0 {
+            over(px, Rgba::from_color(l.color, (a * alpha) as f32));
+        }
     }
 }
 
@@ -1496,7 +1740,7 @@ mod tests {
     #[test]
     fn regions_step_by_beat_or_time_with_duty_soft_and_color_b() {
         let white = Rgb::new(1.0, 1.0, 1.0);
-        let mk = |mode, soft, duty, color_b| CompiledEffect::Regions { pattern: RegionPattern::HalvesLr, color: white, color_b, mode, step_beats: 1.0, step_s: 0.5, order: StepOrder::Forward, soft, duty };
+        let mk = |mode, soft, duty, color_b| CompiledEffect::Regions { pattern: RegionPattern::HalvesLr, color: white, color_b, mode, step_beats: 1.0, step_s: 0.5, order: StepOrder::Forward, soft, duty, custom: None };
         let hard = mk(StepMode::Beat, 0.0, 1.0, None);
         // Beat 0.x: left half; beat 1.x: right half; unknown beat: nothing.
         let a = alpha_grid(&hard, 0, Some(BeatState::new(0.3, 120.0)));
@@ -1716,6 +1960,114 @@ mod tests {
         // Age 0.5 s: speed 7.5 → head at 3.75 cells; age 1 s: speed 11 → head at 11 (tail off the board).
         assert_eq!(paint(500_000), Some(3));
         assert_eq!(paint(1_000_000), None);
+    }
+
+    fn compile_default(t: &str, f: impl FnOnce(&mut Effect)) -> CompiledEffect {
+        let mut e = crate::edit::default_effect(t).unwrap();
+        f(&mut e);
+        CompiledEffect::compile(&e).unwrap()
+    }
+
+    #[test]
+    fn regions_custom_groups_with_offsets() {
+        let e = compile_default("builtin.regions", |e| {
+            let Effect::Regions { params, .. } = e else { unreachable!() };
+            params.pattern = RegionPattern::Custom.into();
+            params.step_mode = StepMode::Seconds.into();
+            params.step_ms = 1000.into();
+            // Two groups sharing cell 9; the second is delayed half a step.
+            params.groups = Some(vec![vec![0, 9], vec![9, 63]]);
+            params.offset = Some(vec![0.0, 0.5]);
+        });
+        // 0.2 s: step 0 → group 0 (cells 0 and 9); group 1 is still in step -1 → (2 groups) group 1.
+        let a = alpha_grid(&e, 200_000, None);
+        assert_eq!((a[0], a[9]), (1.0, 1.0));
+        assert_eq!(a[63], 1.0, "group 1 delayed by 0.5: still lit from its previous step");
+        assert_eq!(a[5], 0.0, "cells in no group stay transparent");
+        // 0.7 s: group 0 (no delay) still lit; group 1 now at its step 0 (= group 0's turn) → dark.
+        let b = alpha_grid(&e, 700_000, None);
+        assert_eq!((b[0], b[63]), (1.0, 0.0));
+        assert_eq!(b[9], 1.0, "a cell in two groups takes the brightest");
+    }
+
+    #[test]
+    fn path_runs_along_its_path_with_tail_and_mirror() {
+        // Perimeter at 0.25 laps/s: 7 cells per second up the left edge from (0, 0).
+        let per = compile_default("builtin.path", |e| {
+            let Effect::Path { params, .. } = e else { unreachable!() };
+            params.tail = 0.0.into();
+            params.size = 0.5.into();
+        });
+        let a = alpha_grid(&per, 1_000_000 / 7 * 3, None); // 3 cells up
+        assert_eq!(a.iter().position(|v| *v > 0.9), Some(3 * 8), "at (0, 3)");
+        assert_eq!(alpha_grid(&per, 4_000_000, None), alpha_grid(&per, 0, None), "one lap in 4 s");
+        // A line without loop stops at its end; with loop it comes back.
+        let line = |looping: bool| {
+            compile_default("builtin.path", |e| {
+                let Effect::Path { params, .. } = e else { unreachable!() };
+                params.path = PathKind::Line.into();
+                params.from_x = Some(0.0.into());
+                params.from_y = Some(0.0.into());
+                params.to_x = Some(7.0.into());
+                params.to_y = Some(0.0.into());
+                params.speed = 7.0.into();
+                params.tail = 0.0.into();
+                params.size = 0.5.into();
+                params.looping = looping.into();
+            })
+        };
+        let lit = |e: &CompiledEffect, t| alpha_grid(e, t, None).iter().position(|v| *v > 0.9);
+        assert_eq!(lit(&line(false), 3_000_000), Some(7), "stopped at the end");
+        assert_eq!(lit(&line(true), 1_428_571), Some(4), "1 s out, 3/7 s back");
+        // Tail: cells behind the head fade; mirror x adds a twin at 7 - x.
+        let tailed = compile_default("builtin.path", |e| {
+            let Effect::Path { params, .. } = e else { unreachable!() };
+            params.path = PathKind::Line.into();
+            params.from_x = Some(0.0.into());
+            params.from_y = Some(0.0.into());
+            params.to_x = Some(7.0.into());
+            params.to_y = Some(0.0.into());
+            params.speed = 4.0.into();
+            params.tail = 3.0.into();
+            params.size = 0.5.into();
+            params.looping = false.into();
+            params.mirror = Mirror::Y.into();
+        });
+        let t = alpha_grid(&tailed, 1_000_000, None); // head at x = 4
+        assert!(t[4] > t[3] && t[3] > t[2] && t[2] > t[1], "{:?}", &t[..8]);
+        assert_eq!(t[7 * 8 + 4], t[4], "mirrored to the top row");
+    }
+
+    #[test]
+    fn shapes_fill_or_outline_and_turn() {
+        let shape = |kind: ShapeKind, fill: bool, angle: f64| {
+            compile_default("builtin.shape", |e| {
+                let Effect::Shape { params, .. } = e else { unreachable!() };
+                params.shape = kind.into();
+                params.fill = fill.into();
+                params.edge = 0.0.into();
+                params.size = 2.0.into();
+                params.size_y = Some(1.0.into());
+                params.center_x = 3.0.into();
+                params.center_y = 3.0.into();
+                params.angle = angle.into();
+            })
+        };
+        let filled = alpha_grid(&shape(ShapeKind::Circle, true, 0.0), 0, None);
+        assert_eq!((filled[3 * 8 + 3], filled[3 * 8 + 5], filled[3 * 8 + 6]), (1.0, 1.0, 0.0));
+        let ring = alpha_grid(&shape(ShapeKind::Circle, false, 0.0), 0, None);
+        assert_eq!((ring[3 * 8 + 3], ring[3 * 8 + 5]), (0.0, 1.0), "outline only");
+        // A 2 × 1 (half sizes) rect: wide when flat, tall when turned 90°.
+        let flat = alpha_grid(&shape(ShapeKind::Rect, true, 0.0), 0, None);
+        let tall = alpha_grid(&shape(ShapeKind::Rect, true, 90.0), 0, None);
+        assert_eq!((flat[3 * 8 + 5], flat[5 * 8 + 3]), (1.0, 0.0));
+        assert_eq!((tall[3 * 8 + 5], tall[5 * 8 + 3]), (0.0, 1.0));
+        let diamond = alpha_grid(&shape(ShapeKind::Diamond, true, 0.0), 0, None);
+        assert_eq!((diamond[4 * 8 + 4], diamond[5 * 8 + 4]), (1.0, 0.0), "|dx| + |dy| <= 2");
+        let line = alpha_grid(&shape(ShapeKind::Line, true, 0.0), 0, None);
+        assert_eq!((line[3 * 8 + 1], line[3 * 8 + 5], line[4 * 8 + 3]), (1.0, 1.0, 0.0), "a line is its stroke");
+        // The ripple ring shapes use the same metric as shape.
+        assert_eq!(shape_sd(ShapeKind::Diamond, 1.0, 1.0, (2.0, 2.0), 0.0), crate::shape::metric(ripple_metric(RippleShape::Diamond), 1.0, 1.0) - 2.0);
     }
 
     #[test]

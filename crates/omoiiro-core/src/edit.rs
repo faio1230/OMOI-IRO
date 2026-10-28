@@ -13,7 +13,7 @@
 //!   never reused within a show.
 
 use crate::model::{
-    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, TapGlowParams, Content, Effect, Layer, Loss, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
+    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Content, Effect, Layer, Loss, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
     StopBehavior, StrobeMode, StrobeParams, Sync, TriggerOn, TriggerSpec, Target, TimecodeSettings, TimecodeSource, Waveform, SCHEMA_VERSION,
 };
 use crate::surface::GRID64_PROFILE;
@@ -245,6 +245,45 @@ pub fn default_effect(effect_type: &str) -> Option<Effect> {
                 order: StepOrder::Forward.into(),
                 soft: 0.0.into(),
                 duty: 1.0.into(),
+                groups: None,
+                offset: None,
+            },
+        },
+        // A spot running round the border with a short tail.
+        "builtin.path" => Effect::Path {
+            version: 1,
+            params: PathParams {
+                color: "#FFFFFF".to_string().into(),
+                path: PathKind::Perimeter.into(),
+                points: None,
+                from_x: None,
+                from_y: None,
+                to_x: None,
+                to_y: None,
+                center_x: None,
+                center_y: None,
+                orbit_radius: None,
+                speed: 0.25.into(),
+                size: 1.0.into(),
+                tail: 3.0.into(),
+                looping: true.into(),
+                phase: 0.0.into(),
+                mirror: Mirror::None.into(),
+            },
+        },
+        "builtin.shape" => Effect::Shape {
+            version: 1,
+            params: ShapeParams {
+                shape: ShapeKind::Circle.into(),
+                color: "#FFFFFF".to_string().into(),
+                fill: true.into(),
+                stroke: 1.0.into(),
+                center_x: 3.5.into(),
+                center_y: 3.5.into(),
+                size: 3.0.into(),
+                size_y: None,
+                angle: 0.0.into(),
+                edge: 0.5.into(),
             },
         },
         "builtin.tap_glow" => Effect::TapGlow {

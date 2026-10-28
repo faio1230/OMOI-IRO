@@ -1,0 +1,295 @@
+{
+  "$schema": "../../schemas/show.schema.json",
+  "schema_version": "0.1.3",
+  "id": "paths-shapes-0-1-3",
+  "name": "0.1.3 の経路・図形・自由グループ（48・52・07 代替）",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "runner-regions",
+      "name": "48 外周ランナー（regions）",
+      "effect": {
+        "type": "builtin.regions",
+        "version": 1,
+        "params": {
+          "pattern": "perimeter",
+          "color": "#FF8020",
+          "step_mode": "beat",
+          "step_beats": 0.25,
+          "step_ms": 500,
+          "order": "forward",
+          "soft": 0.6,
+          "duty": 1
+        }
+      }
+    },
+    {
+      "id": "runner-path",
+      "name": "48 外周ランナー（path）",
+      "effect": {
+        "type": "builtin.path",
+        "version": 1,
+        "params": {
+          "color": "#FF8020",
+          "path": "perimeter",
+          "speed": 0.25,
+          "size": 1,
+          "tail": 4,
+          "loop": true,
+          "phase": 0,
+          "mirror": "none"
+        }
+      }
+    },
+    {
+      "id": "heads-figure8",
+      "name": "52 ムービングヘッド対",
+      "effect": {
+        "type": "builtin.path",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF",
+          "path": "figure8",
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "orbit_radius": 3,
+          "speed": 0.25,
+          "size": 1.25,
+          "tail": 3,
+          "loop": true,
+          "phase": 0,
+          "mirror": "x"
+        }
+      }
+    },
+    {
+      "id": "diamond-grow",
+      "name": "07 代替 広がるひし形",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "diamond",
+          "color": "#40C0FF",
+          "fill": false,
+          "stroke": 1,
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "size": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 0.5,
+                "ease": "ease_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": 6,
+                "ease": "linear"
+              }
+            ]
+          },
+          "angle": 0,
+          "edge": 0.5
+        }
+      }
+    },
+    {
+      "id": "corners",
+      "name": "自由グループ 四隅と中央",
+      "effect": {
+        "type": "builtin.regions",
+        "version": 1,
+        "params": {
+          "pattern": "custom",
+          "color": "#FF2060",
+          "color_b": "#100008",
+          "step_mode": "beat",
+          "step_beats": 1,
+          "step_ms": 500,
+          "order": "pingpong",
+          "soft": 0.5,
+          "duty": 1,
+          "groups": [
+            [
+              0,
+              1,
+              8,
+              9
+            ],
+            [
+              6,
+              7,
+              14,
+              15
+            ],
+            [
+              54,
+              55,
+              62,
+              63
+            ],
+            [
+              48,
+              49,
+              56,
+              57
+            ],
+            [
+              27,
+              28,
+              35,
+              36
+            ]
+          ],
+          "offset": [
+            0,
+            0,
+            0,
+            0,
+            0.5
+          ]
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "runner-regions",
+      "name": "48 外周ランナー（regions）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "runner-regions-1",
+            "preset_id": "runner-regions",
+            "start_us": 0,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "runner-path",
+      "name": "48 外周ランナー（path）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "runner-path-1",
+            "preset_id": "runner-path",
+            "start_us": 8000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "heads-figure8",
+      "name": "52 ムービングヘッド対",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "heads-figure8-1",
+            "preset_id": "heads-figure8",
+            "start_us": 16000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "diamond-grow",
+      "name": "07 代替 広がるひし形",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "diamond-grow-1",
+            "preset_id": "diamond-grow",
+            "start_us": 24000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "custom-groups",
+      "name": "自由グループ（四隅を回り中央へ・往復）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "max",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "custom-groups-1",
+            "preset_id": "corners",
+            "start_us": 32000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    }
+  ]
+}

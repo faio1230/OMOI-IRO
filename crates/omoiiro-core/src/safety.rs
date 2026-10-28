@@ -82,6 +82,8 @@ pub enum FlashSource {
     Grain { hz: f64 },
     /// Wave: `|speed| × 2` per cell. A warning only: never muted (continuous motion).
     Wave { hz: f64 },
+    /// Path: a spot passing a cell. A warning only, like Wave.
+    Path { hz: f64 },
     /// Regions stepping by time: one switch per step.
     Step { hz: f64 },
     /// Regions stepping on the beat (depends on the tempo).
@@ -94,7 +96,7 @@ impl FlashSource {
             FlashSource::Pulse { beats_per_cycle } | FlashSource::StrobeBeat { beats_per_cycle } => tempo_bpm / 60.0 / beats_per_cycle,
             FlashSource::StepBeat { beats_per_step } => tempo_bpm / 60.0 / beats_per_step,
             FlashSource::Step { hz } => *hz,
-            FlashSource::Chase { hz } | FlashSource::Strobe { hz } | FlashSource::Noise { hz } | FlashSource::Grain { hz } | FlashSource::Wave { hz } => *hz,
+            FlashSource::Chase { hz } | FlashSource::Strobe { hz } | FlashSource::Noise { hz } | FlashSource::Grain { hz } | FlashSource::Wave { hz } | FlashSource::Path { hz } => *hz,
         }
     }
 }
@@ -107,6 +109,10 @@ pub fn chase_hz(period_us: u64, width: u32) -> f64 {
 
 fn max(p: &Param<f64>) -> f64 {
     p.values().copied().fold(f64::MIN, f64::max)
+}
+
+fn max_abs(p: &Param<f64>) -> f64 {
+    p.values().map(|v| v.abs()).fold(0.0, f64::max)
 }
 
 fn min(p: &Param<f64>) -> f64 {
@@ -135,6 +141,18 @@ pub fn effect_flash(e: &Effect) -> Option<FlashSource> {
         Effect::Noise { params, .. } => Some(FlashSource::Noise { hz: max(&params.rate_hz) / 2.0 }),
         // Driven by pad presses, not by time: not judged statically.
         Effect::Ripple { .. } | Effect::TapGlow { .. } | Effect::Cross { .. } => None,
+        Effect::Shape { .. } => None,
+        // A spot passing a cell: (cells per second) / (spot diameter). A warning only.
+        Effect::Path { params, .. } => {
+            let length = |k: &crate::model::PathKind| match k {
+                crate::model::PathKind::Perimeter => 28.0,
+                crate::model::PathKind::Orbit => std::f64::consts::TAU * params.orbit_radius.as_ref().map(max).unwrap_or(3.0),
+                crate::model::PathKind::Figure8 => 6.1 * params.orbit_radius.as_ref().map(max).unwrap_or(3.0),
+                _ => 1.0,
+            };
+            let per_s = params.path.values().map(|k| max_abs(&params.speed) * length(k)).fold(0.0, f64::max);
+            Some(FlashSource::Path { hz: per_s / (2.0 * min(&params.size).max(0.5)) })
+        }
         Effect::Rain { params, .. } if max(&params.flicker) > 0.0 => Some(FlashSource::Grain { hz: 4.0 }),
         Effect::Rain { .. } => None,
         Effect::Wave { params, .. } => Some(FlashSource::Wave { hz: params.speed.values().map(|s| s.abs()).fold(0.0, f64::max) * 2.0 }),
@@ -192,7 +210,7 @@ impl FlashProfile {
     /// Highest flashing rate of each layer at `tempo_bpm` (0 = none). No allocation.
     pub fn layer_hz(&self, index: usize, tempo_bpm: f64) -> f64 {
         // Wave is continuous motion: warned about, never muted.
-        self.layers.get(index).map(|(_, _, e)| e.iter().filter(|x| !matches!(x.source, FlashSource::Wave { .. })).map(|x| x.source.hz(tempo_bpm)).fold(0.0, f64::max)).unwrap_or(0.0)
+        self.layers.get(index).map(|(_, _, e)| e.iter().filter(|x| !matches!(x.source, FlashSource::Wave { .. } | FlashSource::Path { .. })).map(|x| x.source.hz(tempo_bpm)).fold(0.0, f64::max)).unwrap_or(0.0)
     }
 
     pub fn warnings(&self, tempo_bpm: f64, max_hz: f64) -> Vec<FlashWarning> {
@@ -210,6 +228,7 @@ impl FlashProfile {
                         FlashSource::Step { .. } => ("regions", format!("領域ステップの切り替え {hz:.2} Hz（上限 {max_hz} Hz）")),
                         FlashSource::StepBeat { beats_per_step } => ("regions", format!("領域ステップ {beats_per_step} 拍ごと × {tempo_bpm:.1} bpm = {hz:.2} Hz（上限 {max_hz} Hz）")),
                         FlashSource::Grain { .. } => ("grain", format!("粒の揺らぎ {hz:.2} Hz（上限 {max_hz} Hz）")),
+                        FlashSource::Path { .. } => ("path", format!("経路の光点がセルを通る {hz:.2} Hz（警告のみ、消灯の対象外。上限 {max_hz} Hz）")),
                         FlashSource::Wave { .. } => ("wave", format!("Wave のセルから見た明滅 {hz:.2} Hz（警告のみ、消灯の対象外。上限 {max_hz} Hz）")),
                     };
                     out.push(FlashWarning {
@@ -376,6 +395,25 @@ mod tests {
         let w = p.warnings(120.0, 3.0);
         assert_eq!(w.len(), 1);
         assert_eq!((w[0].kind, w[0].hz), ("wave", 6.0));
+        assert_eq!(p.layer_hz(0, 120.0), 0.0, "not muted");
+    }
+
+    #[test]
+    fn path_is_warned_only_and_shape_never_flashes() {
+        use crate::edit::default_effect;
+        assert_eq!(effect_flash(&default_effect("builtin.shape").unwrap()), None);
+        // Perimeter (28 cells) at 1 lap/s with a 1-cell spot: 28 / 2 = 14 Hz seen by a cell.
+        let Effect::Path { version, mut params } = default_effect("builtin.path").unwrap() else { unreachable!() };
+        params.speed = 1.0.into();
+        assert_eq!(effect_flash(&Effect::Path { version, params: params.clone() }), Some(FlashSource::Path { hz: 14.0 }));
+        let mut s = demo();
+        s.presets.push(Preset { id: "path".into(), name: "速い経路".into(), effect: Effect::Path { version, params } });
+        if let Content::Timeline { clips } = &mut s.layers[0].content {
+            clips[0].preset_id = "path".into();
+        }
+        let p = FlashProfile::of(&s);
+        let w = p.warnings(120.0, 3.0);
+        assert_eq!((w.len(), w[0].kind, w[0].hz), (1, "path", 14.0));
         assert_eq!(p.layer_hz(0, 120.0), 0.0, "not muted");
     }
 

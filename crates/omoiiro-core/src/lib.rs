@@ -6,10 +6,12 @@
 //!   timecode labels with drop-frame rules, `BeatState`.
 //! * `surface`: bottom-left-origin LED IDs, colors, frames.
 //! * `timeline`: active clip search, local time, fades.
-//! * `render`: effects (solid, chase, pulse), compositing, the headless
+//! * `render`: effects (`builtin.*`), compositing, the headless
 //!   `Renderer`.
 //! * `validation`: semantic validation with JSON Pointers.
 //! * `safety`: brightness ceiling, flashing-rate analysis and warnings.
+//! * `shape`: signed distances and alpha of shapes on the grid (shared by
+//!   shape, path and ripple).
 //! * `edit`: edit commands (validated), snapping, Undo / Redo over snapshots.
 //!
 //! No midir, Tauri, OS clock, files or threads here. Rendering does no JSON
@@ -19,6 +21,7 @@ pub mod edit;
 pub mod model;
 pub mod render;
 pub mod safety;
+pub mod shape;
 pub mod surface;
 pub mod time;
 pub mod timeline;
