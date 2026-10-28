@@ -693,12 +693,14 @@ export function LayerInspector({ view, layer, apply }: { view: EditorView; layer
             <option value="max">max（明るい方）</option>
           </select>
         </label>
-        <label className="field">
-          <span>出力先</span>
-          <select value={layer.target_id} onChange={(e) => set({ target_id: e.target.value })}>
-            {view.targets.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
-        </label>
+        {layer.target_id !== "" && (
+          <label className="field">
+            <span>出力先</span>
+            <select value={layer.target_id} onChange={(e) => set({ target_id: e.target.value })}>
+              {view.targets.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
+        )}
         {layer.kind === "triggered" && layer.trigger && <TriggerFields layer={layer} trigger={layer.trigger} apply={apply} />}
         <MaskFields layer={layer} apply={apply} />
         {layer.kind === "continuous" && (

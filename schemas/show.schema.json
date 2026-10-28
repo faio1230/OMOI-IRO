@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://omoi-iro.invalid/schemas/show.schema.json",
   "title": "OMOI-IRO Show 0.1.3",
-  "description": "Show file schema. Cross-reference, ID uniqueness, drop-frame and interval checks require semantic validation. 0.1.0, 0.1.1 and 0.1.2 files are read by migration (version only; 0.1.3 adds the triggered layer, keyframed effect parameters, regions custom, builtin.path, builtin.shape (with wipe and invert) layer masks and builtin.particles; 0.1.2 adds builtin.strobe, builtin.noise, builtin.ripple, builtin.rain, builtin.wave, builtin.orb, builtin.regions, builtin.tap_glow, builtin.cross and the optional chase reverse, ripple shape / interval trigger, wave phase and orb orbit_phase).",
+  "description": "Show file schema. Cross-reference, ID uniqueness, drop-frame and interval checks require semantic validation. 0.1.0, 0.1.1 and 0.1.2 files are read by migration (version only; 0.1.3 adds the triggered layer, keyframed effect parameters, regions custom, builtin.path, builtin.shape (with wipe and invert) layer masks, builtin.particles and compounds; 0.1.2 adds builtin.strobe, builtin.noise, builtin.ripple, builtin.rain, builtin.wave, builtin.orb, builtin.regions, builtin.tap_glow, builtin.cross and the optional chase reverse, ripple shape / interval trigger, wave phase and orb orbit_phase).",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -61,6 +61,13 @@
       },
       "minItems": 1,
       "maxItems": 256
+    },
+    "compounds": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/compound"
+      },
+      "maxItems": 64
     },
     "layers": {
       "type": "array",
@@ -2567,7 +2574,6 @@
       "additionalProperties": false,
       "required": [
         "id",
-        "preset_id",
         "start_us",
         "duration_us",
         "fade_in_us",
@@ -2593,8 +2599,45 @@
         },
         "fade_out_us": {
           "$ref": "#/$defs/timeUs"
+        },
+        "compound_id": {
+          "$ref": "#/$defs/id"
+        },
+        "tint": {
+          "$ref": "#/$defs/color"
+        },
+        "time_scale": {
+          "type": "number",
+          "minimum": 0.25,
+          "maximum": 4
+        },
+        "loop": {
+          "type": "boolean"
         }
-      }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "preset_id"
+          ],
+          "not": {
+            "required": [
+              "compound_id"
+            ]
+          }
+        },
+        {
+          "required": [
+            "compound_id"
+          ],
+          "not": {
+            "required": [
+              "preset_id"
+            ]
+          }
+        }
+      ],
+      "description": "A preset clip (preset_id) or, 0.1.3, a compound clip (compound_id with optional tint, time_scale and loop)."
     },
     "content": {
       "type": "object",
@@ -2708,7 +2751,6 @@
       "required": [
         "id",
         "name",
-        "target_id",
         "enabled",
         "opacity",
         "blend",
@@ -2743,7 +2785,8 @@
         "mask": {
           "$ref": "#/$defs/mask"
         }
-      }
+      },
+      "description": "target_id is required on the show's layers (semantic check) and absent on a compound's inner layers."
     },
     "trigger": {
       "type": "object",
@@ -2944,6 +2987,37 @@
               "$ref": "#/$defs/keyframes"
             }
           ]
+        }
+      }
+    },
+    "compound": {
+      "description": "0.1.3: several layers and their timing as one material, placed by clips with compound_id.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "layers"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/name"
+        },
+        "duration_us": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/layer"
+          },
+          "minItems": 1,
+          "maxItems": 4
         }
       }
     }

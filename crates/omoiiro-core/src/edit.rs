@@ -13,7 +13,7 @@
 //!   never reused within a show.
 
 use crate::model::{
-    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Content, Effect, EdgeMode, Layer, LayerMask, Loss, ParticleMode, ParticlesParams, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
+    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Compound, Content, Effect, EdgeMode, Layer, LayerMask, Loss, ParticleMode, ParticlesParams, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
     StopBehavior, StrobeMode, StrobeParams, Sync, TriggerOn, TriggerSpec, Target, TimecodeSettings, TimecodeSource, Waveform, SCHEMA_VERSION,
 };
 use crate::surface::GRID64_PROFILE;
@@ -105,6 +105,21 @@ pub enum EditCommand {
     SetLayerTrigger { layer_id: String, trigger: TriggerSpec },
     /// 0.1.3: set or clear a layer's mask (any layer kind).
     SetLayerMask { layer_id: String, mask: Option<LayerMask> },
+    /// 0.1.3 stage 6: new compound (one empty inner timeline layer, 4 s).
+    AddCompound { name: String },
+    /// Rename / set the own length (`duration_us` 0 = the latest inner clip end).
+    SetCompound { compound_id: String, name: Option<String>, duration_us: Option<u64> },
+    /// Refused while any clip places it (the reason lists them).
+    DeleteCompound { compound_id: String },
+    /// New inner layer on top: continuous with `preset_id`, else a timeline.
+    AddCompoundLayer { compound_id: String, name: String, preset_id: Option<String> },
+    /// Place a compound on a timeline layer (`duration_us` absent = its length).
+    AddCompoundClip { layer_id: String, compound_id: String, start_us: i64, duration_us: Option<i64> },
+    /// Tint ("" = none), time scale (1 = none) and loop of a compound clip.
+    SetCompoundClip { clip_id: String, tint: Option<String>, time_scale: Option<f64>, looping: Option<bool> },
+    /// Copy a compound clip out into independent layers above its layer
+    /// (refused unless its time scale is 1: effect speeds cannot be scaled).
+    DetachCompoundClip { clip_id: String },
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -158,6 +173,7 @@ pub fn new_show(name: &str) -> Show {
         preview: Preview { bpm: 120.0 },
         targets: vec![Target { id: "main-pad".into(), name: "Launchpad X".into(), profile: GRID64_PROFILE.into() }],
         presets: vec![Preset { id: "preset-white".into(), name: "白".into(), effect: default_effect("builtin.solid").expect("solid") }],
+        compounds: Vec::new(),
         layers: Vec::new(),
     }
 }
@@ -370,7 +386,7 @@ pub fn default_effect(effect_type: &str) -> Option<Effect> {
 pub fn preset_users(show: &Show, preset_id: &str) -> (Vec<String>, Vec<String>) {
     let mut clips = Vec::new();
     let mut layers = Vec::new();
-    for l in &show.layers {
+    for l in all_layers(show) {
         match &l.content {
             Content::Timeline { clips: cs } | Content::Triggered { clips: cs, .. } => clips.extend(cs.iter().filter(|c| c.preset_id == preset_id).map(|c| c.id.clone())),
             Content::Continuous { preset_id: p } if p == preset_id => layers.push(l.id.clone()),
@@ -406,6 +422,13 @@ impl EditCommand {
             EditCommand::AddTriggeredLayer { .. } => "発火レイヤーを追加",
             EditCommand::SetLayerTrigger { .. } => "発火の設定",
             EditCommand::SetLayerMask { .. } => "マスクの設定",
+            EditCommand::AddCompound { .. } => "素材を追加",
+            EditCommand::SetCompound { .. } => "素材の設定",
+            EditCommand::DeleteCompound { .. } => "素材を削除",
+            EditCommand::AddCompoundLayer { .. } => "素材にレイヤーを追加",
+            EditCommand::AddCompoundClip { .. } => "素材を置く",
+            EditCommand::SetCompoundClip { .. } => "素材の色と速さ",
+            EditCommand::DetachCompoundClip { .. } => "素材を展開して独立",
         }
     }
 }
@@ -442,26 +465,52 @@ pub struct EditOutcome {
     pub clip_id: Option<String>,
     pub layer_id: Option<String>,
     pub preset_id: Option<String>,
+    pub compound_id: Option<String>,
 }
 
 fn non_negative(name: &str, v: i64) -> Result<u64, EditError> {
     u64::try_from(v).map_err(|_| EditError::Invalid(format!("{name} must be >= 0 (got {v})")))
 }
 
+/// Every layer: the show's, then the inner layers of the compounds.
+fn all_layers(show: &Show) -> impl Iterator<Item = &Layer> {
+    show.layers.iter().chain(show.compounds.iter().flat_map(|c| c.layers.iter()))
+}
+
+fn all_layer_ids(show: &Show) -> impl Iterator<Item = &str> {
+    all_layers(show).map(|l| l.id.as_str())
+}
+
+/// The list holding a layer (the show's or a compound's) and its index there.
+fn layer_list_mut<'a>(show: &'a mut Show, layer_id: &str) -> Result<(&'a mut Vec<Layer>, usize), EditError> {
+    let lists = std::iter::once(&mut show.layers).chain(show.compounds.iter_mut().map(|c| &mut c.layers));
+    for list in lists {
+        if let Some(i) = list.iter().position(|l| l.id == layer_id) {
+            return Ok((list, i));
+        }
+    }
+    Err(EditError::NotFound(format!("layer {layer_id:?}")))
+}
+
+fn layer_mut<'a>(show: &'a mut Show, layer_id: &str) -> Result<&'a mut Layer, EditError> {
+    let (list, i) = layer_list_mut(show, layer_id)?;
+    Ok(&mut list[i])
+}
+
 fn clips_mut<'a>(show: &'a mut Show, layer_id: &str) -> Result<&'a mut Vec<Clip>, EditError> {
-    let layer = show.layers.iter_mut().find(|l| l.id == layer_id).ok_or_else(|| EditError::NotFound(format!("layer {layer_id:?}")))?;
+    let layer = layer_mut(show, layer_id)?;
     match layer.content.clips_mut() {
         Some(clips) => Ok(clips),
         None => Err(EditError::Invalid(format!("layer {layer_id:?} is continuous, not a timeline"))),
     }
 }
 
-/// (layer index, clip index) of a clip.
-fn find_clip(show: &Show, clip_id: &str) -> Result<(usize, usize), EditError> {
-    for (li, l) in show.layers.iter().enumerate() {
+/// (layer id, clip index) of a clip, in the show's layers or a compound's.
+fn find_clip(show: &Show, clip_id: &str) -> Result<(String, usize), EditError> {
+    for l in all_layers(show) {
         if let Some(clips) = l.content.clips() {
             if let Some(ci) = clips.iter().position(|c| c.id == clip_id) {
-                return Ok((li, ci));
+                return Ok((l.id.clone(), ci));
             }
         }
     }
@@ -469,7 +518,7 @@ fn find_clip(show: &Show, clip_id: &str) -> Result<(usize, usize), EditError> {
 }
 
 fn all_clip_ids(show: &Show) -> impl Iterator<Item = &str> {
-    show.layers.iter().flat_map(|l| match l.content.clips() {
+    all_layers(show).flat_map(|l| match l.content.clips() {
         Some(clips) => clips.iter().map(|c| c.id.as_str()).collect::<Vec<_>>(),
         None => Vec::new(),
     })
@@ -500,15 +549,14 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
                 return Err(EditError::Invalid("duration must be > 0".into()));
             }
             let id = fresh_id("clip", all_clip_ids(&s));
-            let clip = Clip { id: id.clone(), preset_id: preset_id.clone(), start_us: at(*start_us), duration_us: duration, fade_in_us: 0, fade_out_us: 0 };
+            let clip = Clip { id: id.clone(), preset_id: preset_id.clone(), start_us: at(*start_us), duration_us: duration, ..Default::default() };
             clips_mut(&mut s, layer_id)?.push(clip);
             out.clip_id = Some(id);
             out.layer_id = Some(layer_id.clone());
         }
         EditCommand::MoveClip { clip_id, start_us, to_layer_id } => {
             non_negative("start_us", *start_us)?;
-            let (li, ci) = find_clip(&s, clip_id)?;
-            let from_layer = s.layers[li].id.clone();
+            let (from_layer, ci) = find_clip(&s, clip_id)?;
             let target = to_layer_id.clone().unwrap_or(from_layer.clone());
             let mut clip = clips_mut(&mut s, &from_layer)?.remove(ci);
             clip.start_us = at(*start_us);
@@ -525,8 +573,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             if d == 0 {
                 return Err(EditError::Invalid("duration must be > 0".into()));
             }
-            let (li, ci) = find_clip(&s, clip_id)?;
-            let lid = s.layers[li].id.clone();
+            let (lid, ci) = find_clip(&s, clip_id)?;
             let c = &mut clips_mut(&mut s, &lid)?[ci];
             c.duration_us = d;
             fit_fades(c);
@@ -535,8 +582,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
         EditCommand::SetClipTiming { clip_id, start_us, duration_us, fade_in_us, fade_out_us } => {
             let (start, duration) = (non_negative("start_us", *start_us)?, non_negative("duration_us", *duration_us)?);
             let (fi, fo) = (non_negative("fade_in_us", *fade_in_us)?, non_negative("fade_out_us", *fade_out_us)?);
-            let (li, ci) = find_clip(&s, clip_id)?;
-            let lid = s.layers[li].id.clone();
+            let (lid, ci) = find_clip(&s, clip_id)?;
             let c = &mut clips_mut(&mut s, &lid)?[ci];
             // Numeric input: snapped like drags, fades kept as typed (validation reports misfits).
             c.start_us = at(start as i64);
@@ -546,8 +592,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             out.clip_id = Some(clip_id.clone());
         }
         EditCommand::DuplicateClip { clip_id, start_us } => {
-            let (li, ci) = find_clip(&s, clip_id)?;
-            let lid = s.layers[li].id.clone();
+            let (lid, ci) = find_clip(&s, clip_id)?;
             let id = fresh_id("clip", all_clip_ids(&s));
             let clips = clips_mut(&mut s, &lid)?;
             let mut copy = clips[ci].clone();
@@ -561,14 +606,13 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             out.layer_id = Some(lid);
         }
         EditCommand::DeleteClip { clip_id } => {
-            let (li, ci) = find_clip(&s, clip_id)?;
-            let lid = s.layers[li].id.clone();
+            let (lid, ci) = find_clip(&s, clip_id)?;
             clips_mut(&mut s, &lid)?.remove(ci);
             out.layer_id = Some(lid);
         }
         EditCommand::AddLayer { name, index } => {
             let target_id = s.targets.first().map(|t| t.id.clone()).ok_or_else(|| EditError::Invalid("the show has no target".into()))?;
-            let id = fresh_id("layer", s.layers.iter().map(|l| l.id.as_str()));
+            let id = fresh_id("layer", all_layer_ids(&s));
             let name = if name.trim().is_empty() { id.clone() } else { name.trim().to_string() };
             let layer = Layer { id: id.clone(), name, target_id, enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Timeline { clips: Vec::new() }, mask: None };
             let i = index.unwrap_or(s.layers.len()).min(s.layers.len());
@@ -577,7 +621,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
         }
         EditCommand::AddTriggeredLayer { name, on, index } => {
             let target_id = s.targets.first().map(|t| t.id.clone()).ok_or_else(|| EditError::Invalid("the show has no target".into()))?;
-            let id = fresh_id("layer", s.layers.iter().map(|l| l.id.as_str()));
+            let id = fresh_id("layer", all_layer_ids(&s));
             let name = if name.trim().is_empty() { id.clone() } else { name.trim().to_string() };
             let interval_ms = (*on == TriggerOn::Interval).then_some(1000);
             let trigger = TriggerSpec { on: *on, interval_ms, origin_x: None, origin_y: None };
@@ -587,7 +631,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             out.layer_id = Some(id);
         }
         EditCommand::SetLayerTrigger { layer_id, trigger } => {
-            let l = s.layers.iter_mut().find(|l| &l.id == layer_id).ok_or_else(|| EditError::NotFound(format!("layer {layer_id:?}")))?;
+            let l = layer_mut(&mut s, layer_id)?;
             match &mut l.content {
                 Content::Triggered { trigger: t, .. } => *t = trigger.clone(),
                 _ => return Err(EditError::Invalid(format!("layer {layer_id:?} is not a triggered layer"))),
@@ -595,22 +639,22 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             out.layer_id = Some(layer_id.clone());
         }
         EditCommand::SetLayerMask { layer_id, mask } => {
-            let l = s.layers.iter_mut().find(|l| &l.id == layer_id).ok_or_else(|| EditError::NotFound(format!("layer {layer_id:?}")))?;
+            let l = layer_mut(&mut s, layer_id)?;
             l.mask = mask.clone();
             out.layer_id = Some(layer_id.clone());
         }
         EditCommand::DeleteLayer { layer_id } => {
-            let i = s.layers.iter().position(|l| &l.id == layer_id).ok_or_else(|| EditError::NotFound(format!("layer {layer_id:?}")))?;
-            s.layers.remove(i);
+            let (list, i) = layer_list_mut(&mut s, layer_id)?;
+            list.remove(i);
         }
         EditCommand::MoveLayer { layer_id, to_index } => {
-            let i = s.layers.iter().position(|l| &l.id == layer_id).ok_or_else(|| EditError::NotFound(format!("layer {layer_id:?}")))?;
-            let l = s.layers.remove(i);
-            s.layers.insert((*to_index).min(s.layers.len()), l);
+            let (list, i) = layer_list_mut(&mut s, layer_id)?;
+            let l = list.remove(i);
+            list.insert((*to_index).min(list.len()), l);
             out.layer_id = Some(layer_id.clone());
         }
         EditCommand::SetLayer { layer_id, name, enabled, opacity, blend, target_id } => {
-            let l = s.layers.iter_mut().find(|l| &l.id == layer_id).ok_or_else(|| EditError::NotFound(format!("layer {layer_id:?}")))?;
+            let l = layer_mut(&mut s, layer_id)?;
             if let Some(n) = name {
                 l.name = n.trim().to_string();
             }
@@ -630,7 +674,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
         }
         EditCommand::AddContinuousLayer { name, preset_id, index } => {
             let target_id = s.targets.first().map(|t| t.id.clone()).ok_or_else(|| EditError::Invalid("the show has no target".into()))?;
-            let id = fresh_id("layer", s.layers.iter().map(|l| l.id.as_str()));
+            let id = fresh_id("layer", all_layer_ids(&s));
             let name = if name.trim().is_empty() { id.clone() } else { name.trim().to_string() };
             let layer = Layer { id: id.clone(), name, target_id, enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Continuous { preset_id: preset_id.clone() }, mask: None };
             let i = index.unwrap_or(s.layers.len()).min(s.layers.len());
@@ -638,7 +682,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             out.layer_id = Some(id);
         }
         EditCommand::SetLayerPreset { layer_id, preset_id } => {
-            let l = s.layers.iter_mut().find(|l| &l.id == layer_id).ok_or_else(|| EditError::NotFound(format!("layer {layer_id:?}")))?;
+            let l = layer_mut(&mut s, layer_id)?;
             match &mut l.content {
                 Content::Continuous { preset_id: p } => *p = preset_id.clone(),
                 Content::Timeline { .. } | Content::Triggered { .. } => return Err(EditError::Invalid(format!("layer {layer_id:?} has clips; set the preset per clip"))),
@@ -689,15 +733,13 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             s.presets.push(p);
         }
         EditCommand::SetClipPreset { clip_id, preset_id } => {
-            let (li, ci) = find_clip(&s, clip_id)?;
-            let lid = s.layers[li].id.clone();
+            let (lid, ci) = find_clip(&s, clip_id)?;
             clips_mut(&mut s, &lid)?[ci].preset_id = preset_id.clone();
             out.clip_id = Some(clip_id.clone());
             out.preset_id = Some(preset_id.clone());
         }
         EditCommand::EditClipEffect { clip_id, effect } => {
-            let (li, ci) = find_clip(&s, clip_id)?;
-            let lid = s.layers[li].id.clone();
+            let (lid, ci) = find_clip(&s, clip_id)?;
             let pid = clips_mut(&mut s, &lid)?[ci].preset_id.clone();
             let (clips, layers) = preset_users(&s, &pid);
             let shared = clips.len() + layers.len() > 1;
@@ -715,6 +757,156 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             p.effect = effect.clone();
             out.clip_id = Some(clip_id.clone());
             out.preset_id = Some(target);
+        }
+        EditCommand::AddCompound { name } => {
+            let id = fresh_id("compound", s.compounds.iter().map(|c| c.id.as_str()));
+            let layer_id = fresh_id("layer", all_layer_ids(&s));
+            let name = if name.trim().is_empty() { id.clone() } else { name.trim().to_string() };
+            let layer = Layer { id: layer_id.clone(), name: "1".into(), target_id: String::new(), enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Timeline { clips: Vec::new() }, mask: None };
+            s.compounds.push(Compound { id: id.clone(), name, duration_us: Some(4_000_000), layers: vec![layer] });
+            out.compound_id = Some(id);
+            out.layer_id = Some(layer_id);
+        }
+        EditCommand::SetCompound { compound_id, name, duration_us } => {
+            let c = s.compounds.iter_mut().find(|c| &c.id == compound_id).ok_or_else(|| EditError::NotFound(format!("compound {compound_id:?}")))?;
+            if let Some(n) = name {
+                c.name = n.trim().to_string();
+            }
+            if let Some(d) = duration_us {
+                c.duration_us = (*d > 0).then_some(*d);
+            }
+            out.compound_id = Some(compound_id.clone());
+        }
+        EditCommand::DeleteCompound { compound_id } => {
+            let i = s.compounds.iter().position(|c| &c.id == compound_id).ok_or_else(|| EditError::NotFound(format!("compound {compound_id:?}")))?;
+            let users: Vec<&str> = all_layers(&s).flat_map(|l| l.content.clips().into_iter().flatten()).filter(|c| c.compound_id.as_ref() == Some(compound_id)).map(|c| c.id.as_str()).collect();
+            if !users.is_empty() {
+                return Err(EditError::Invalid(format!("素材 {compound_id:?} は使用中のため削除できない（クリップ {}）", users.join(", "))));
+            }
+            s.compounds.remove(i);
+        }
+        EditCommand::AddCompoundLayer { compound_id, name, preset_id } => {
+            let id = fresh_id("layer", all_layer_ids(&s));
+            let c = s.compounds.iter_mut().find(|c| &c.id == compound_id).ok_or_else(|| EditError::NotFound(format!("compound {compound_id:?}")))?;
+            let name = if name.trim().is_empty() { (c.layers.len() + 1).to_string() } else { name.trim().to_string() };
+            let content = match preset_id {
+                Some(p) => Content::Continuous { preset_id: p.clone() },
+                None => Content::Timeline { clips: Vec::new() },
+            };
+            c.layers.push(Layer { id: id.clone(), name, target_id: String::new(), enabled: true, opacity: 1.0, blend: Blend::Over, content, mask: None });
+            out.compound_id = Some(compound_id.clone());
+            out.layer_id = Some(id);
+        }
+        EditCommand::AddCompoundClip { layer_id, compound_id, start_us, duration_us } => {
+            non_negative("start_us", *start_us)?;
+            let length = s.compounds.iter().find(|c| &c.id == compound_id).ok_or_else(|| EditError::NotFound(format!("compound {compound_id:?}")))?.length_us();
+            let duration = match duration_us {
+                Some(d) => at(non_negative("duration_us", *d)? as i64),
+                None => length,
+            };
+            if duration == 0 {
+                return Err(EditError::Invalid("duration must be > 0".into()));
+            }
+            let id = fresh_id("clip", all_clip_ids(&s));
+            let clip = Clip { id: id.clone(), compound_id: Some(compound_id.clone()), start_us: at(*start_us), duration_us: duration, ..Default::default() };
+            clips_mut(&mut s, layer_id)?.push(clip);
+            out.clip_id = Some(id);
+            out.layer_id = Some(layer_id.clone());
+            out.compound_id = Some(compound_id.clone());
+        }
+        EditCommand::SetCompoundClip { clip_id, tint, time_scale, looping } => {
+            let (lid, ci) = find_clip(&s, clip_id)?;
+            let c = &mut clips_mut(&mut s, &lid)?[ci];
+            if c.compound_id.is_none() {
+                return Err(EditError::Invalid(format!("clip {clip_id:?} does not place a compound")));
+            }
+            if let Some(tint) = tint {
+                c.tint = (!tint.is_empty()).then(|| tint.to_uppercase());
+            }
+            if let Some(k) = time_scale {
+                c.time_scale = (*k != 1.0).then_some(*k);
+            }
+            if let Some(l) = looping {
+                c.looping = l.then_some(true);
+            }
+            out.clip_id = Some(clip_id.clone());
+        }
+        EditCommand::DetachCompoundClip { clip_id } => {
+            let (lid, ci) = find_clip(&s, clip_id)?;
+            let li = s.layers.iter().position(|l| l.id == lid).ok_or_else(|| EditError::Invalid(format!("clip {clip_id:?} is inside a compound")))?;
+            let clip = clips_mut(&mut s, &lid)?[ci].clone();
+            let cid = clip.compound_id.clone().ok_or_else(|| EditError::Invalid(format!("clip {clip_id:?} does not place a compound")))?;
+            if clip.time_scale.is_some_and(|k| k != 1.0) {
+                return Err(EditError::Invalid("速さ（time_scale）が 1 以外の素材は展開できない。効果そのものの速さ（流れの周期や雨の速さ）は縮尺できず、見た目が変わるため。先に速さを 1 に戻す".into()));
+            }
+            let cp = s.compounds.iter().find(|c| c.id == cid).cloned().ok_or_else(|| EditError::NotFound(format!("compound {cid:?}")))?;
+            let outer = s.layers[li].clone();
+            let length = cp.length_us().max(1);
+            let reps = if clip.looping.unwrap_or(false) { clip.duration_us.div_ceil(length) } else { 1 };
+            // Tinted presets are copied once each.
+            let mut copies: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+            let mut preset_for = |s: &mut Show, pid: &str| -> String {
+                let (Some(tint), Some(rgb)) = (&clip.tint, clip.tint.as_deref().and_then(crate::surface::Rgb::from_hex)) else { return pid.to_string() };
+                if let Some(id) = copies.get(pid) {
+                    return id.clone();
+                }
+                let Some(orig) = s.presets.iter().find(|p| p.id == pid).cloned() else { return pid.to_string() };
+                let id = fresh_id(&format!("{pid}-tint"), s.presets.iter().map(|p| p.id.as_str()));
+                s.presets.push(Preset { id: id.clone(), name: format!("{}（{tint}）", orig.name), effect: crate::render::tinted(&orig.effect, rgb) });
+                copies.insert(pid.to_string(), id.clone());
+                id
+            };
+            let mut used_layers: Vec<String> = all_layer_ids(&s).map(str::to_string).collect();
+            let mut used_clips: Vec<String> = all_clip_ids(&s).map(str::to_string).collect();
+            let mut new_layers = Vec::new();
+            for il in &cp.layers {
+                let mut clips = Vec::new();
+                for r in 0..reps {
+                    let base = r * length;
+                    // Inner windows (start, end, preset, fades) of this repetition, in clip time.
+                    let windows: Vec<(u64, u64, String, u64, u64)> = match &il.content {
+                        Content::Continuous { preset_id } => vec![(base, base + length, preset_id.clone(), 0, 0)],
+                        _ => il.content.clips().into_iter().flatten().filter(|c| c.start_us < length).map(|c| (base + c.start_us, base + c.end_us().min(length), c.preset_id.clone(), c.fade_in_us, c.fade_out_us)).collect(),
+                    };
+                    for (a, b, pid, fi, fo) in windows {
+                        let b = b.min(clip.duration_us);
+                        if a >= b {
+                            continue;
+                        }
+                        let id = fresh_id("clip", used_clips.iter().map(String::as_str));
+                        used_clips.push(id.clone());
+                        let preset_id = preset_for(&mut s, &pid);
+                        let mut c = Clip { id, preset_id, start_us: clip.start_us + a, duration_us: b - a, fade_in_us: fi, fade_out_us: fo, ..Default::default() };
+                        // The placing clip's fades go to the pieces at its ends.
+                        if a == 0 {
+                            c.fade_in_us = c.fade_in_us.max(clip.fade_in_us);
+                        }
+                        if b == clip.duration_us {
+                            c.fade_out_us = c.fade_out_us.max(clip.fade_out_us);
+                        }
+                        fit_fades(&mut c);
+                        clips.push(c);
+                    }
+                }
+                let id = fresh_id("layer", used_layers.iter().map(String::as_str));
+                used_layers.push(id.clone());
+                new_layers.push(Layer {
+                    id,
+                    name: format!("{} / {}", cp.name, il.name),
+                    target_id: outer.target_id.clone(),
+                    enabled: il.enabled && outer.enabled,
+                    opacity: il.opacity * outer.opacity,
+                    blend: il.blend,
+                    content: Content::Timeline { clips },
+                    mask: il.mask.clone(),
+                });
+            }
+            clips_mut(&mut s, &lid)?.remove(ci);
+            out.layer_id = new_layers.first().map(|l| l.id.clone());
+            for (k, l) in new_layers.into_iter().enumerate() {
+                s.layers.insert(li + 1 + k, l);
+            }
+            out.compound_id = Some(cid);
         }
         EditCommand::SetSync { beat_source, mtc_output_enabled } => {
             if let Some(b) = beat_source {
@@ -842,8 +1034,8 @@ mod tests {
     }
 
     fn clip<'a>(s: &'a Show, id: &str) -> &'a Clip {
-        let (li, ci) = find_clip(s, id).unwrap();
-        match &s.layers[li].content {
+        let (lid, ci) = find_clip(s, id).unwrap();
+        match &all_layers(s).find(|l| l.id == lid).unwrap().content {
             Content::Timeline { clips } => &clips[ci],
             _ => unreachable!(),
         }
@@ -870,7 +1062,7 @@ mod tests {
         assert_eq!((clip(&s, &id).start_us, clip(&s, &id).duration_us), (61_000_000, 4_000_000));
 
         let (s, _) = apply(&s, &EditCommand::MoveClip { clip_id: id.clone(), start_us: 70_000_000, to_layer_id: Some("motion".into()) }, Snap::None).unwrap();
-        assert_eq!(find_clip(&s, &id).unwrap().0, 1, "moved to the motion layer");
+        assert_eq!(find_clip(&s, &id).unwrap().0, s.layers[1].id, "moved to the motion layer");
         let (s, _) = apply(&s, &EditCommand::SetClipTiming { clip_id: id.clone(), start_us: 70_000_000, duration_us: 2_000_000, fade_in_us: 1_500_000, fade_out_us: 0 }, Snap::None).unwrap();
         let (s, _) = apply(&s, &EditCommand::ResizeClip { clip_id: id.clone(), duration_us: 1_000_000 }, Snap::None).unwrap();
         assert_eq!(clip(&s, &id).fade_in_us, 1_000_000, "fades are fitted into a shorter clip");
@@ -1037,6 +1229,40 @@ mod tests {
         let bad = TriggerSpec { on: TriggerOn::Interval, interval_ms: None, origin_x: None, origin_y: None };
         assert!(matches!(apply(&s, &EditCommand::SetLayerTrigger { layer_id: layer, trigger: bad.clone() }, Snap::None), Err(EditError::Rejected(_))));
         assert!(matches!(apply(&s, &EditCommand::SetLayerTrigger { layer_id: "base".into(), trigger: bad }, Snap::None), Err(EditError::Invalid(_))));
+    }
+
+    #[test]
+    fn compounds_are_built_placed_edited_and_detached() {
+        let s = demo();
+        let (s, o) = apply(&s, &EditCommand::AddCompound { name: "素材".into() }, Snap::None).unwrap();
+        let (cp, inner) = (o.compound_id.unwrap(), o.layer_id.unwrap());
+        // Inner layers take clips with the usual commands (IDs are show-wide).
+        let (s, _) = apply(&s, &EditCommand::AddClip { layer_id: inner.clone(), preset_id: "sweep-cyan".into(), start_us: 500_000, duration_us: 1_000_000 }, Snap::None).unwrap();
+        let (s, _) = apply(&s, &EditCommand::AddCompoundLayer { compound_id: cp.clone(), name: "".into(), preset_id: Some("base-blue".into()) }, Snap::None).unwrap();
+        let (s, o) = apply(&s, &EditCommand::AddCompoundClip { layer_id: "motion".into(), compound_id: cp.clone(), start_us: 40_000_000, duration_us: None }, Snap::None).unwrap();
+        let placed = o.clip_id.unwrap();
+        assert_eq!(clip(&s, &placed).duration_us, 4_000_000, "its own length");
+        let (s, _) = apply(&s, &EditCommand::SetCompoundClip { clip_id: placed.clone(), tint: Some("#ff0000".into()), time_scale: Some(2.0), looping: Some(true) }, Snap::None).unwrap();
+        let c = clip(&s, &placed);
+        assert_eq!((c.tint.as_deref(), c.time_scale, c.looping), (Some("#FF0000"), Some(2.0), Some(true)));
+        // In use: not deleted. Faster than 1: not detached.
+        assert!(matches!(apply(&s, &EditCommand::DeleteCompound { compound_id: cp.clone() }, Snap::None), Err(EditError::Invalid(_))));
+        assert!(matches!(apply(&s, &EditCommand::DetachCompoundClip { clip_id: placed.clone() }, Snap::None), Err(EditError::Invalid(m)) if m.contains("time_scale")));
+        // At speed 1: two layers above "motion", tinted preset copies, the loop unrolled.
+        let (s, _) = apply(&s, &EditCommand::SetCompoundClip { clip_id: placed.clone(), tint: None, time_scale: Some(1.0), looping: None }, Snap::None).unwrap();
+        let (s2, _) = apply(&s, &EditCommand::ResizeClip { clip_id: placed.clone(), duration_us: 9_000_000 }, Snap::None).unwrap();
+        let (d, _) = apply(&s2, &EditCommand::DetachCompoundClip { clip_id: placed.clone() }, Snap::None).unwrap();
+        assert!(find_clip(&d, &placed).is_err());
+        let mi = d.layers.iter().position(|l| l.id == "motion").unwrap();
+        let (sweep, base) = (&d.layers[mi + 1], &d.layers[mi + 2]);
+        assert_eq!(sweep.name, "素材 / 1");
+        let starts: Vec<u64> = sweep.content.clips().unwrap().iter().map(|c| c.start_us).collect();
+        assert_eq!(starts, vec![40_500_000, 44_500_000, 48_500_000], "looped 3 times in 9 s");
+        let base_clips = base.content.clips().unwrap();
+        assert_eq!((base_clips.len(), base_clips[2].duration_us), (3, 1_000_000), "the last repeat is cut at the clip end");
+        assert!(d.presets.iter().any(|p| p.id.starts_with("sweep-cyan-tint")), "tinted copy");
+        // Unused now: the compound can go.
+        assert!(apply(&d, &EditCommand::DeleteCompound { compound_id: cp }, Snap::None).is_ok());
     }
 
     #[test]

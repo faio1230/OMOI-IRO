@@ -22,6 +22,9 @@ use std::fmt;
 
 pub const MAX_TARGETS: usize = 1;
 pub const MAX_LAYERS: usize = 8;
+/// Inner layers of one compound (0.1.3 stage 6).
+pub const MAX_COMPOUND_LAYERS: usize = 4;
+pub const MAX_COMPOUNDS: usize = 64;
 pub const MAX_PRESETS: usize = 256;
 pub const MAX_CLIPS_PER_TIMELINE: usize = 4096;
 pub const MAX_NAME_CHARS: usize = 128;
@@ -577,16 +580,48 @@ pub fn validate(show: &Show) -> Vec<Issue> {
         }
     }
 
-    // 1-3, 6. Layers and clips.
+    // 0.1.3 stage 6. Compounds: 1..=4 inner layers, a positive length.
+    if show.compounds.len() > MAX_COMPOUNDS {
+        c.push("/compounds", format!("at most {MAX_COMPOUNDS} compounds (got {})", show.compounds.len()));
+    }
+    let mut compound_ids: HashMap<&str, usize> = HashMap::new();
+    for (i, cp) in show.compounds.iter().enumerate() {
+        let p = format!("/compounds/{i}");
+        c.id(&cp.id, format!("{p}/id"));
+        if compound_ids.insert(&cp.id, i).is_some() {
+            c.push(format!("{p}/id"), format!("duplicate compound id {:?}", cp.id));
+        }
+        c.name(&cp.name, format!("{p}/name"));
+        if !(1..=MAX_COMPOUND_LAYERS).contains(&cp.layers.len()) {
+            c.push(format!("{p}/layers"), format!("1..={MAX_COMPOUND_LAYERS} inner layers (got {})", cp.layers.len()));
+        }
+        match cp.duration_us {
+            Some(d) if d == 0 || d > MAX_SAFE_INTEGER => c.push(format!("{p}/duration_us"), "duration_us must be positive and within the safe integer range"),
+            None if cp.length_us() == 0 => c.push(format!("{p}/duration_us"), "required while the compound has no clips (its length would be 0)"),
+            _ => {}
+        }
+    }
+
+    // 1-3, 6. Layers and clips: the show's layers, then the compounds' inner
+    // layers. Layer and clip IDs are unique across both (edits address them by ID).
     let mut layer_ids = HashSet::new();
     let mut clip_ids = HashSet::new();
     let mut max_end: u64 = 0;
-    for (li, l) in show.layers.iter().enumerate() {
-        let p = format!("/layers/{li}");
+    let all_layers = show.layers.iter().enumerate().map(|(li, l)| (l, format!("/layers/{li}"), false)).chain(
+        show.compounds.iter().enumerate().flat_map(|(ci, cp)| cp.layers.iter().enumerate().map(move |(li, l)| (l, format!("/compounds/{ci}/layers/{li}"), true))),
+    );
+    for (l, p, inner) in all_layers {
         c.id(&l.id, format!("{p}/id"));
         c.unique(&mut layer_ids, &l.id, format!("{p}/id"), "layer");
         c.name(&l.name, format!("{p}/name"));
-        if !target_ids.contains(l.target_id.as_str()) {
+        if inner {
+            if !l.target_id.is_empty() {
+                c.push(format!("{p}/target_id"), "an inner layer uses the target of the layer placing the compound");
+            }
+            if matches!(l.content, Content::Triggered { .. }) {
+                c.push(format!("{p}/content/kind"), "an inner layer is a timeline or continuous");
+            }
+        } else if !target_ids.contains(l.target_id.as_str()) {
             c.push(format!("{p}/target_id"), format!("unknown target {:?}", l.target_id));
         }
         c.unit(l.opacity, format!("{p}/opacity"));
@@ -627,14 +662,44 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                     let cp = format!("{p}/content/clips/{ci}");
                     c.id(&clip.id, format!("{cp}/id"));
                     c.unique(&mut clip_ids, &clip.id, format!("{cp}/id"), "clip");
-                    if !preset_ids.contains_key(clip.preset_id.as_str()) {
-                        c.push(format!("{cp}/preset_id"), format!("unknown preset {:?}", clip.preset_id));
+                    match &clip.compound_id {
+                        None => {
+                            if !preset_ids.contains_key(clip.preset_id.as_str()) {
+                                c.push(format!("{cp}/preset_id"), format!("unknown preset {:?}", clip.preset_id));
+                            }
+                            if clip.tint.is_some() || clip.time_scale.is_some() || clip.looping.is_some() {
+                                c.push(cp.clone(), "tint, time_scale and loop are for compound clips");
+                            }
+                        }
+                        Some(id) => {
+                            if !clip.preset_id.is_empty() {
+                                c.push(format!("{cp}/preset_id"), "a clip has a preset_id or a compound_id, not both");
+                            }
+                            if inner {
+                                c.push(format!("{cp}/compound_id"), "compounds do not nest");
+                            } else if !matches!(l.content, Content::Timeline { .. }) {
+                                c.push(format!("{cp}/compound_id"), "compounds are placed on timeline layers");
+                            }
+                            if !compound_ids.contains_key(id.as_str()) {
+                                c.push(format!("{cp}/compound_id"), format!("unknown compound {id:?}"));
+                            }
+                            if let Some(tint) = &clip.tint {
+                                c.color(tint, format!("{cp}/tint"));
+                            }
+                            if let Some(s) = clip.time_scale {
+                                c.range(s, 0.25, 4.0, format!("{cp}/time_scale"));
+                            }
+                        }
                     }
                     if clip.duration_us == 0 {
                         c.push(format!("{cp}/duration_us"), "duration_us must be positive");
                     }
                     match clip.start_us.checked_add(clip.duration_us) {
-                        Some(end) if end <= MAX_SAFE_INTEGER => max_end = max_end.max(end),
+                        Some(end) if end <= MAX_SAFE_INTEGER => {
+                            if !inner {
+                                max_end = max_end.max(end);
+                            }
+                        }
                         _ => c.push(format!("{cp}/duration_us"), "start_us + duration_us exceeds the safe integer range"),
                     }
                     match clip.fade_in_us.checked_add(clip.fade_out_us) {
@@ -694,7 +759,7 @@ mod tests {
         use crate::model::{Clip, Layer, Preset};
         let mut s = crate::model::demo_for_tests();
         s.presets.push(Preset { id: "r".into(), name: "r".into(), effect: crate::edit::default_effect("builtin.ripple").unwrap() });
-        let clip = |p: &str| Clip { id: format!("c-{p}"), preset_id: p.into(), start_us: 0, duration_us: 1_000_000, fade_in_us: 0, fade_out_us: 0 };
+        let clip = |p: &str| Clip { id: format!("c-{p}"), preset_id: p.into(), start_us: 0, duration_us: 1_000_000, ..Default::default() };
         let layer = |p: &str, on| Layer {
             id: "trig".into(),
             name: "trig".into(),
@@ -874,6 +939,48 @@ mod tests {
         for k in ["count", "lifetime_ms", "gravity", "size", "pause_ms", "implode_radius", "color"] {
             assert!(p.contains(&format!("/presets/{n}/effect/params/{k}")), "{k} in {p:?}");
         }
+    }
+
+    #[test]
+    fn compound_rules() {
+        use crate::model::{Clip, Compound, Layer, TriggerSpec};
+        let inner = |id: &str, content| Layer { id: id.into(), name: id.into(), target_id: String::new(), enabled: true, opacity: 1.0, blend: crate::model::Blend::Over, content, mask: None };
+        let mut s = demo();
+        s.compounds.push(Compound {
+            id: "cp".into(),
+            name: "cp".into(),
+            duration_us: None,
+            layers: vec![
+                Layer { target_id: "main-pad".into(), ..inner("a", Content::Continuous { preset_id: "base-blue".into() }) },
+                inner("b", Content::Triggered { clips: vec![], trigger: TriggerSpec { on: TriggerOn::Press, interval_ms: None, origin_x: None, origin_y: None } }),
+                inner("c", Content::Timeline { clips: vec![Clip { id: "nest".into(), compound_id: Some("cp".into()), duration_us: 1, ..Default::default() }] }),
+                inner("d", Content::Continuous { preset_id: "base-blue".into() }),
+                inner("base", Content::Continuous { preset_id: "base-blue".into() }),
+            ],
+        });
+        if let Content::Timeline { clips } = &mut s.layers[0].content {
+            clips[0].compound_id = Some("cp".into()); // and its preset_id is still set
+            clips.push(Clip { id: "t".into(), preset_id: "base-blue".into(), duration_us: 1, tint: Some("#FFFFFF".into()), ..Default::default() });
+            clips.push(Clip { id: "x".into(), compound_id: Some("nope".into()), duration_us: 1, time_scale: Some(8.0), ..Default::default() });
+        }
+        let p = pointers(&s);
+        for want in [
+            "/compounds/0/layers",
+            "/compounds/0/layers/0/target_id",
+            "/compounds/0/layers/1/content/kind",
+            "/compounds/0/layers/2/content/clips/0/compound_id",
+            "/compounds/0/layers/4/id",
+            "/layers/0/content/clips/0/preset_id",
+            "/layers/0/content/clips/1",
+            "/layers/0/content/clips/2/compound_id",
+            "/layers/0/content/clips/2/time_scale",
+        ] {
+            assert!(p.contains(&want.to_string()), "{want} in {p:?}");
+        }
+        // Without clips a compound needs its own length.
+        let mut s = demo();
+        s.compounds.push(Compound { id: "e".into(), name: "e".into(), duration_us: None, layers: vec![inner("in", Content::Timeline { clips: vec![] })] });
+        assert_eq!(pointers(&s), vec!["/compounds/0/duration_us".to_string()]);
     }
 
     #[test]

@@ -37,11 +37,30 @@ pub struct EditorState {
 #[derive(Debug, Serialize)]
 pub struct ClipDto {
     pub id: String,
+    /// Empty on a compound clip.
     pub preset_id: String,
     pub start_us: u64,
     pub duration_us: u64,
     pub fade_in_us: u64,
     pub fade_out_us: u64,
+    /// 0.1.3 compound clips: the compound, tint, time scale and loop.
+    pub compound_id: Option<String>,
+    pub tint: Option<String>,
+    pub time_scale: Option<f64>,
+    pub looping: Option<bool>,
+}
+
+/// A compound with its inner layers (same shape as the show's layers).
+#[derive(Debug, Serialize)]
+pub struct CompoundDto {
+    pub id: String,
+    pub name: String,
+    /// Own length, or None = the latest inner clip end.
+    pub duration_us: Option<u64>,
+    pub length_us: u64,
+    pub layers: Vec<LayerDto>,
+    /// Clips placing it.
+    pub used_by_clips: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -90,6 +109,7 @@ pub struct EditorView {
     pub targets: Vec<TargetDto>,
     pub length_us: Option<i64>,
     pub layers: Vec<LayerDto>,
+    pub compounds: Vec<CompoundDto>,
     pub presets: Vec<PresetDto>,
     pub dirty: bool,
     pub can_undo: bool,
@@ -134,6 +154,53 @@ fn color_of(e: &Effect) -> String {
     }
 }
 
+fn layer_dto(l: &omoiiro_core::model::Layer) -> LayerDto {
+    LayerDto {
+        id: l.id.clone(),
+        name: l.name.clone(),
+        target_id: l.target_id.clone(),
+        kind: match l.content {
+            Content::Timeline { .. } => "timeline",
+            Content::Continuous { .. } => "continuous",
+            Content::Triggered { .. } => "triggered",
+        },
+        enabled: l.enabled,
+        opacity: l.opacity,
+        blend: match l.blend {
+            omoiiro_core::model::Blend::Over => "over",
+            omoiiro_core::model::Blend::Add => "add",
+            omoiiro_core::model::Blend::Max => "max",
+        },
+        preset_id: match &l.content {
+            Content::Continuous { preset_id } => Some(preset_id.clone()),
+            Content::Timeline { .. } | Content::Triggered { .. } => None,
+        },
+        clips: match l.content.clips() {
+            Some(clips) => clips
+                .iter()
+                .map(|c| ClipDto {
+            id: c.id.clone(),
+            preset_id: c.preset_id.clone(),
+            start_us: c.start_us,
+            duration_us: c.duration_us,
+            fade_in_us: c.fade_in_us,
+            fade_out_us: c.fade_out_us,
+            compound_id: c.compound_id.clone(),
+            tint: c.tint.clone(),
+            time_scale: c.time_scale,
+            looping: c.looping,
+        })
+                .collect(),
+            None => Vec::new(),
+        },
+        trigger: match &l.content {
+            Content::Triggered { trigger, .. } => Some(trigger.clone()),
+            _ => None,
+        },
+        mask: l.mask.clone(),
+    }
+}
+
 fn view(doc: &EditorDoc, runtime_revision: Option<u64>, outcome: Option<EditOutcome>, limits: SafetyLimits) -> EditorView {
     let s = doc.history.current();
     let flash_warnings = FlashProfile::of(s).warnings(s.preview.bpm, limits.max_flash_hz);
@@ -142,41 +209,17 @@ fn view(doc: &EditorDoc, runtime_revision: Option<u64>, outcome: Option<EditOutc
         name: s.name.clone(),
         targets: s.targets.iter().map(|t| TargetDto { id: t.id.clone(), name: t.name.clone() }).collect(),
         length_us: show_length_us(s),
-        layers: s
-            .layers
+        layers: s.layers.iter().map(layer_dto).collect(),
+        compounds: s
+            .compounds
             .iter()
-            .map(|l| LayerDto {
-                id: l.id.clone(),
-                name: l.name.clone(),
-                target_id: l.target_id.clone(),
-                kind: match l.content {
-                    Content::Timeline { .. } => "timeline",
-                    Content::Continuous { .. } => "continuous",
-                    Content::Triggered { .. } => "triggered",
-                },
-                enabled: l.enabled,
-                opacity: l.opacity,
-                blend: match l.blend {
-                    omoiiro_core::model::Blend::Over => "over",
-                    omoiiro_core::model::Blend::Add => "add",
-                    omoiiro_core::model::Blend::Max => "max",
-                },
-                preset_id: match &l.content {
-                    Content::Continuous { preset_id } => Some(preset_id.clone()),
-                    Content::Timeline { .. } | Content::Triggered { .. } => None,
-                },
-                clips: match l.content.clips() {
-                    Some(clips) => clips
-                        .iter()
-                        .map(|c| ClipDto { id: c.id.clone(), preset_id: c.preset_id.clone(), start_us: c.start_us, duration_us: c.duration_us, fade_in_us: c.fade_in_us, fade_out_us: c.fade_out_us })
-                        .collect(),
-                    None => Vec::new(),
-                },
-                trigger: match &l.content {
-                    Content::Triggered { trigger, .. } => Some(trigger.clone()),
-                    _ => None,
-                },
-                mask: l.mask.clone(),
+            .map(|c| CompoundDto {
+                id: c.id.clone(),
+                name: c.name.clone(),
+                duration_us: c.duration_us,
+                length_us: c.length_us(),
+                layers: c.layers.iter().map(layer_dto).collect(),
+                used_by_clips: s.layers.iter().flat_map(|l| l.content.clips().into_iter().flatten()).filter(|x| x.compound_id.as_ref() == Some(&c.id)).map(|x| x.id.clone()).collect(),
             })
             .collect(),
         presets: s

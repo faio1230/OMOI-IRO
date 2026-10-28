@@ -290,6 +290,28 @@ mod tests {
     }
 
     #[test]
+    fn compounds_fixture_loads_round_trips_and_places_three_times() {
+        use omoiiro_core::render::Renderer;
+        let text = include_str!("../../../fixtures/shows/compounds-0.1.3.show.json");
+        let show = load_str(text).unwrap();
+        let saved = to_canonical_string(&show);
+        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), serde_json::from_str::<Value>(text).unwrap());
+        let mut a = Renderer::new(&show).unwrap();
+        let mut b = Renderer::new(&load_str(&saved).unwrap()).unwrap();
+        for t in [1_000_000, 5_000_000, 12_500_000, 16_500_000, 20_000_000, 25_000_000, 33_000_000, 41_000_000] {
+            assert_eq!(a.render(t, None), b.render(t, None), "at {t}");
+        }
+        // 32 landing: white flash fading (plain), the tint after the flash (×1.5), the loop restarting.
+        let mut c = |t| a.render(t, None).leds[0];
+        assert!((c(16_500_000).r - 0.5).abs() < 0.02 && c(16_500_000).r == c(16_500_000).b, "white at half");
+        assert_eq!(c(20_000_000).to_hex(), "#A040FF");
+        assert_eq!(c(25_000_000).to_hex(), "#40FF80");
+        assert_eq!(c(25_200_000), c(22_200_000), "looped every 3 s");
+        // Without duration_us its length is the latest inner clip end.
+        assert_eq!(show.compounds[1].length_us(), 3_000_000);
+    }
+
+    #[test]
     fn triggered_layer_round_trips_and_needs_its_interval() {
         let mut v = demo_value();
         v["layers"][0]["content"] = json!({"kind": "triggered", "clips": [], "trigger": {"on": "interval"}});

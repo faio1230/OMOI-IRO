@@ -100,7 +100,7 @@ mod tests {
     use super::*;
 
     fn clip(id: &str, start: u64, dur: u64, fi: u64, fo: u64) -> Clip {
-        Clip { id: id.into(), preset_id: "p".into(), start_us: start, duration_us: dur, fade_in_us: fi, fade_out_us: fo }
+        Clip { id: id.into(), preset_id: "p".into(), start_us: start, duration_us: dur, fade_in_us: fi, fade_out_us: fo, ..Default::default() }
     }
 
     fn orders(ix: &ClipIndex, t: i64) -> Vec<usize> {

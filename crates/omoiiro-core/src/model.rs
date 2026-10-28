@@ -312,7 +312,35 @@ pub struct Show {
     pub preview: Preview,
     pub targets: Vec<Target>,
     pub presets: Vec<Preset>,
+    /// 0.1.3 stage 6: compounds (several layers with their timing saved as
+    /// one material), placed by timeline clips with `compound_id`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub compounds: Vec<Compound>,
     pub layers: Vec<Layer>,
+}
+
+/// Several layers and their timing as one material (docs/14 §4-6). Its
+/// inner layers have the layer shape without a target (the placing layer's
+/// target is used); their content is a timeline or continuous, never
+/// triggered or another compound. Clips refer to it: editing the compound
+/// changes every placement (detach a clip to make it independent).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Compound {
+    pub id: String,
+    pub name: String,
+    /// Own length; absent = the latest end of its inner clips.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration_us: Option<u64>,
+    /// 1..=4 inner layers, bottom first.
+    pub layers: Vec<Layer>,
+}
+
+impl Compound {
+    /// Own length: `duration_us`, or the latest end of its inner clips (0 if none).
+    pub fn length_us(&self) -> u64 {
+        self.duration_us.unwrap_or_else(|| self.layers.iter().flat_map(|l| l.content.clips().into_iter().flatten()).map(|c| c.end_us()).max().unwrap_or(0))
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -1100,6 +1128,9 @@ pub enum OrbMotion {
 pub struct Layer {
     pub id: String,
     pub name: String,
+    /// Output target; empty on a compound's inner layer (it uses the
+    /// placing layer's).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub target_id: String,
     pub enabled: bool,
     #[serde(serialize_with = "ser_num")]
@@ -1186,15 +1217,30 @@ pub fn ser_opt_num<S: Serializer>(v: &Option<f64>, s: S) -> Result<S::Ok, S::Err
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Clip {
     pub id: String,
+    /// The preset drawn; empty on a compound clip (exactly one of the two).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub preset_id: String,
+    /// 0.1.3 stage 6: place this compound instead of a preset (timeline layers).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compound_id: Option<String>,
     pub start_us: u64,
     pub duration_us: u64,
     pub fade_in_us: u64,
     pub fade_out_us: u64,
+    /// Compound clips: every colour inside becomes this one (#RRGGBB).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tint: Option<String>,
+    /// Compound clips: inner time = local time × this, 0.25..=4 (absent = 1).
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_num")]
+    pub time_scale: Option<f64>,
+    /// Compound clips longer than the compound: repeat it (absent = false:
+    /// nothing is drawn after its end).
+    #[serde(rename = "loop", default, skip_serializing_if = "Option::is_none")]
+    pub looping: Option<bool>,
 }
 
 impl Clip {

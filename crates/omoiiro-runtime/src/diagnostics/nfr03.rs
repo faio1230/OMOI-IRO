@@ -103,6 +103,78 @@ pub fn load_show_particles() -> Show {
     omoiiro_store::load_str(&doc.to_string()).expect("particle load show is valid")
 }
 
+/// The compound load (0.1.3 stage 6): 8 layers, each looping one compound
+/// of 4 inner layers (32 drawn layers), every inner layer a timeline of
+/// overlapping 2 s clips with fades over chase / pulse / noise / rain /
+/// orb; or, with `particles`, every inner layer a capped fountain.
+pub fn load_show_compounds(particles: bool) -> Show {
+    let effects = [
+        json!({"type": "builtin.chase", "version": 1, "params": {"color": "#00DCC8", "period_us": 2_000_000, "width": 3, "axis": "x"}}),
+        json!({"type": "builtin.pulse", "version": 1, "params": {"color": "#A020F0", "beats_per_cycle": 0.5, "depth": 0.7, "waveform": "triangle"}}),
+        json!({"type": "builtin.noise", "version": 1, "params": {"base_color": "#101020", "highlight_color": "#FFFFFF", "density": 0.3, "rate_hz": 2, "seed": 1, "smooth": true, "depth": 0.5}}),
+        json!({"type": "builtin.rain", "version": 1, "params": {"color": "#2060FF", "direction": "down", "speed": 8, "density": 0.8, "tail": 4, "seed": 2, "flicker": 0}}),
+        json!({"type": "builtin.orb", "version": 1, "params": {"color": "#FF6020", "center_x": 3.5, "center_y": 3.5, "radius": 3, "edge": 1, "light_angle": 45, "shading": 0.6, "dither": 0, "dither_rate_hz": 8, "seed": 3, "motion": "orbit", "speed": 0.5, "orbit_radius": 2, "bounce_angle": 30}}),
+        json!({"type": "builtin.particles", "version": 1, "params": {
+            "mode": "fountain", "rate": 64, "color": "#FFC040", "color_end": "#2000FF", "speed_min": 2, "speed_max": 16, "angle": 90, "spread": 360,
+            "gravity": -8, "drag": 0.5, "lifetime_ms": 6000, "size": 2, "tail": 4, "edge_mode": "bounce", "seed": 1}}),
+    ];
+    let presets: Vec<Value> = effects.iter().enumerate().map(|(i, e)| json!({"id": format!("p{i}"), "name": format!("p{i}"), "effect": e})).collect();
+    let length: i64 = 60_000_000;
+    let blends = ["over", "add", "max"];
+    let compounds: Vec<Value> = (0..8)
+        .map(|c| {
+            let inner: Vec<Value> = (0..4)
+                .map(|i| {
+                    let id = format!("c{c}i{i}");
+                    let blend = blends[(c + i) % 3];
+                    if particles {
+                        return json!({"id": id, "name": id, "enabled": true, "opacity": 1, "blend": blend, "content": {"kind": "continuous", "preset_id": "p5"}});
+                    }
+                    let mut clips = Vec::new();
+                    let (mut start, mut k) = ((i as i64) * 250_000, 0);
+                    while start < length {
+                        clips.push(json!({"id": format!("{id}k{k}"), "preset_id": format!("p{}", (c + i + k) % 5), "start_us": start, "duration_us": 2_000_000, "fade_in_us": 500_000, "fade_out_us": 500_000}));
+                        start += 1_500_000;
+                        k += 1;
+                    }
+                    json!({"id": id, "name": id, "enabled": true, "opacity": 0.8, "blend": blend, "content": {"kind": "timeline", "clips": clips}})
+                })
+                .collect();
+            json!({"id": format!("cp{c}"), "name": format!("cp{c}"), "duration_us": length, "layers": inner})
+        })
+        .collect();
+    let layers: Vec<Value> = (0..8)
+        .map(|l| {
+            let blend = blends[l % 3];
+            json!({
+                "id": format!("layer{l}"), "name": format!("layer {l}"), "target_id": "main-pad", "enabled": true, "opacity": 1, "blend": blend,
+                "content": {"kind": "timeline", "clips": [{"id": format!("place{l}"), "compound_id": format!("cp{l}"), "start_us": 0, "duration_us": 600_000_000, "fade_in_us": 0, "fade_out_us": 0, "loop": true, "tint": if l % 2 == 0 { Value::Null } else { json!("#40FF80") }}]},
+            })
+        })
+        .collect();
+    let mut doc = json!({
+        "schema_version": omoiiro_core::model::SCHEMA_VERSION, "id": "nfr03-compounds", "name": "NFR03 compound load", "seed": 1,
+        "sync": {
+            "timecode": {"source": "live_bridge", "frame_rate": "30", "origin": "00:00:00:00", "input_offset_us": 0},
+            "beat_source": "midi_clock", "stop_behavior": "hold",
+            "loss": {"holdover_ms": 250, "blackout_after_ms": 1000, "recovery_fade_ms": 100},
+        },
+        "render": {"fps": 30, "master_brightness": 0.8},
+        "preview": {"bpm": 128},
+        "targets": [{"id": "main-pad", "name": "Launchpad X", "profile": omoiiro_core::surface::GRID64_PROFILE}],
+        "presets": presets,
+        "compounds": compounds,
+        "layers": layers,
+    });
+    // No tint on even layers: drop the nulls.
+    for l in doc["layers"].as_array_mut().into_iter().flatten() {
+        if let Some(c) = l["content"]["clips"][0].as_object_mut() {
+            c.retain(|_, v| !v.is_null());
+        }
+    }
+    omoiiro_store::load_str(&doc.to_string()).expect("compound load show is valid")
+}
+
 fn snapshot(t: i64, beat: f64) -> TransportSnapshot {
     TransportSnapshot {
         now_us: t,

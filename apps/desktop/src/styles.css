@@ -201,3 +201,8 @@ button.preset .pname { flex: 1; white-space: nowrap; overflow: hidden; text-over
 .keyframes td input[type="number"] { width: 76px; }
 .keyframes select { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px; font: inherit; }
 .insp-grid .field:has(.keyframes) { grid-column: 1 / -1; }
+
+table.compounds { width: 100%; border-collapse: collapse; margin-top: 8px; }
+table.compounds th, table.compounds td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line, #333); }
+table.compounds tr.sel { background: rgba(154, 140, 255, 0.12); }
+table.compounds input { width: 100%; }

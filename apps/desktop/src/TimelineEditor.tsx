@@ -7,6 +7,7 @@ import * as ipc from "./ipc/commands";
 import type { ClipDto, EditCommand, EditorView, LayerDto, Snap } from "./ipc/types";
 import { LayerInspector, PresetPanel, ShowSyncPanel, TRIGGER_JA, type PresetEditMode } from "./ShowInspectors";
 import UnsavedChoice from "./UnsavedChoice";
+import { CompoundClipFields, CompoundPanel } from "./Compounds";
 
 const ROW_H = 46;
 const HEAD_W = 190;
@@ -39,6 +40,8 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
   const [drag, setDrag] = useState<Drag | null>(null);
   const [form, setForm] = useState({ start: "", duration: "", fadeIn: "", fadeOut: "" });
   const [presetMode, setPresetMode] = useState<PresetEditMode | null>(null);
+  // The timeline shows the show's layers, or a compound's inner layers.
+  const [scope, setScope] = useState<string | null>(null);
   const busy = useRef(false);
 
   // Refresh when the document changes elsewhere (opened, saved from the header).
@@ -113,6 +116,7 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
   const clips = useMemo(() => {
     const m = new Map<string, { clip: ClipDto; layer: LayerDto }>();
     view?.layers.forEach((l) => l.clips.forEach((c) => m.set(c.id, { clip: c, layer: l })));
+    view?.compounds.forEach((cp) => cp.layers.forEach((l) => l.clips.forEach((c) => m.set(c.id, { clip: c, layer: l }))));
     return m;
   }, [view]);
   const selected = selClip ? clips.get(selClip) : undefined;
@@ -189,7 +193,13 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
     );
   }
 
-  const lengthUs = Math.max(view.length_us ?? 0, 60_000_000) + 10_000_000;
+  const compound = scope ? view.compounds.find((c) => c.id === scope) : undefined;
+  if (scope && !compound) setScope(null);
+  const layers = compound ? compound.layers : view.layers;
+  const compoundOf = (id: string | null) => (id ? view.compounds.find((c) => c.id === id) : undefined);
+  // Inside a compound the ruler is its own time (0 = its start) and there is no playhead.
+  const playhead = compound ? null : playheadUs;
+  const lengthUs = compound ? Math.max(compound.length_us, 4_000_000) + 2_000_000 : Math.max(view.length_us ?? 0, 60_000_000) + 10_000_000;
   const widthPx = (lengthUs / 1e6) * pxPerSec;
   const presetOf = (id: string) => view.presets.find((p) => p.id === id);
   // Clips and continuous layers whose preset flashes above this terminal's limit (at preview.bpm).
@@ -197,7 +207,7 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
   const tickEvery = pxPerSec >= 40 ? 1 : pxPerSec >= 12 ? 5 : 10;
   const ticks = Array.from({ length: Math.floor(lengthUs / 1e6 / tickEvery) + 1 }, (_, i) => i * tickEvery);
   // Display top layer first (array order = compositing order, last = front).
-  const rows = [...view.layers].reverse();
+  const rows = [...layers].reverse();
 
   const applyForm = () => {
     if (!selected) return;
@@ -213,7 +223,7 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
   const addClip = (layer: LayerDto) => {
     if (!presetId) return;
     const end = layer.clips.reduce((m, c) => Math.max(m, c.start_us + c.duration_us), 0);
-    const at = playheadUs ?? end;
+    const at = playhead ?? end;
     apply({ op: "add_clip", layer_id: layer.id, preset_id: presetId, start_us: Math.max(0, Math.round(at)), duration_us: DEFAULT_CLIP_US });
   };
 
@@ -230,7 +240,7 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
       />
     )}
     <section className="panel timeline-panel">
-      <h2>タイムライン：{view.name}{view.path ? "" : "（新規・未保存）"}</h2>
+      <h2>タイムライン：{view.name}{view.path ? "" : "（新規・未保存）"}{compound ? ` ／ 素材「${compound.name}」の中` : ""}</h2>
       <div className="tl-toolbar">
         <button disabled={!view.can_undo} onClick={() => call(() => ipc.editorUndo())} title="Ctrl+Z">元に戻す{view.undo_label ? `（${view.undo_label}）` : ""}</button>
         <button disabled={!view.can_redo} onClick={() => call(() => ipc.editorRedo())} title="Ctrl+Y">やり直す{view.redo_label ? `（${view.redo_label}）` : ""}</button>
@@ -255,9 +265,25 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
           拡大
           <input type="range" min={4} max={120} value={pxPerSec} onChange={(e) => setPxPerSec(Number(e.target.value))} />
         </label>
-        <button onClick={() => apply({ op: "add_layer", name: "", index: null })}>レイヤーを追加</button>
-        <button disabled={!presetId} onClick={() => apply({ op: "add_continuous_layer", name: "", preset_id: presetId, index: null })}>常時レイヤーを追加</button>
-        <button onClick={() => apply({ op: "add_triggered_layer", name: "", on: "press", index: null })} title="パッドなどで発火する演出のレイヤー。クリップが有効な区間">発火レイヤーを追加</button>
+        <label className="inline">
+          編集対象
+          <select value={scope ?? ""} onChange={(e) => { setScope(e.target.value || null); setSelClip(null); setSelLayer(null); }}>
+            <option value="">ショー</option>
+            {view.compounds.map((c) => <option key={c.id} value={c.id}>素材：{c.name}</option>)}
+          </select>
+        </label>
+        {compound ? (
+          <>
+            <button onClick={() => apply({ op: "add_compound_layer", compound_id: compound.id, name: "", preset_id: null })} disabled={compound.layers.length >= 4}>素材にレイヤーを追加</button>
+            <button disabled={!presetId || compound.layers.length >= 4} onClick={() => apply({ op: "add_compound_layer", compound_id: compound.id, name: "", preset_id: presetId })}>素材に常時レイヤーを追加</button>
+          </>
+        ) : (
+          <>
+            <button onClick={() => apply({ op: "add_layer", name: "", index: null })}>レイヤーを追加</button>
+            <button disabled={!presetId} onClick={() => apply({ op: "add_continuous_layer", name: "", preset_id: presetId, index: null })}>常時レイヤーを追加</button>
+            <button onClick={() => apply({ op: "add_triggered_layer", name: "", on: "press", index: null })} title="パッドなどで発火する演出のレイヤー。クリップが有効な区間">発火レイヤーを追加</button>
+          </>
+        )}
         <span className={view.dirty ? "badge warn" : "badge"}>{view.dirty ? "未保存の変更あり" : "保存済みと同じ"}</span>
         {view.runtime_revision !== null && <span className="badge good">Runtime に反映 rev {view.runtime_revision}</span>}
         <span className={view.flash_warnings.length ? "badge warn" : "badge"}>点滅 {view.flash_warnings.length} 件（{view.preview_bpm} bpm、上限 {view.max_flash_hz} Hz）</span>
@@ -279,14 +305,14 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
             ))}
           </div>
           {rows.map((layer) => {
-            const idx = view.layers.findIndex((l) => l.id === layer.id);
+            const idx = layers.findIndex((l) => l.id === layer.id);
             return (
               <div key={layer.id} className={selLayer === layer.id ? "tl-row sel" : "tl-row"} style={{ width: HEAD_W + widthPx, height: ROW_H }} onPointerDown={() => { setSelLayer(layer.id); setSelClip(null); }}>
                 <div className="tl-head" style={{ width: HEAD_W }}>
                   <div className="tl-name" title={layer.id}>{layer.name}</div>
                   <div className="tl-meta">{layer.kind === "continuous" ? `常時 · ${presetOf(layer.preset_id ?? "")?.name ?? ""}` : layer.kind === "triggered" ? `発火 · ${TRIGGER_JA[layer.trigger?.on ?? "press"]}` : `${layer.blend} · ${Math.round(layer.opacity * 100)}%`}</div>
                   <div className="tl-btns">
-                    <button className="tiny" title="手前へ" disabled={idx === view.layers.length - 1} onClick={() => apply({ op: "move_layer", layer_id: layer.id, to_index: idx + 1 })}>▲</button>
+                    <button className="tiny" title="手前へ" disabled={idx === layers.length - 1} onClick={() => apply({ op: "move_layer", layer_id: layer.id, to_index: idx + 1 })}>▲</button>
                     <button className="tiny" title="奥へ" disabled={idx === 0} onClick={() => apply({ op: "move_layer", layer_id: layer.id, to_index: idx - 1 })}>▼</button>
                     {layer.kind !== "continuous" && <button className="tiny" title="クリップを追加（再生位置、なければ末尾）" onClick={() => addClip(layer)}>＋</button>}
                     <button className="tiny danger" title="レイヤーを削除" onClick={() => apply({ op: "delete_layer", layer_id: layer.id })}>×</button>
@@ -296,6 +322,8 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
                   {layer.kind === "continuous" && <div className={flashing.has(layer.id) ? "tl-continuous flash" : "tl-continuous"} style={{ background: presetOf(layer.preset_id ?? "")?.color }} />}
                   {layer.clips.map((c) => {
                     const p = presetOf(c.preset_id);
+                    const cp = compoundOf(c.compound_id);
+                    const label = cp ? `素材：${cp.name}${c.time_scale && c.time_scale !== 1 ? ` ×${c.time_scale}` : ""}${c.looping ? " ↻" : ""}` : p?.name ?? c.preset_id;
                     const d = drag && drag.clip.id === c.id ? drag : null;
                     const startUs = d?.kind === "move" ? Math.max(0, c.start_us + (d.dx / pxPerSec) * 1e6) : c.start_us;
                     const durUs = d?.kind === "resize" ? Math.max(1, c.duration_us + (d.dx / pxPerSec) * 1e6) : c.duration_us;
@@ -304,8 +332,8 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
                       <div
                         key={c.id}
                         className={`tl-clip${selClip === c.id ? " sel" : ""}${flashing.has(c.id) ? " flash" : ""}`}
-                        style={{ left: (startUs / 1e6) * pxPerSec, width: Math.max(w, 4), ["--c" as string]: p?.color ?? "#888" }}
-                        title={`${c.id} · ${p?.name ?? c.preset_id} · ${sec(c.start_us)}s + ${sec(c.duration_us)}s`}
+                        style={{ left: (startUs / 1e6) * pxPerSec, width: Math.max(w, 4), ["--c" as string]: cp ? c.tint ?? "#9A8CFF" : p?.color ?? "#888" }}
+                        title={`${c.id} · ${label} · ${sec(c.start_us)}s + ${sec(c.duration_us)}s`}
                         onPointerDown={(e) => {
                           e.stopPropagation();
                           setSelClip(c.id);
@@ -315,7 +343,7 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
                       >
                         <div className="fade in" style={{ width: (c.fade_in_us / durUs) * 100 + "%" }} />
                         <div className="fade out" style={{ width: (c.fade_out_us / durUs) * 100 + "%" }} />
-                        <span className="tl-clip-label">{p?.name ?? c.preset_id}</span>
+                        <span className="tl-clip-label">{label}</span>
                         <div
                           className="tl-resize"
                           onPointerDown={(e) => {
@@ -331,32 +359,36 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
               </div>
             );
           })}
-          {playheadUs !== null && <div className="tl-playhead" style={{ left: HEAD_W + (playheadUs / 1e6) * pxPerSec }} />}
+          {playhead !== null && <div className="tl-playhead" style={{ left: HEAD_W + (playhead / 1e6) * pxPerSec }} />}
         </div>
       </div>
 
       {selected ? (
         <div className="inspector">
           <div className="insp-title">
-            クリップ <span className="mono">{selected.clip.id}</span> · {presetOf(selected.clip.preset_id)?.name}
+            クリップ <span className="mono">{selected.clip.id}</span> · {selected.clip.compound_id ? `素材：${compoundOf(selected.clip.compound_id)?.name ?? selected.clip.compound_id}` : presetOf(selected.clip.preset_id)?.name}
           </div>
           <div className="insp-grid">
             <NumField label="開始（秒）" value={form.start} onChange={(v) => setForm({ ...form, start: v })} hint={`${frames30(selected.clip.start_us)} フレーム`} />
             <NumField label="長さ（秒）" value={form.duration} onChange={(v) => setForm({ ...form, duration: v })} hint={`${frames30(selected.clip.duration_us)} フレーム`} />
             <NumField label="フェードイン（秒）" value={form.fadeIn} onChange={(v) => setForm({ ...form, fadeIn: v })} />
             <NumField label="フェードアウト（秒）" value={form.fadeOut} onChange={(v) => setForm({ ...form, fadeOut: v })} />
-            <label className="field">
-              <span>プリセット</span>
-              <select value={selected.clip.preset_id} onChange={(e) => apply({ op: "set_clip_preset", clip_id: selected.clip.id, preset_id: e.target.value })}>
-                {view.presets.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </label>
+            {selected.clip.compound_id ? (
+              <CompoundClipFields clip={selected.clip} compound={compoundOf(selected.clip.compound_id)} apply={apply} />
+            ) : (
+              <label className="field">
+                <span>プリセット</span>
+                <select value={selected.clip.preset_id} onChange={(e) => apply({ op: "set_clip_preset", clip_id: selected.clip.id, preset_id: e.target.value })}>
+                  {view.presets.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="field">
               <span>レイヤー</span>
               <select value={selected.layer.id} onChange={(e) => apply({ op: "move_clip", clip_id: selected.clip.id, start_us: selected.clip.start_us, to_layer_id: e.target.value })}>
-                {view.layers.filter((l) => l.kind === selected.layer.kind).map((l) => (
+                {(compound && compound.layers.some((l) => l.id === selected.layer.id) ? compound.layers : view.layers).filter((l) => l.kind === selected.layer.kind).map((l) => (
                   <option key={l.id} value={l.id}>{l.name}</option>
                 ))}
               </select>
@@ -364,20 +396,21 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
           </div>
           <div className="actions">
             <button className="primary" onClick={applyForm}>数値を適用</button>
-            <button onClick={() => setPresetMode({ kind: "clip", clipId: selected.clip.id, presetId: selected.clip.preset_id })}>このクリップだけ効果を編集</button>
+            {!selected.clip.compound_id && <button onClick={() => setPresetMode({ kind: "clip", clipId: selected.clip.id, presetId: selected.clip.preset_id })}>このクリップだけ効果を編集</button>}
             <button onClick={() => apply({ op: "duplicate_clip", clip_id: selected.clip.id, start_us: null })} title="Ctrl+D">複製</button>
             <button className="danger" onClick={() => { apply({ op: "delete_clip", clip_id: selected.clip.id }); setSelClip(null); }} title="Delete">削除</button>
             <span className="hint">ドラッグで移動、右端で長さ。数値の開始・長さもスナップに合わせる。</span>
           </div>
         </div>
-      ) : selLayer && view.layers.find((l) => l.id === selLayer) ? (
-        <LayerInspector view={view} layer={view.layers.find((l) => l.id === selLayer)!} apply={apply} />
+      ) : selLayer && layers.find((l) => l.id === selLayer) ? (
+        <LayerInspector view={view} layer={layers.find((l) => l.id === selLayer)!} apply={apply} />
       ) : (
         <p className="hint">クリップを選ぶと数値で編集できる。レイヤーの行を選ぶとレイヤーの設定。見出しの＋でクリップを追加（再生位置、なければ末尾に4秒）。</p>
       )}
       {error && <p className="error">{error}</p>}
       <p className="hint">編集は Rust 側で検証してから反映する（不正な編集は何も変えない）。Runtime が同じショーを追従中なら、通った版を次の frame 境界で差し替える。{view.path}</p>
     </section>
+    <CompoundPanel view={view} scope={scope} setScope={(id) => { setScope(id); setSelClip(null); setSelLayer(null); }} selLayer={selLayer} playheadUs={playheadUs} apply={apply} />
     <ShowSyncPanel view={view} apply={apply} />
     <PresetPanel view={view} mode={presetMode} setMode={setPresetMode} apply={apply} applyView={(f) => call(f)} />
     </>

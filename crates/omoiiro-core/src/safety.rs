@@ -99,6 +99,21 @@ impl FlashSource {
             FlashSource::Chase { hz } | FlashSource::Strobe { hz } | FlashSource::Noise { hz } | FlashSource::Grain { hz } | FlashSource::Wave { hz } | FlashSource::Path { hz } => *hz,
         }
     }
+
+    /// Played `k` times faster (a compound clip's time_scale): rates in time
+    /// scale, rates on the beat follow the song and do not.
+    pub fn scaled(self, k: f64) -> FlashSource {
+        match self {
+            FlashSource::Chase { hz } => FlashSource::Chase { hz: hz * k },
+            FlashSource::Strobe { hz } => FlashSource::Strobe { hz: hz * k },
+            FlashSource::Noise { hz } => FlashSource::Noise { hz: hz * k },
+            FlashSource::Grain { hz } => FlashSource::Grain { hz: hz * k },
+            FlashSource::Wave { hz } => FlashSource::Wave { hz: hz * k },
+            FlashSource::Path { hz } => FlashSource::Path { hz: hz * k },
+            FlashSource::Step { hz } => FlashSource::Step { hz: hz * k },
+            beat => beat,
+        }
+    }
 }
 
 /// `(8 / width) / period_s`: how often the band passes one cell.
@@ -189,20 +204,37 @@ impl FlashProfile {
         let mut layers = Vec::with_capacity(show.layers.len());
         for l in &show.layers {
             let mut entries: Vec<LayerPresetFlash> = Vec::new();
-            let mut add = |preset_id: &str, clip: Option<&str>| {
+            // `k`: time scale of a compound clip (1 otherwise); the fastest use is kept.
+            let mut add = |preset_id: &str, clip: Option<&str>, k: f64| {
+                let Some(p) = show.presets.iter().find(|p| p.id == preset_id) else { return };
+                let Some(source) = effect_flash(&p.effect).map(|s| s.scaled(k)) else { return };
                 if let Some(e) = entries.iter_mut().find(|e| e.preset_id == preset_id) {
-                    e.clips.extend(clip.map(str::to_string));
+                    e.clips.extend(clip.map(str::to_string).filter(|c| !e.clips.contains(c)));
+                    if source.hz(120.0) > e.source.hz(120.0) {
+                        e.source = source;
+                    }
                     return;
                 }
-                if let Some(p) = show.presets.iter().find(|p| p.id == preset_id) {
-                    if let Some(source) = effect_flash(&p.effect) {
-                        entries.push(LayerPresetFlash { preset_id: p.id.clone(), preset_name: p.name.clone(), source, clips: clip.map(str::to_string).into_iter().collect() });
-                    }
-                }
+                entries.push(LayerPresetFlash { preset_id: p.id.clone(), preset_name: p.name.clone(), source, clips: clip.map(str::to_string).into_iter().collect() });
             };
             match &l.content {
-                Content::Timeline { clips } | Content::Triggered { clips, .. } => clips.iter().for_each(|c| add(&c.preset_id, Some(&c.id))),
-                Content::Continuous { preset_id } => add(preset_id, None),
+                Content::Timeline { clips } | Content::Triggered { clips, .. } => {
+                    for c in clips {
+                        match c.compound_id.as_deref().and_then(|id| show.compounds.iter().find(|x| x.id == id)) {
+                            // Every preset inside counts for the placing layer, at its time scale.
+                            Some(cp) => {
+                                for il in &cp.layers {
+                                    match &il.content {
+                                        Content::Continuous { preset_id } => add(preset_id, Some(&c.id), c.time_scale.unwrap_or(1.0)),
+                                        _ => il.content.clips().into_iter().flatten().for_each(|ic| add(&ic.preset_id, Some(&c.id), c.time_scale.unwrap_or(1.0))),
+                                    }
+                                }
+                            }
+                            None => add(&c.preset_id, Some(&c.id), 1.0),
+                        }
+                    }
+                }
+                Content::Continuous { preset_id } => add(preset_id, None, 1.0),
             }
             layers.push((l.id.clone(), l.name.clone(), entries));
         }
@@ -417,6 +449,27 @@ mod tests {
         let w = p.warnings(120.0, 3.0);
         assert_eq!((w.len(), w[0].kind, w[0].hz), (1, "path", 14.0));
         assert_eq!(p.layer_hz(0, 120.0), 0.0, "not muted");
+    }
+
+    #[test]
+    fn compound_flashing_counts_for_the_placing_layer_at_its_time_scale() {
+        use crate::model::{Clip, Compound, Layer, Blend};
+        let mut s = demo();
+        let Effect::Strobe { version, mut params } = crate::edit::default_effect("builtin.strobe").unwrap() else { unreachable!() };
+        params.mode = crate::model::StrobeMode::Hz.into();
+        params.rate_hz = 2.0.into();
+        s.presets.push(Preset { id: "st".into(), name: "st".into(), effect: Effect::Strobe { version, params } });
+        s.compounds.push(Compound {
+            id: "cp".into(),
+            name: "cp".into(),
+            duration_us: Some(1_000_000),
+            layers: vec![Layer { id: "in".into(), name: "in".into(), target_id: String::new(), enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Continuous { preset_id: "st".into() }, mask: None }],
+        });
+        if let Content::Timeline { clips } = &mut s.layers[0].content {
+            clips.push(Clip { id: "fast".into(), compound_id: Some("cp".into()), start_us: 0, duration_us: 1_000_000, time_scale: Some(2.0), ..Default::default() });
+        }
+        let p = FlashProfile::of(&s);
+        assert_eq!(p.layer_hz(0, 120.0), 4.0, "2 Hz played twice as fast");
     }
 
     #[test]

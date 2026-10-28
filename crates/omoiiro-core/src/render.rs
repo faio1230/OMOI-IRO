@@ -1281,8 +1281,134 @@ pub fn blend_layer(frame: &mut Frame, layer: &LayerFrame, blend: Blend, opacity:
 #[derive(Clone, Debug)]
 enum LayerContent {
     Continuous { effect: usize },
-    Timeline { index: ClipIndex, effects: Vec<usize> },
+    /// `uses[i]`: the compound placement of clip i (index into `Renderer::uses`).
+    Timeline { index: ClipIndex, effects: Vec<usize>, uses: Vec<Option<usize>> },
     Triggered { index: ClipIndex, effects: Vec<usize>, on: TriggerOn, interval_us: i64, origin: (f64, f64) },
+}
+
+/// Content of a compound's inner layer.
+#[derive(Clone, Debug)]
+enum InnerContent {
+    Continuous { effect: usize },
+    Timeline { index: ClipIndex, effects: Vec<usize> },
+}
+
+#[derive(Clone, Debug)]
+struct InnerLayer {
+    enabled: bool,
+    opacity: f32,
+    blend: Blend,
+    content: InnerContent,
+    mask: Option<LayerMask>,
+}
+
+/// One placement of a compound (a clip): its inner layers with the effects
+/// of this placement (tinted copies when the clip has a tint).
+#[derive(Clone, Debug)]
+struct CompoundUse {
+    length_us: u64,
+    looping: bool,
+    time_scale: f64,
+    layers: Vec<InnerLayer>,
+}
+
+/// Color keys of effect parameters; the first three are the main color
+/// (whichever the effect has), the rest follow it by brightness.
+const COLOR_KEYS: [&str; 8] = ["color", "highlight_color", "color_start", "color_b", "head_color", "base_color", "color_mid", "color_end"];
+
+fn luminance(c: Rgb) -> f32 {
+    0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
+}
+
+/// The effect with every color replaced by `tint`. The main color becomes
+/// `tint`; the other colors keep their brightness relative to the main one
+/// (darker: `tint` scaled down; brighter: `tint` mixed towards white), so a
+/// dark background or a white head stays one. Keyframed colors become the
+/// constant derived from their first value.
+pub fn tinted(e: &Effect, tint: Rgb) -> Effect {
+    let Ok(mut v) = serde_json::to_value(e) else { return e.clone() };
+    let Some(params) = v.get_mut("params").and_then(|p| p.as_object_mut()) else { return e.clone() };
+    let first = |x: &serde_json::Value| -> Option<Rgb> {
+        let s = x.as_str().or_else(|| x.get("keyframes")?.get(0)?.get("v")?.as_str())?;
+        Rgb::from_hex(s)
+    };
+    let main = COLOR_KEYS[..3].iter().find_map(|k| params.get(*k).and_then(first)).map(luminance).unwrap_or(1.0).max(1e-3);
+    for k in COLOR_KEYS {
+        let Some(orig) = params.get(k).and_then(first) else { continue };
+        let ratio = luminance(orig) / main;
+        let c = if ratio <= 1.0 {
+            tint.scale(ratio)
+        } else {
+            let w = (ratio - 1.0).min(1.0);
+            Rgb::new(tint.r + (1.0 - tint.r) * w, tint.g + (1.0 - tint.g) * w, tint.b + (1.0 - tint.b) * w)
+        };
+        params.insert(k.to_string(), serde_json::Value::String(c.to_hex()));
+    }
+    serde_json::from_value(v).unwrap_or_else(|_| e.clone())
+}
+
+/// Composite a premultiplied layer onto a premultiplied buffer.
+fn blend_into(dst: &mut LayerFrame, src: &LayerFrame, blend: Blend, opacity: f32) {
+    for (d, s) in dst.px.iter_mut().zip(src.px.iter()) {
+        let (r, g, b, a) = (s.r * opacity, s.g * opacity, s.b * opacity, s.a * opacity);
+        match blend {
+            Blend::Over => {
+                let k = 1.0 - a;
+                *d = Rgba { r: r + d.r * k, g: g + d.g * k, b: b + d.b * k, a: a + d.a * k };
+            }
+            Blend::Add => *d = Rgba { r: (d.r + r).min(1.0), g: (d.g + g).min(1.0), b: (d.b + b).min(1.0), a: (d.a + a).min(1.0) },
+            Blend::Max => *d = Rgba { r: d.r.max(r), g: d.g.max(g), b: d.b.max(b), a: d.a.max(a) },
+        }
+    }
+}
+
+/// Timeline clips at `t` (layer time) into `buf`: presets only (particles included).
+fn paint_timeline_presets(effects: &[CompiledEffect], keyed: &[Option<Effect>], fx: &[usize], active: &[ClipSpan], t: ShowTimeUs, beat: Option<BeatState>, input: Option<&PadInput>, buf: &mut LayerFrame) {
+    for span in active {
+        let local = span.local_us(t);
+        let ei = fx[span.order];
+        if matches!(effects[ei], CompiledEffect::Particles(_)) {
+            // One event from the clip start; parameters as at the start.
+            let Some(l) = particle_look(effects, keyed, ei, 0) else { continue };
+            let ev = Event { x: l.origin.0, y: l.origin.1, age_s: local as f64 / 1e6, emit_s: f64::INFINITY, id: span.order as u64, start_us: 0 };
+            paint_particles(effects, keyed, ei, std::slice::from_ref(&ev), span.fade(t), buf);
+            continue;
+        }
+        sample(effects, keyed, ei, local).paint_input(local, beat, input, span.fade(t), buf);
+    }
+}
+
+/// A compound at its inner time `t` into `out` (cleared): each inner layer
+/// drawn into `layer`, masked, then blended with its blend and opacity.
+#[allow(clippy::too_many_arguments)]
+fn paint_compound(effects: &[CompiledEffect], keyed: &[Option<Effect>], u: &CompoundUse, t: u64, beat: Option<BeatState>, input: Option<&PadInput>, active: &mut Vec<ClipSpan>, events: &mut Vec<Event>, layer: &mut LayerFrame, out: &mut LayerFrame) {
+    out.clear();
+    for l in &u.layers {
+        if !l.enabled || l.opacity <= 0.0 {
+            continue;
+        }
+        layer.clear();
+        let mask_t = match &l.content {
+            InnerContent::Continuous { effect } => {
+                if matches!(effects[*effect], CompiledEffect::Particles(_)) {
+                    continuous_particle_events(&|x| particle_look(effects, keyed, *effect, x), t, events);
+                    paint_particles(effects, keyed, *effect, events, 1.0, layer);
+                } else {
+                    sample(effects, keyed, *effect, t).paint_input(t, beat, input, 1.0, layer);
+                }
+                Some(t)
+            }
+            InnerContent::Timeline { index, effects: fx } => {
+                index.active(t as ShowTimeUs, active);
+                paint_timeline_presets(effects, keyed, fx, active, t as ShowTimeUs, beat, input, layer);
+                active.first().map(|s| s.local_us(t as ShowTimeUs))
+            }
+        };
+        if let (Some(m), Some(mt)) = (&l.mask, mask_t) {
+            apply_mask(m, mt, layer);
+        }
+        blend_into(out, layer, l.blend, l.opacity);
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -1329,6 +1455,11 @@ pub struct Renderer {
     keyed: Vec<Option<Effect>>,
     /// Particle events of one layer (reused, at most `MAX_EVENTS` kept).
     events: Vec<Event>,
+    /// Compound placements, and the buffers and clip list they draw with.
+    uses: Vec<CompoundUse>,
+    inner_active: Vec<ClipSpan>,
+    inner_buf: LayerFrame,
+    compound_buf: LayerFrame,
 }
 
 impl Renderer {
@@ -1346,6 +1477,43 @@ impl Renderer {
             keyed.push(has_keyframes(&p.effect).then(|| p.effect.clone()));
             by_id.insert(p.id.as_str(), i);
         }
+        // Compound placements: tinted presets are compiled as extra effects.
+        let mut uses: Vec<CompoundUse> = Vec::new();
+        let mut tinted_ids: HashMap<(usize, String), usize> = HashMap::new();
+        let mut max_inner_clips = 0;
+        let mut place = |clip: &crate::model::Clip, effects: &mut Vec<CompiledEffect>, keyed: &mut Vec<Option<Effect>>| -> Option<usize> {
+            let cp = show.compounds.iter().find(|c| Some(&c.id) == clip.compound_id.as_ref())?;
+            let tint = clip.tint.as_deref().and_then(Rgb::from_hex);
+            let mut effect_of = |pid: &str| -> usize {
+                let base = by_id[pid];
+                let Some(tint) = tint else { return base };
+                *tinted_ids.entry((base, clip.tint.clone().unwrap_or_default())).or_insert_with(|| {
+                    let e = tinted(&show.presets[base].effect, tint);
+                    effects.push(CompiledEffect::compile(&e).expect("tinted colors are valid"));
+                    keyed.push(has_keyframes(&e).then(|| e.clone()));
+                    effects.len() - 1
+                })
+            };
+            let layers = cp
+                .layers
+                .iter()
+                .map(|l| InnerLayer {
+                    enabled: l.enabled,
+                    opacity: l.opacity as f32,
+                    blend: l.blend,
+                    mask: l.mask.clone(),
+                    content: match &l.content {
+                        Content::Continuous { preset_id } => InnerContent::Continuous { effect: effect_of(preset_id) },
+                        Content::Timeline { clips } | Content::Triggered { clips, .. } => {
+                            max_inner_clips = max_inner_clips.max(clips.len());
+                            InnerContent::Timeline { index: ClipIndex::new(clips), effects: clips.iter().map(|c| effect_of(&c.preset_id)).collect() }
+                        }
+                    },
+                })
+                .collect();
+            uses.push(CompoundUse { length_us: cp.length_us(), looping: clip.looping.unwrap_or(false), time_scale: clip.time_scale.unwrap_or(1.0), layers });
+            Some(uses.len() - 1)
+        };
         let mut max_clips = 0;
         let layers = show
             .layers
@@ -1357,7 +1525,9 @@ impl Renderer {
                         max_clips = max_clips.max(clips.len());
                         LayerContent::Timeline {
                             index: ClipIndex::new(clips),
-                            effects: clips.iter().map(|c| by_id[c.preset_id.as_str()]).collect(),
+                            // Compound clips have no preset: their effects are in `uses`.
+                            effects: clips.iter().map(|c| by_id.get(c.preset_id.as_str()).copied().unwrap_or(usize::MAX)).collect(),
+                            uses: clips.iter().map(|c| place(c, &mut effects, &mut keyed)).collect(),
                         }
                     }
                     Content::Triggered { clips, trigger } => {
@@ -1384,6 +1554,10 @@ impl Renderer {
             inst: Vec::with_capacity(MAX_INSTANCES),
             keyed,
             events: Vec::with_capacity(4 * MAX_EVENTS),
+            uses,
+            inner_active: Vec::with_capacity(max_inner_clips),
+            inner_buf: LayerFrame::default(),
+            compound_buf: LayerFrame::default(),
         })
     }
 
@@ -1431,19 +1605,25 @@ impl Renderer {
                         _ => e.paint_input(t as u64, beat, input, 1.0, &mut self.buf),
                     }
                 }
-                LayerContent::Timeline { index, effects } => {
+                LayerContent::Timeline { index, effects, uses } => {
                     index.active(t, &mut self.active);
                     for span in &self.active {
-                        let local = span.local_us(t);
-                        let ei = effects[span.order];
-                        if matches!(self.effects[ei], CompiledEffect::Particles(_)) {
-                            // One event from the clip start; parameters as at the start.
-                            let Some(l) = particle_look(&self.effects, &self.keyed, ei, 0) else { continue };
-                            let ev = Event { x: l.origin.0, y: l.origin.1, age_s: local as f64 / 1e6, emit_s: f64::INFINITY, id: span.order as u64, start_us: 0 };
-                            paint_particles(&self.effects, &self.keyed, ei, std::slice::from_ref(&ev), span.fade(t), &mut self.buf);
+                        let Some(u) = uses[span.order] else {
+                            paint_timeline_presets(&self.effects, &self.keyed, effects, std::slice::from_ref(span), t, beat, input, &mut self.buf);
                             continue;
+                        };
+                        // A compound: inner time = local × time_scale; past its
+                        // length it repeats (loop) or draws nothing.
+                        let u = &self.uses[u];
+                        let mut inner = (span.local_us(t) as f64 * u.time_scale) as u64;
+                        if inner >= u.length_us {
+                            if !u.looping || u.length_us == 0 {
+                                continue;
+                            }
+                            inner %= u.length_us;
                         }
-                        sample(&self.effects, &self.keyed, ei, local).paint_input(local, beat, input, span.fade(t), &mut self.buf);
+                        paint_compound(&self.effects, &self.keyed, u, inner, beat, input, &mut self.inner_active, &mut self.events, &mut self.inner_buf, &mut self.compound_buf);
+                        blend_into(&mut self.buf, &self.compound_buf, Blend::Over, span.fade(t) as f32);
                     }
                 }
                 LayerContent::Triggered { index, effects, on, interval_us, origin } => {
@@ -1970,7 +2150,7 @@ mod tests {
     fn triggered_show(effect: Effect, trigger: crate::model::TriggerSpec) -> Show {
         let mut s = demo();
         s.presets.push(crate::model::Preset { id: "p".into(), name: "p".into(), effect });
-        let clip = crate::model::Clip { id: "w".into(), preset_id: "p".into(), start_us: 1_000_000, duration_us: 4_000_000, fade_in_us: 0, fade_out_us: 0 };
+        let clip = crate::model::Clip { id: "w".into(), preset_id: "p".into(), start_us: 1_000_000, duration_us: 4_000_000, ..Default::default() };
         s.layers = vec![crate::model::Layer {
             id: "t".into(),
             name: "t".into(),
@@ -2144,6 +2324,72 @@ mod tests {
         let mut budget = MAX_PARTICLES;
         paint_event(&Event { age_s: 1.0, ..ev }, &|_| Some(look), 1.0, &mut LayerFrame::default(), &mut budget);
         assert_eq!(MAX_PARTICLES - budget, 65, "0..=64 born in the first second");
+    }
+    /// demo + a 2 s compound "cp" (solid base-blue, then a 0..1 s chase) placed
+    /// by one clip at 5 s for 6 s on the only layer.
+    fn compound_show(f: impl FnOnce(&mut crate::model::Clip)) -> Show {
+        use crate::model::{Clip, Compound, Layer};
+        let mut s = demo();
+        let inner = |id: &str, content| Layer { id: id.into(), name: id.into(), target_id: String::new(), enabled: true, opacity: 1.0, blend: Blend::Over, content, mask: None };
+        s.compounds.push(Compound {
+            id: "cp".into(),
+            name: "cp".into(),
+            duration_us: Some(2_000_000),
+            layers: vec![
+                inner("in-base", Content::Continuous { preset_id: "base-blue".into() }),
+                inner("in-sweep", Content::Timeline { clips: vec![Clip { id: "ic".into(), preset_id: "sweep-cyan".into(), duration_us: 1_000_000, ..Default::default() }] }),
+            ],
+        });
+        s.layers.truncate(1);
+        let mut clip = Clip { id: "place".into(), compound_id: Some("cp".into()), start_us: 5_000_000, duration_us: 6_000_000, ..Default::default() };
+        f(&mut clip);
+        if let Content::Timeline { clips } = &mut s.layers[0].content {
+            *clips = vec![clip];
+        }
+        s
+    }
+
+    #[test]
+    fn compound_clips_play_inner_time_with_scale_and_loop() {
+        let plain = Renderer::new(&compound_show(|_| {})).unwrap().render(5_500_000, None); // inner 0.5 s
+        let mut once = Renderer::new(&compound_show(|_| {})).unwrap();
+        assert!(lit(&once.render(5_500_000, None)) > 0);
+        assert_eq!(once.render(8_000_000, None), Frame::default(), "past its 2 s and no loop: nothing");
+        let mut looped = Renderer::new(&compound_show(|c| c.looping = Some(true))).unwrap();
+        assert_eq!(looped.render(7_500_000, None), plain, "inner 2.5 s wraps to 0.5 s");
+        let mut fast = Renderer::new(&compound_show(|c| c.time_scale = Some(2.0))).unwrap();
+        assert_eq!(fast.render(5_250_000, None), plain, "twice as fast: inner 0.5 s at local 0.25 s");
+        // The inner chase (0..1 s) sits over the solid: at inner 1.5 s only the solid is left.
+        let solid_only = once.render(6_500_000, None);
+        assert!(solid_only.leds.iter().all(|c| *c == solid_only.leds[0]));
+    }
+
+    #[test]
+    fn tint_replaces_colors_by_brightness() {
+        let mut r = Renderer::new(&compound_show(|c| c.tint = Some("#00FF00".into()))).unwrap();
+        let f = r.render(6_500_000, None); // the solid only
+        assert_eq!((f.leds[0].r, f.leds[0].b), (0.0, 0.0));
+        assert!(f.leds[0].g > 0.0);
+        // Darker secondary colors stay darker; the main one becomes the tint.
+        let regions = crate::edit::default_effect("builtin.regions").unwrap();
+        let Effect::Regions { params, .. } = tinted(&regions, Rgb::new(1.0, 0.0, 0.0)) else { unreachable!() };
+        assert_eq!(params.color.value(), "#FF0000");
+        let Effect::Noise { params, .. } = tinted(&crate::edit::default_effect("builtin.noise").unwrap(), Rgb::new(0.0, 0.0, 1.0)) else { unreachable!() };
+        let (base, high) = (Rgb::from_hex(params.base_color.value()).unwrap(), Rgb::from_hex(params.highlight_color.value()).unwrap());
+        assert!(base.b < high.b && base.r == 0.0, "{base:?} {high:?}");
+    }
+
+    #[test]
+    fn inner_layers_blend_inside_the_compound_then_onto_the_layer() {
+        // Inner add of the chase over the solid inside; the compound then goes over the black frame.
+        let mut s = compound_show(|_| {});
+        s.compounds[0].layers[1].blend = Blend::Add;
+        s.compounds[0].layers[1].opacity = 0.5;
+        let mut r = Renderer::new(&s).unwrap();
+        let f = r.render(5_100_000, None);
+        // Add brightens some cells above the plain solid.
+        let solid = r.render(6_500_000, None).leds[0];
+        assert!(f.leds.iter().any(|c| c.g > solid.g));
     }
     #[test]
     fn hold_draws_while_held_and_release_fires_on_release() {

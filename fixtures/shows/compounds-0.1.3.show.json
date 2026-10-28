@@ -1,0 +1,369 @@
+{
+  "$schema": "../../schemas/show.schema.json",
+  "schema_version": "0.1.3",
+  "id": "compounds-0-1-3",
+  "name": "0.1.3 の素材（23 リボン・32 着地・20 交通を色と速さを変えて3回ずつ）",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "ribbon-a",
+      "name": "リボン（主）",
+      "effect": {
+        "type": "builtin.wave",
+        "version": 1,
+        "params": {
+          "color": "#FF40C0",
+          "axis": "x",
+          "wavelength": 8,
+          "amplitude": 2.5,
+          "center": 3.5,
+          "speed": 0.75,
+          "thickness": 1.25,
+          "beat_amplitude": false
+        }
+      }
+    },
+    {
+      "id": "ribbon-b",
+      "name": "リボン（影）",
+      "effect": {
+        "type": "builtin.wave",
+        "version": 1,
+        "params": {
+          "color": "#601848",
+          "axis": "x",
+          "wavelength": 8,
+          "amplitude": 2,
+          "center": 3.5,
+          "speed": 0.5,
+          "thickness": 1,
+          "beat_amplitude": false,
+          "phase": 0.5
+        }
+      }
+    },
+    {
+      "id": "flash-white",
+      "name": "白",
+      "effect": {
+        "type": "builtin.solid",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF"
+        }
+      }
+    },
+    {
+      "id": "land-color",
+      "name": "着地の色",
+      "effect": {
+        "type": "builtin.solid",
+        "version": 1,
+        "params": {
+          "color": "#FF8020"
+        }
+      }
+    },
+    {
+      "id": "traffic-out",
+      "name": "交通（右へ）",
+      "effect": {
+        "type": "builtin.rain",
+        "version": 1,
+        "params": {
+          "color": "#00C0FF",
+          "head_color": "#E0FFFF",
+          "direction": "right",
+          "speed": 8,
+          "density": 0.4,
+          "tail": 4,
+          "seed": 20,
+          "flicker": 0
+        }
+      }
+    },
+    {
+      "id": "traffic-in",
+      "name": "交通（左へ）",
+      "effect": {
+        "type": "builtin.rain",
+        "version": 1,
+        "params": {
+          "color": "#FF2060",
+          "head_color": "#FFE0E8",
+          "direction": "left",
+          "speed": 6,
+          "density": 0.3,
+          "tail": 4,
+          "seed": 21,
+          "flicker": 0
+        }
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "id": "neon-ribbon",
+      "name": "23 ネオン・リボン",
+      "duration_us": 4000000,
+      "layers": [
+        {
+          "id": "ribbon-shadow",
+          "name": "影",
+          "enabled": true,
+          "opacity": 1,
+          "blend": "over",
+          "content": {
+            "kind": "continuous",
+            "preset_id": "ribbon-b"
+          }
+        },
+        {
+          "id": "ribbon-main",
+          "name": "主",
+          "enabled": true,
+          "opacity": 1,
+          "blend": "add",
+          "content": {
+            "kind": "continuous",
+            "preset_id": "ribbon-a"
+          }
+        }
+      ]
+    },
+    {
+      "id": "color-landing",
+      "name": "32 色の着地",
+      "layers": [
+        {
+          "id": "landing-color",
+          "name": "色",
+          "enabled": true,
+          "opacity": 1,
+          "blend": "over",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "landing-color-1",
+                "preset_id": "land-color",
+                "start_us": 500000,
+                "duration_us": 2500000,
+                "fade_in_us": 500000,
+                "fade_out_us": 0
+              }
+            ]
+          }
+        },
+        {
+          "id": "landing-flash",
+          "name": "白",
+          "enabled": true,
+          "opacity": 1,
+          "blend": "add",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "landing-flash-1",
+                "preset_id": "flash-white",
+                "start_us": 0,
+                "duration_us": 1000000,
+                "fade_in_us": 0,
+                "fade_out_us": 1000000
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "neon-traffic",
+      "name": "20 ネオンの交通",
+      "duration_us": 4000000,
+      "layers": [
+        {
+          "id": "traffic-a",
+          "name": "右へ",
+          "enabled": true,
+          "opacity": 1,
+          "blend": "over",
+          "content": {
+            "kind": "continuous",
+            "preset_id": "traffic-out"
+          }
+        },
+        {
+          "id": "traffic-b",
+          "name": "左へ",
+          "enabled": true,
+          "opacity": 1,
+          "blend": "max",
+          "content": {
+            "kind": "continuous",
+            "preset_id": "traffic-in"
+          }
+        }
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "id": "ribbons",
+      "name": "23 リボン ×3",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "neon-ribbon-1",
+            "compound_id": "neon-ribbon",
+            "start_us": 0,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "neon-ribbon-2",
+            "compound_id": "neon-ribbon",
+            "start_us": 4000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0,
+            "tint": "#40C0FF",
+            "time_scale": 0.5
+          },
+          {
+            "id": "neon-ribbon-3",
+            "compound_id": "neon-ribbon",
+            "start_us": 8000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0,
+            "tint": "#80FF40",
+            "time_scale": 2,
+            "loop": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "landings",
+      "name": "32 着地 ×3",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "color-landing-1",
+            "compound_id": "color-landing",
+            "start_us": 16000000,
+            "duration_us": 3000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "color-landing-2",
+            "compound_id": "color-landing",
+            "start_us": 19000000,
+            "duration_us": 3000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0,
+            "tint": "#A040FF",
+            "time_scale": 1.5
+          },
+          {
+            "id": "color-landing-3",
+            "compound_id": "color-landing",
+            "start_us": 22000000,
+            "duration_us": 6000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0,
+            "tint": "#40FF80",
+            "loop": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "traffic",
+      "name": "20 交通 ×3",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "neon-traffic-1",
+            "compound_id": "neon-traffic",
+            "start_us": 28000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "neon-traffic-2",
+            "compound_id": "neon-traffic",
+            "start_us": 32000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0,
+            "tint": "#FFC040",
+            "time_scale": 0.5
+          },
+          {
+            "id": "neon-traffic-3",
+            "compound_id": "neon-traffic",
+            "start_us": 36000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0,
+            "tint": "#C040FF",
+            "time_scale": 2,
+            "loop": true
+          }
+        ]
+      }
+    }
+  ]
+}

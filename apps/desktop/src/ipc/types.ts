@@ -284,7 +284,14 @@ export type EditCommand =
   | { op: "set_sync"; beat_source: BeatSource | null; mtc_output_enabled: boolean | null }
   | { op: "add_triggered_layer"; name: string; on: TriggerOn; index: number | null }
   | { op: "set_layer_trigger"; layer_id: string; trigger: TriggerSpec }
-  | { op: "set_layer_mask"; layer_id: string; mask: LayerMask | null };
+  | { op: "set_layer_mask"; layer_id: string; mask: LayerMask | null }
+  | { op: "add_compound"; name: string }
+  | { op: "set_compound"; compound_id: string; name: string | null; duration_us: number | null }
+  | { op: "delete_compound"; compound_id: string }
+  | { op: "add_compound_layer"; compound_id: string; name: string; preset_id: string | null }
+  | { op: "add_compound_clip"; layer_id: string; compound_id: string; start_us: number; duration_us: number | null }
+  | { op: "set_compound_clip"; clip_id: string; tint: string | null; time_scale: number | null; looping: boolean | null }
+  | { op: "detach_compound_clip"; clip_id: string };
 
 export type Blend = "over" | "add" | "max";
 export type EffectType = "builtin.solid" | "builtin.chase" | "builtin.pulse" | "builtin.strobe" | "builtin.noise" | "builtin.ripple" | "builtin.rain" | "builtin.wave" | "builtin.orb" | "builtin.regions" | "builtin.tap_glow" | "builtin.cross" | "builtin.path" | "builtin.shape" | "builtin.particles";
@@ -335,6 +342,21 @@ export interface ClipDto {
   duration_us: number;
   fade_in_us: number;
   fade_out_us: number;
+  /** 0.1.3 compound clips (preset_id is then ""). */
+  compound_id: string | null;
+  tint: string | null;
+  time_scale: number | null;
+  looping: boolean | null;
+}
+
+/** A compound: inner layers (no target) and the clips placing it. */
+export interface CompoundDto {
+  id: string;
+  name: string;
+  duration_us: number | null;
+  length_us: number;
+  layers: LayerDto[];
+  used_by_clips: string[];
 }
 
 export interface LayerDto {
@@ -379,6 +401,7 @@ export interface EditOutcome {
   clip_id: string | null;
   layer_id: string | null;
   preset_id: string | null;
+  compound_id: string | null;
 }
 
 export interface EditorView {
@@ -387,6 +410,7 @@ export interface EditorView {
   targets: { id: string; name: string }[];
   length_us: number | null;
   layers: LayerDto[];
+  compounds: CompoundDto[];
   presets: PresetDto[];
   dirty: boolean;
   can_undo: boolean;
