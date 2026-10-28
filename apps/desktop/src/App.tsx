@@ -10,7 +10,8 @@ import LedPreview from "./LedPreview";
 import TimelineEditor from "./TimelineEditor";
 import InputPanel from "./InputPanel";
 import UnsavedChoice from "./UnsavedChoice";
-import type { AppInfo, LiveDiag, StartRequest, StatusDto, TimingSummary } from "./ipc/types";
+import * as preview from "./previewStore";
+import type { AppInfo, LiveDiag, StartRequest, StatusDto, TimeSource, TimingSummary } from "./ipc/types";
 
 const STATUS_POLL_MS = 200;
 const MAX_EVENTS = 50;
@@ -62,17 +63,18 @@ function Health({ s, onReset, onReconnect, busy }: { s: StatusDto; onReset: () =
   const c = s.control;
   const controlTone: Tone = !c ? "idle" : c.fault ? "bad" : c.output === "ready" && c.input === "ready" ? "good" : "warn";
   const t = s.timecode_out;
+  const local = s.running && s.time_source === "local" ? s.local : null;
   return (
     <section className="panel">
       <h2>同期と接続の状態</h2>
       <div className="tiles">
         <Tile
-          title="時刻源（ブリッジ）"
+          title={local ? "時刻源" : "時刻源（ブリッジ）"}
           tone={timeTone}
-          value={s.running ? `${s.time_health}${s.stalled ? "（停滞）" : ""}` : "--"}
+          value={local ? `手元の時計（${local.playing ? "再生中" : "停止中"}）` : s.running ? `${s.time_health}${s.stalled ? "（停滞）" : ""}` : "--"}
           detail={[s.running ? `transport ${s.transport} · 出力 ${s.output} ${s.gain.toFixed(2)}` : null, s.dark ? `暗転の理由：${s.dark}` : null]}
         />
-        <Tile title="拍源" tone={beatTone} value={s.running ? s.beat_health : "--"} detail={[s.beat ? `${s.beat.beat.toFixed(2)} 拍 · ${s.beat.tempo_bpm.toFixed(1)} bpm${s.beat.phase_valid ? "" : "（位相未確定）"}` : null, s.beat_seeded ? "bridge の拍で原点を補完" : null]} />
+        <Tile title="拍源" tone={beatTone} value={local ? `手元（${local.bpm} bpm）` : s.running ? s.beat_health : "--"} detail={[s.beat ? `${s.beat.beat.toFixed(2)} 拍 · ${s.beat.tempo_bpm.toFixed(1)} bpm${s.beat.phase_valid ? "" : "（位相未確定）"}` : null, s.beat_seeded ? "bridge の拍で原点を補完" : null]} />
         <Tile title="LED出力" tone={s.render_panics > 0 ? "bad" : bindingTone(s.led.state)} value={ja(s.led.state)} detail={[s.led.generation !== null ? `接続世代 ${s.led.generation}` : null, s.running ? `点灯 ${s.led.lit}` : null, s.led.error, s.render_panics > 0 ? `描画の異常 ${s.render_panics} フレーム（前のフレームを保持。最後：${s.render_fault ?? ""}）` : null]} />
         <Tile
           title="操作経路（→ Live）"
@@ -183,7 +185,8 @@ export default function App() {
       .appInfo()
       .then((i) => {
         setInfo(i);
-        if (i.initial_show_path) setReq({ show_path: i.initial_show_path });
+        const initial = i.initial_show_path;
+        if (initial) setReq((r) => ({ ...r, show_path: initial }));
       })
       .catch((e) => setError(ipc.errorText(e)));
   }, []);
@@ -195,6 +198,8 @@ export default function App() {
       try {
         const s = await ipc.runtimeStatus();
         setStatus(s);
+        // A21: the transport bar drives the runtime's clock while it runs locally.
+        preview.setRuntimeLocal(s.running && s.time_source === "local" ? s.local : null);
         if (s.events.length > 0) setEvents((prev) => [...prev, ...s.events].slice(-MAX_EVENTS));
       } catch (e) {
         setError(ipc.errorText(e));
@@ -225,13 +230,17 @@ export default function App() {
     ipc.settingsGet().then((v) => setRecent(v.settings.recent_shows)).catch(() => {});
   }, []);
   useEffect(refreshRecent, [refreshRecent]);
+  // A21: offer the time source chosen at the last start.
+  useEffect(() => {
+    ipc.settingsGet().then((v) => setReq((r) => ({ ...r, time_source: v.settings.last_time_source ?? "live" }))).catch(() => {});
+  }, []);
 
   // Open a show for editing (and as the show to start). A file that fails to
   // load leaves the current show as it is; the reasons come with JSON Pointers.
   // Unsaved changes: ask (save and open / open without saving / cancel).
   const [pendingOpen, setPendingOpen] = useState<string | null>(null);
   const opened = (path: string) => {
-    setReq({ show_path: path });
+    setReq((r) => ({ ...r, show_path: path }));
     setSaveNote(`開いた：${path}`);
     refreshRecent();
   };
@@ -284,7 +293,7 @@ export default function App() {
       const p = await ipc.pickShowSave(status?.document?.path);
       if (!p) return;
       const v = await ipc.editorSaveAs(p);
-      setReq({ show_path: v.path });
+      setReq((r) => ({ ...r, show_path: v.path }));
       setSaveNote(`保存した：${v.path}`);
       refreshRecent();
     });
@@ -382,9 +391,16 @@ export default function App() {
               <div className="show-row">
                 <label className="field grow">
                   <span>ショーファイル（ポートとブリッジは「接続設定」）</span>
-                  <input value={req.show_path} placeholder="C:\…\demo.show.json" disabled={running} spellCheck={false} onChange={(e) => setReq({ show_path: e.target.value })} />
+                  <input value={req.show_path} placeholder="C:\…\demo.show.json" disabled={running} spellCheck={false} onChange={(e) => setReq((r) => ({ ...r, show_path: e.target.value }))} />
                 </label>
                 <button disabled={busy} onClick={pickAndOpen}>開く…</button>
+                <label className="inline">
+                  時刻源
+                  <select value={req.time_source ?? "live"} disabled={busy || running} onChange={(e) => setReq((r) => ({ ...r, time_source: e.target.value as TimeSource }))}>
+                    <option value="live">Live に追従</option>
+                    <option value="local">手元の時計（Live なし）</option>
+                  </select>
+                </label>
                 <button className="primary" disabled={busy || running} onClick={start}>開始</button>
                 <button disabled={busy || !running} onClick={stop}>停止</button>
               </div>
