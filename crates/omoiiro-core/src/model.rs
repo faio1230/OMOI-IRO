@@ -1,4 +1,4 @@
-//! Show data model (docs/04-show-data.md, schemas/show.schema.json 0.1.2).
+//! Show data model (docs/04-show-data.md, schemas/show.schema.json 0.1.3).
 //!
 //! These types are the serde DTO and the domain model at once. Field order
 //! follows the Schema so that serialization gives the canonical key order;
@@ -10,10 +10,10 @@
 use crate::time::FrameRate;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-pub const SCHEMA_VERSION: &str = "0.1.2";
+pub const SCHEMA_VERSION: &str = "0.1.3";
 /// Older versions the store migrates on load (additive changes: only the
-/// version is rewritten; 0.1.2 adds effect types).
-pub const MIGRATABLE_VERSIONS: &[&str] = &["0.1.0", "0.1.1"];
+/// version is rewritten; 0.1.2 adds effect types, 0.1.3 the triggered layer).
+pub const MIGRATABLE_VERSIONS: &[&str] = &["0.1.0", "0.1.1", "0.1.2"];
 
 /// Serialize an `f64` as an integer when it is one (1.0 -> `1`, 0.6 -> `0.6`).
 pub fn ser_num<S: Serializer>(v: &f64, s: S) -> Result<S::Ok, S::Error> {
@@ -364,6 +364,11 @@ impl Effect {
         }
     }
 
+    /// Draws instances (position and age) handed to it: ripple, tap_glow, cross.
+    pub fn takes_instances(&self) -> bool {
+        matches!(self, Effect::Ripple { .. } | Effect::TapGlow { .. } | Effect::Cross { .. })
+    }
+
     /// Compiled-in effect (`builtin.*`), as opposed to a future graph reference.
     pub fn is_builtin(&self) -> bool {
         self.type_name().starts_with("builtin.")
@@ -659,6 +664,66 @@ pub enum Blend {
 pub enum Content {
     Timeline { clips: Vec<Clip> },
     Continuous { preset_id: String },
+    /// 0.1.3: clips are the windows where `trigger` fires instances of the
+    /// clip's preset (positions and times come from the trigger).
+    Triggered { clips: Vec<Clip>, trigger: TriggerSpec },
+}
+
+impl Content {
+    /// Clips of a timeline or triggered layer.
+    pub fn clips(&self) -> Option<&Vec<Clip>> {
+        match self {
+            Content::Timeline { clips } | Content::Triggered { clips, .. } => Some(clips),
+            Content::Continuous { .. } => None,
+        }
+    }
+
+    pub fn clips_mut(&mut self) -> Option<&mut Vec<Clip>> {
+        match self {
+            Content::Timeline { clips } | Content::Triggered { clips, .. } => Some(clips),
+            Content::Continuous { .. } => None,
+        }
+    }
+}
+
+/// When a triggered layer fires (docs/14 §4-1).
+///
+/// * `press` / `release` / `hold`: pad input, timed by its arrival
+///   (monotonic): instances are not replayed by a seek and keep ageing
+///   through Stop. Only input that arrives while a clip is active counts.
+///   `hold` lasts from press to release (at most 10 s).
+/// * `clip_start` / `interval`: the clip's local time (deterministic, seek
+///   safe), at `origin_x` / `origin_y` (default the centre).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TriggerSpec {
+    pub on: TriggerOn,
+    /// `interval` only (required there): 100..=10000 ms.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub interval_ms: Option<u32>,
+    /// `clip_start` / `interval`: 0..=7 cells; absent = 3.5.
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_num")]
+    pub origin_x: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_num")]
+    pub origin_y: Option<f64>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TriggerOn {
+    Press,
+    Release,
+    Hold,
+    ClipStart,
+    Interval,
+}
+
+/// `ser_num` for an optional plain number (skipped when absent).
+pub fn ser_opt_num<S: Serializer>(v: &Option<f64>, s: S) -> Result<S::Ok, S::Error> {
+    match v {
+        Some(x) => ser_num(x, s),
+        None => s.serialize_none(),
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

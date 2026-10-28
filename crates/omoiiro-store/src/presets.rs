@@ -42,8 +42,8 @@ pub fn parse_preset_file(text: &str) -> Result<Preset, LoadError> {
     let v: Value = serde_json::from_str(text)
         .map_err(|e| LoadError::Json { line: e.line(), column: e.column(), message: e.to_string() })?;
     match v.get("schema_version").and_then(Value::as_str) {
-        // 0.1.1 preset files are valid 0.1.2 ones (additive change).
-        Some(v) if v == SCHEMA_VERSION || v == "0.1.1" => {}
+        // 0.1.1 / 0.1.2 preset files are valid current ones (additive changes).
+        Some(v) if v == SCHEMA_VERSION || v == "0.1.1" || v == "0.1.2" => {}
         Some(other) => return Err(LoadError::UnsupportedVersion { found: other.to_string() }),
         None => return Err(LoadError::Schema(vec![Issue { pointer: "/schema_version".into(), message: "missing".into() }])),
     }
@@ -96,7 +96,7 @@ mod tests {
     fn export_then_import_with_conflict_policies() {
         let mut show = demo();
         let text = export_preset(&show, "sweep-cyan").unwrap();
-        assert!(text.starts_with("{\n  \"schema_version\": \"0.1.2\",\n  \"kind\": \"omoiiro.preset\","));
+        assert!(text.starts_with("{\n  \"schema_version\": \"0.1.3\",\n  \"kind\": \"omoiiro.preset\","));
         // The exported file passes the preset schema.
         assert!(crate::schema::validate_preset_file(&serde_json::from_str(&text).unwrap()).is_empty());
         // Same ID already present.

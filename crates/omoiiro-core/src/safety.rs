@@ -165,7 +165,7 @@ impl FlashProfile {
                 }
             };
             match &l.content {
-                Content::Timeline { clips } => clips.iter().for_each(|c| add(&c.preset_id, Some(&c.id))),
+                Content::Timeline { clips } | Content::Triggered { clips, .. } => clips.iter().for_each(|c| add(&c.preset_id, Some(&c.id))),
                 Content::Continuous { preset_id } => add(preset_id, None),
             }
             layers.push((l.id.clone(), l.name.clone(), entries));

@@ -14,7 +14,7 @@
 //!    timeline, string lengths) and value ranges the renderer relies on
 //!    (colors, opacity, depth, beats per cycle, period, width).
 
-use crate::model::{Content, Effect, Show, SCHEMA_VERSION};
+use crate::model::{Content, Effect, Show, TriggerOn, TriggerSpec, SCHEMA_VERSION};
 use crate::surface::{Rgb, GRID64_PROFILE};
 use crate::time::{Timecode, MAX_SAFE_INTEGER};
 use std::collections::{HashMap, HashSet};
@@ -336,7 +336,19 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                     c.push(format!("{p}/content/preset_id"), format!("unknown preset {preset_id:?}"));
                 }
             }
-            Content::Timeline { clips } => {
+            Content::Timeline { clips } | Content::Triggered { clips, .. } => {
+                if let Content::Triggered { trigger, .. } = &l.content {
+                    check_trigger(&mut c, trigger, &format!("{p}/content/trigger"));
+                    // Without coordinates of its own, only an effect that takes instances
+                    // (ripple / tap_glow / cross) or a hold (drawn while held) makes sense.
+                    for (ci, clip) in clips.iter().enumerate() {
+                        if let Some(&pi) = preset_ids.get(clip.preset_id.as_str()) {
+                            if trigger.on != TriggerOn::Hold && !show.presets[pi].effect.takes_instances() {
+                                c.push(format!("{p}/content/clips/{ci}/preset_id"), format!("{} draws at fixed positions: use it with trigger on hold, or use ripple / tap_glow / cross", show.presets[pi].effect.type_name()));
+                            }
+                        }
+                    }
+                }
                 if clips.len() > MAX_CLIPS_PER_TIMELINE {
                     c.push(format!("{p}/content/clips"), format!("at most {MAX_CLIPS_PER_TIMELINE} clips (got {})", clips.len()));
                 }
@@ -374,9 +386,52 @@ pub fn validate(show: &Show) -> Vec<Issue> {
     c.issues
 }
 
+fn check_trigger(c: &mut Ctx, t: &TriggerSpec, p: &str) {
+    match (t.on, t.interval_ms) {
+        (TriggerOn::Interval, None) => c.push(format!("{p}/interval_ms"), "required when on is interval"),
+        (_, Some(ms)) if !(100..=10_000).contains(&ms) => c.push(format!("{p}/interval_ms"), "interval_ms must be within 100..=10000"),
+        _ => {}
+    }
+    for (name, v) in [("origin_x", t.origin_x), ("origin_y", t.origin_y)] {
+        if let Some(v) = v {
+            c.range(v, 0.0, 7.0, format!("{p}/{name}"));
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn triggered_layers_check_their_trigger_and_effects() {
+        use crate::model::{Clip, Layer, Preset};
+        let mut s = crate::model::demo_for_tests();
+        s.presets.push(Preset { id: "r".into(), name: "r".into(), effect: crate::edit::default_effect("builtin.ripple").unwrap() });
+        let clip = |p: &str| Clip { id: format!("c-{p}"), preset_id: p.into(), start_us: 0, duration_us: 1_000_000, fade_in_us: 0, fade_out_us: 0 };
+        let layer = |p: &str, on| Layer {
+            id: "trig".into(),
+            name: "trig".into(),
+            target_id: "main-pad".into(),
+            enabled: true,
+            opacity: 1.0,
+            blend: crate::model::Blend::Over,
+            content: Content::Triggered { clips: vec![clip(p)], trigger: TriggerSpec { on, interval_ms: None, origin_x: None, origin_y: None } },
+        };
+        let with = |l: Layer| {
+            let mut x = s.clone();
+            x.layers.push(l);
+            validate(&x)
+        };
+        assert!(with(layer("r", TriggerOn::Press)).is_empty());
+        // A fixed-position effect only on hold.
+        assert!(with(layer("base-blue", TriggerOn::Hold)).is_empty());
+        let e = with(layer("base-blue", TriggerOn::Press));
+        assert!(e[0].pointer.ends_with("/content/clips/0/preset_id"), "{e:?}");
+        // Interval needs its interval.
+        let e = with(layer("r", TriggerOn::Interval));
+        assert!(e[0].pointer.ends_with("/content/trigger/interval_ms"), "{e:?}");
+    }
     use crate::model::Show;
 
     fn demo() -> Show {

@@ -281,7 +281,9 @@ export type EditCommand =
   | { op: "delete_preset"; preset_id: string }
   | { op: "set_clip_preset"; clip_id: string; preset_id: string }
   | { op: "edit_clip_effect"; clip_id: string; effect: Effect }
-  | { op: "set_sync"; beat_source: BeatSource | null; mtc_output_enabled: boolean | null };
+  | { op: "set_sync"; beat_source: BeatSource | null; mtc_output_enabled: boolean | null }
+  | { op: "add_triggered_layer"; name: string; on: TriggerOn; index: number | null }
+  | { op: "set_layer_trigger"; layer_id: string; trigger: TriggerSpec };
 
 export type Blend = "over" | "add" | "max";
 export type EffectType = "builtin.solid" | "builtin.chase" | "builtin.pulse" | "builtin.strobe" | "builtin.noise" | "builtin.ripple" | "builtin.rain" | "builtin.wave" | "builtin.orb" | "builtin.regions" | "builtin.tap_glow" | "builtin.cross";
@@ -317,12 +319,23 @@ export interface LayerDto {
   id: string;
   name: string;
   target_id: string;
-  kind: "timeline" | "continuous";
+  kind: "timeline" | "continuous" | "triggered";
   enabled: boolean;
   opacity: number;
   blend: Blend;
   preset_id: string | null;
   clips: ClipDto[];
+  /** Triggered layers: when they fire. */
+  trigger: TriggerSpec | null;
+}
+
+export type TriggerOn = "press" | "release" | "hold" | "clip_start" | "interval";
+
+export interface TriggerSpec {
+  on: TriggerOn;
+  interval_ms?: number;
+  origin_x?: number;
+  origin_y?: number;
 }
 
 export interface PresetDto {

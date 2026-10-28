@@ -79,8 +79,8 @@ export default function LedPreview(props: { showPath: string; running: boolean; 
             const x = k % 8;
             const i = (y * 8 + x) * 3;
             const c = frame ? `rgb(${frame.rgb[i]}, ${frame.rgb[i + 1]}, ${frame.rgb[i + 2]})` : "#000";
-            // Click = a pad press for Ripple in the shown source (checking only, not device input).
-            return <div key={k} className="pad" style={{ background: c }} onPointerDown={() => ipc.previewPad(x, y).catch(() => {})} />;
+            // Press / release = pad events for input-driven effects in the shown source (checking only, not device input).
+            return <div key={k} className="pad" style={{ background: c }} onPointerDown={() => ipc.previewPad(x, y, true).catch(() => {})} onPointerUp={() => ipc.previewPad(x, y, false).catch(() => {})} onPointerLeave={(e) => e.buttons && ipc.previewPad(x, y, false).catch(() => {})} />;
           })}
         </div>
         <div className="preview-side">

@@ -305,9 +305,10 @@ impl FollowSession {
     /// A pad press from the UI (preview grid click), as if it came from the
     /// operation input: only input-driven effects (Ripple) see it; nothing
     /// is sent to Live.
-    pub fn press_pad(&self, x: u8, y: u8) {
-        let hit = omoiiro_core::render::PadHit { x: x.min(7), y: y.min(7), velocity: 127, t_us: self.clock.now_us() };
-        let _ = self.shared.pad_tx.try_send(hit);
+    pub fn press_pad(&self, x: u8, y: u8, pressed: bool) {
+        let (x, y, t_us) = (x.min(7), y.min(7), self.clock.now_us());
+        let ev = if pressed { omoiiro_core::render::PadEvent::Press { x, y, velocity: 127, t_us } } else { omoiiro_core::render::PadEvent::Release { x, y, t_us } };
+        let _ = self.shared.pad_tx.try_send(ev);
     }
 
     pub fn set_brightness(&self, b: f32) {

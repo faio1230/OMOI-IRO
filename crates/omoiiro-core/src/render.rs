@@ -61,7 +61,7 @@
 //! brightness scales the result.
 
 use crate::model::{
-    Axis, Blend, Content, Effect, OrbMotion, RainDirection, RegionPattern, RippleFade, RippleShape, RippleTrigger, Show, StepMode, StepOrder, StrobeMode, Waveform,
+    Axis, Blend, Content, Effect, OrbMotion, TriggerOn, RainDirection, RegionPattern, RippleFade, RippleShape, RippleTrigger, Show, StepMode, StepOrder, StrobeMode, Waveform,
 };
 use crate::surface::{Frame, LayerFrame, Rgb, Rgba, GRID_H, GRID_LEDS, GRID_W};
 use crate::time::{BeatState, ShowTimeUs};
@@ -103,14 +103,37 @@ pub enum CompiledEffect {
     Regions { pattern: RegionPattern, color: Rgb, color_b: Option<Rgb>, mode: StepMode, step_beats: f64, step_s: f64, order: StepOrder, soft: f64, duty: f64 },
 }
 
-/// One pad press for input-driven effects: grid cell (bottom-left origin)
-/// and the monotonic time it arrived.
+/// One pad press for input-driven effects: grid cell (bottom-left origin),
+/// the monotonic time it arrived, its release (if any) and the show time
+/// when it arrived (triggered layers accept it only inside a clip).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PadHit {
     pub x: u8,
     pub y: u8,
     pub velocity: u8,
     pub t_us: i64,
+    pub release_us: Option<i64>,
+    pub show_us: Option<i64>,
+}
+
+impl PadHit {
+    pub fn press(x: u8, y: u8, velocity: u8, t_us: i64) -> PadHit {
+        PadHit { x, y, velocity, t_us, release_us: None, show_us: None }
+    }
+
+    /// Release time, with a hold longer than `PadInput::MAX_HOLD_US` cut there.
+    pub fn effective_release(&self, now_us: i64) -> Option<i64> {
+        self.release_us.or((now_us - self.t_us > PadInput::MAX_HOLD_US).then_some(self.t_us + PadInput::MAX_HOLD_US))
+    }
+}
+
+/// Operation input for the renderer, in arrival order.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PadEvent {
+    Press { x: u8, y: u8, velocity: u8, t_us: i64 },
+    Release { x: u8, y: u8, t_us: i64 },
+    /// The input went away (unplugged, reconnect): release every held pad.
+    ReleaseAll { t_us: i64 },
 }
 
 /// Pad hits seen by the renderer at monotonic time `now_us` (oldest first).
@@ -135,12 +158,35 @@ impl PadInput {
         self.hits.push(hit);
     }
 
+    /// A hold is cut (released) after 10 s.
+    pub const MAX_HOLD_US: i64 = 10_000_000;
+
+    /// Take one event; `show_us` is the show time when it arrived.
+    pub fn apply(&mut self, ev: PadEvent, show_us: Option<i64>) {
+        match ev {
+            PadEvent::Press { x, y, velocity, t_us } => self.push(PadHit { show_us, ..PadHit::press(x, y, velocity, t_us) }),
+            // The newest held press of that pad.
+            PadEvent::Release { x, y, t_us } => {
+                if let Some(h) = self.hits.iter_mut().rev().find(|h| h.x == x && h.y == y && h.release_us.is_none()) {
+                    h.release_us = Some(t_us);
+                }
+            }
+            PadEvent::ReleaseAll { t_us } => self.hits.iter_mut().filter(|h| h.release_us.is_none()).for_each(|h| h.release_us = Some(t_us)),
+        }
+    }
+
     /// Set the time and drop expired hits.
     pub fn advance(&mut self, now_us: i64) {
         self.now_us = now_us;
         self.hits.retain(|h| now_us - h.t_us <= Self::MAX_AGE_US);
     }
 }
+
+/// A fired instance for instance-taking effects: position and age.
+pub type Instance = (f64, f64, i64);
+
+/// Instances a triggered layer keeps per clip and frame at most.
+pub const MAX_INSTANCES: usize = 64;
 
 impl CompiledEffect {
     pub fn compile(e: &Effect) -> Option<CompiledEffect> {
@@ -448,26 +494,37 @@ impl CompiledEffect {
 
 impl CompiledEffect {
     /// `paint` plus the input-driven effects (Ripple) when `input` is given.
+    /// Continuous layers (0.1.2 behaviour): every press is an instance.
     pub fn paint_input(&self, local_us: u64, beat: Option<BeatState>, input: Option<&PadInput>, alpha: f64, layer: &mut LayerFrame) {
+        let pad_driven = matches!(self, CompiledEffect::Ripple { interval: None, .. } | CompiledEffect::TapGlow { .. } | CompiledEffect::Cross { .. });
+        if !pad_driven {
+            return self.paint(local_us, beat, alpha, layer);
+        }
+        if let Some(input) = input {
+            // Newest first.
+            let mut inst = [(0.0, 0.0, 0); PadInput::CAPACITY];
+            let n = input.hits.len().min(PadInput::CAPACITY);
+            for (o, h) in inst.iter_mut().zip(input.hits.iter().rev()) {
+                *o = (h.x as f64, h.y as f64, input.now_us - h.t_us);
+            }
+            self.paint_instances(&inst[..n], alpha, layer);
+        }
+    }
+
+    /// True for effects drawn from instances (position + age).
+    pub fn takes_instances(&self) -> bool {
+        matches!(self, CompiledEffect::Ripple { .. } | CompiledEffect::TapGlow { .. } | CompiledEffect::Cross { .. })
+    }
+
+    /// Draw instances (newest first). Other effects draw nothing here.
+    pub fn paint_instances(&self, inst: &[Instance], alpha: f64, layer: &mut LayerFrame) {
         match *self {
-            CompiledEffect::Ripple { look, interval: None } => {
-                if let Some(input) = input {
-                    // Newest first.
-                    let ages = input.hits.iter().rev().map(|h| (h.x as f64, h.y as f64, input.now_us - h.t_us));
-                    paint_ripple(ages, look, alpha, layer);
-                }
-            }
+            CompiledEffect::Ripple { look, .. } => paint_ripple(inst.iter().copied(), look, alpha, layer),
             CompiledEffect::TapGlow { start, mid, end, lifetime_us, radius, repeats, repeat_us, decay } => {
-                if let Some(input) = input {
-                    paint_tap_glow(input, [start, mid, end], lifetime_us, radius, repeats, repeat_us, decay, alpha, layer);
-                }
+                paint_tap_glow(inst, [start, mid, end], lifetime_us, radius, repeats, repeat_us, decay, alpha, layer)
             }
-            CompiledEffect::Cross { color, speed, length, lifetime_us } => {
-                if let Some(input) = input {
-                    paint_cross(input, color, speed, length, lifetime_us, alpha, layer);
-                }
-            }
-            _ => self.paint(local_us, beat, alpha, layer),
+            CompiledEffect::Cross { color, speed, length, lifetime_us } => paint_cross(inst, color, speed, length, lifetime_us, alpha, layer),
+            _ => {}
         }
     }
 }
@@ -479,13 +536,12 @@ fn lerp_rgb(a: Rgb, b: Rgb, k: f32) -> Rgb {
 /// Each press glows `repeats` times, `repeat_us` apart, each weaker by `decay`;
 /// a glow goes start → mid → end over its lifetime. The strongest wins per cell.
 #[allow(clippy::too_many_arguments)]
-fn paint_tap_glow(input: &PadInput, colors: [Rgb; 3], lifetime_us: i64, radius: f64, repeats: u32, repeat_us: i64, decay: f64, alpha: f64, layer: &mut LayerFrame) {
+fn paint_tap_glow(inst: &[Instance], colors: [Rgb; 3], lifetime_us: i64, radius: f64, repeats: u32, repeat_us: i64, decay: f64, alpha: f64, layer: &mut LayerFrame) {
     if alpha <= 0.0 {
         return;
     }
     let mut best = [(0.0f64, Rgb::new(0.0, 0.0, 0.0)); GRID_LEDS];
-    for h in &input.hits {
-        let age = input.now_us - h.t_us;
+    for &(hx, hy, age) in inst {
         for r in 0..repeats {
             let a = age - r as i64 * repeat_us;
             if !(0..lifetime_us).contains(&a) {
@@ -495,7 +551,7 @@ fn paint_tap_glow(input: &PadInput, colors: [Rgb; 3], lifetime_us: i64, radius: 
             let color = if life < 0.5 { lerp_rgb(colors[0], colors[1], (life * 2.0) as f32) } else { lerp_rgb(colors[1], colors[2], ((life - 0.5) * 2.0) as f32) };
             let strength = decay.powi(r as i32);
             for (i, b) in best.iter_mut().enumerate() {
-                let (dx, dy) = ((i % GRID_W) as f64 - h.x as f64, (i / GRID_W) as f64 - h.y as f64);
+                let (dx, dy) = ((i % GRID_W) as f64 - hx, (i / GRID_W) as f64 - hy);
                 let d = (dx * dx + dy * dy).sqrt();
                 let w = if radius > 0.0 { (1.0 - d / radius).max(0.0) } else if d == 0.0 { 1.0 } else { 0.0 };
                 let s = w * strength;
@@ -514,13 +570,12 @@ fn paint_tap_glow(input: &PadInput, colors: [Rgb; 3], lifetime_us: i64, radius: 
 
 /// Heads run `speed` cells/s along the pad's row and column; linear tails of
 /// `length` cells behind them; everything fades over the lifetime.
-fn paint_cross(input: &PadInput, color: Rgb, speed: f64, length: f64, lifetime_us: i64, alpha: f64, layer: &mut LayerFrame) {
+fn paint_cross(inst: &[Instance], color: Rgb, speed: f64, length: f64, lifetime_us: i64, alpha: f64, layer: &mut LayerFrame) {
     if alpha <= 0.0 {
         return;
     }
     let mut cell_a = [0.0f64; GRID_LEDS];
-    for h in &input.hits {
-        let age = input.now_us - h.t_us;
+    for &(hx, hy, age) in inst {
         if !(0..lifetime_us).contains(&age) {
             continue;
         }
@@ -528,10 +583,11 @@ fn paint_cross(input: &PadInput, color: Rgb, speed: f64, length: f64, lifetime_u
         let head = speed * age as f64 / 1e6;
         for (i, a) in cell_a.iter_mut().enumerate() {
             let (x, y) = (i % GRID_W, i / GRID_W);
-            let d = if y == h.y as usize {
-                (x as f64 - h.x as f64).abs()
-            } else if x == h.x as usize {
-                (y as f64 - h.y as f64).abs()
+            // The row and the column through the instance's cell.
+            let d = if (y as f64 - hy).abs() < 0.5 {
+                (x as f64 - hx).abs()
+            } else if (x as f64 - hx).abs() < 0.5 {
+                (y as f64 - hy).abs()
             } else {
                 continue;
             };
@@ -735,6 +791,45 @@ fn paint_rain(local_us: u64, color: Rgb, head: Rgb, direction: RainDirection, sp
     }
 }
 
+/// Instances of one active triggered clip (newest first, at most `MAX_INSTANCES`).
+/// Pad events count only when they arrived while this clip was active.
+fn triggered_instances(on: TriggerOn, interval_us: i64, origin: (f64, f64), span: &ClipSpan, local: i64, input: Option<&PadInput>, out: &mut Vec<Instance>) {
+    out.clear();
+    match on {
+        TriggerOn::ClipStart => out.push((origin.0, origin.1, local)),
+        TriggerOn::Interval => {
+            let mut k = local / interval_us;
+            while k >= 0 && out.len() < MAX_INSTANCES {
+                let age = local - k * interval_us;
+                if age > PadInput::MAX_AGE_US {
+                    break;
+                }
+                out.push((origin.0, origin.1, age));
+                k -= 1;
+            }
+        }
+        TriggerOn::Press | TriggerOn::Release | TriggerOn::Hold => {
+            let Some(input) = input else { return };
+            let now = input.now_us;
+            for h in input.hits.iter().rev() {
+                if out.len() == MAX_INSTANCES {
+                    break;
+                }
+                if !h.show_us.is_some_and(|s| span.contains(s)) {
+                    continue;
+                }
+                let age = match (on, h.effective_release(now)) {
+                    (TriggerOn::Press, _) => now - h.t_us,
+                    (TriggerOn::Release, Some(r)) => now - r,
+                    (TriggerOn::Hold, None) => now - h.t_us,
+                    _ => continue,
+                };
+                out.push((h.x as f64, h.y as f64, age));
+            }
+        }
+    }
+}
+
 /// SplitMix64 finalizer: a well-mixed 64-bit value from one input.
 #[inline]
 fn mix64(mut z: u64) -> u64 {
@@ -798,6 +893,7 @@ pub fn blend_layer(frame: &mut Frame, layer: &LayerFrame, blend: Blend, opacity:
 enum LayerContent {
     Continuous { effect: usize },
     Timeline { index: ClipIndex, effects: Vec<usize> },
+    Triggered { index: ClipIndex, effects: Vec<usize>, on: TriggerOn, interval_us: i64, origin: (f64, f64) },
 }
 
 #[derive(Clone, Debug)]
@@ -818,6 +914,8 @@ pub struct Renderer {
     active: Vec<ClipSpan>,
     /// Layers muted by the flashing limit (safety); the show is unchanged.
     muted: Vec<bool>,
+    /// Instances of one triggered clip (reused, never grows past `MAX_INSTANCES`).
+    inst: Vec<Instance>,
 }
 
 impl Renderer {
@@ -847,6 +945,16 @@ impl Renderer {
                             effects: clips.iter().map(|c| by_id[c.preset_id.as_str()]).collect(),
                         }
                     }
+                    Content::Triggered { clips, trigger } => {
+                        max_clips = max_clips.max(clips.len());
+                        LayerContent::Triggered {
+                            index: ClipIndex::new(clips),
+                            effects: clips.iter().map(|c| by_id[c.preset_id.as_str()]).collect(),
+                            on: trigger.on,
+                            interval_us: trigger.interval_ms.unwrap_or(1000).max(1) as i64 * 1000,
+                            origin: (trigger.origin_x.unwrap_or(3.5), trigger.origin_y.unwrap_or(3.5)),
+                        }
+                    }
                 };
                 CompiledLayer { enabled: l.enabled, opacity: l.opacity as f32, blend: l.blend, content }
             })
@@ -858,6 +966,7 @@ impl Renderer {
             buf: LayerFrame::default(),
             active: Vec::with_capacity(max_clips),
             muted: vec![false; show.layers.len()],
+            inst: Vec::with_capacity(MAX_INSTANCES),
         })
     }
 
@@ -895,6 +1004,20 @@ impl Renderer {
                     index.active(t, &mut self.active);
                     for span in &self.active {
                         self.effects[effects[span.order]].paint_input(span.local_us(t), beat, input, span.fade(t), &mut self.buf);
+                    }
+                }
+                LayerContent::Triggered { index, effects, on, interval_us, origin } => {
+                    index.active(t, &mut self.active);
+                    for span in &self.active {
+                        let local = span.local_us(t) as i64;
+                        triggered_instances(*on, *interval_us, *origin, span, local, input, &mut self.inst);
+                        let e = &self.effects[effects[span.order]];
+                        if e.takes_instances() {
+                            e.paint_instances(&self.inst, span.fade(t), &mut self.buf);
+                        } else if !self.inst.is_empty() {
+                            // A fixed-position effect on `hold`: drawn while a pad is held.
+                            e.paint(local as u64, beat, span.fade(t), &mut self.buf);
+                        }
                     }
                 }
             }
@@ -1080,7 +1203,7 @@ mod tests {
             e.paint_input(0, None, Some(input), 1.0, &mut l);
             l
         };
-        let hit = |x, y, t_us| PadHit { x, y, velocity: 100, t_us };
+        let hit = |x, y, t_us| PadHit::press(x, y, 100, t_us);
         // No input: nothing (and `paint` alone never draws a ripple).
         let empty = PadInput::default();
         assert!(at(&empty).px.iter().all(|p| p.a == 0.0));
@@ -1238,7 +1361,7 @@ mod tests {
         // Shapes at radius 2 from (3, 3): diamond reaches (5, 3) and (4, 4); square reaches (5, 5).
         let at_r2 = |shape| {
             let mut input = PadInput::default();
-            input.push(PadHit { x: 3, y: 3, velocity: 100, t_us: 0 });
+            input.push(PadHit::press(3, 3, 100, 0));
             input.advance(500_000);
             let mut l = LayerFrame::default();
             CompiledEffect::Ripple { look: look(shape), interval: None }.paint_input(0, None, Some(&input), 1.0, &mut l);
@@ -1341,7 +1464,7 @@ mod tests {
 
     fn pad_layer(e: &CompiledEffect, x: u8, y: u8, age_us: i64) -> LayerFrame {
         let mut input = PadInput::default();
-        input.push(PadHit { x, y, velocity: 100, t_us: 0 });
+        input.push(PadHit::press(x, y, 100, 0));
         input.advance(age_us);
         let mut l = LayerFrame::default();
         e.paint_input(0, None, Some(&input), 1.0, &mut l);
@@ -1387,6 +1510,102 @@ mod tests {
         assert!(pad_layer(&c, 2, 2, 1_000_000).px.iter().all(|p| p.a == 0.0), "after the lifetime");
     }
 
+    /// A show with one triggered layer: clip 1..5 s of `preset`, firing `on`.
+    fn triggered_show(effect: Effect, trigger: crate::model::TriggerSpec) -> Show {
+        let mut s = demo();
+        s.presets.push(crate::model::Preset { id: "p".into(), name: "p".into(), effect });
+        let clip = crate::model::Clip { id: "w".into(), preset_id: "p".into(), start_us: 1_000_000, duration_us: 4_000_000, fade_in_us: 0, fade_out_us: 0 };
+        s.layers = vec![crate::model::Layer {
+            id: "t".into(),
+            name: "t".into(),
+            target_id: "main-pad".into(),
+            enabled: true,
+            opacity: 1.0,
+            blend: Blend::Over,
+            content: Content::Triggered { clips: vec![clip], trigger },
+        }];
+        s
+    }
+
+    fn on(on: TriggerOn) -> crate::model::TriggerSpec {
+        crate::model::TriggerSpec { on, interval_ms: (on == TriggerOn::Interval).then_some(500), origin_x: None, origin_y: None }
+    }
+
+    fn lit(f: &Frame) -> usize {
+        f.leds.iter().filter(|c| c.r + c.g + c.b > 0.0).count()
+    }
+
+    #[test]
+    fn triggered_press_counts_only_inside_its_clip_and_ages_in_real_time() {
+        let cross = crate::edit::default_effect("builtin.cross").unwrap(); // 12 cells/s, 800 ms
+        let mut r = Renderer::new(&triggered_show(cross, on(TriggerOn::Press))).unwrap();
+        let mut input = PadInput::default();
+        // Before the clip (show 0.5 s): ignored. Inside (show 2 s): fires.
+        input.apply(PadEvent::Press { x: 0, y: 0, velocity: 100, t_us: 0 }, Some(500_000));
+        input.advance(100_000);
+        assert_eq!(lit(&r.render_input(2_000_000, None, Some(&input))), 0, "pressed outside the clip");
+        input.apply(PadEvent::Press { x: 3, y: 3, velocity: 100, t_us: 200_000 }, Some(2_000_000));
+        input.advance(300_000);
+        assert!(lit(&r.render_input(2_100_000, None, Some(&input))) > 0);
+        // A seek back inside the clip does not replay or clear it: age follows real time.
+        assert_eq!(r.render_input(1_200_000, None, Some(&input)), r.render_input(4_000_000, None, Some(&input)));
+        // Outside the clip nothing is drawn.
+        assert_eq!(lit(&r.render_input(6_000_000, None, Some(&input))), 0);
+        // Without input the layer is empty.
+        assert_eq!(lit(&r.render(2_100_000, None)), 0);
+    }
+
+    #[test]
+    fn hold_draws_while_held_and_release_fires_on_release() {
+        // A fixed-position effect on hold: a blinder drawn only while a pad is held.
+        let solid = crate::edit::default_effect("builtin.solid").unwrap();
+        let mut r = Renderer::new(&triggered_show(solid, on(TriggerOn::Hold))).unwrap();
+        let mut input = PadInput::default();
+        input.apply(PadEvent::Press { x: 1, y: 1, velocity: 100, t_us: 0 }, Some(2_000_000));
+        input.advance(500_000);
+        assert_eq!(lit(&r.render_input(2_500_000, None, Some(&input))), 64, "held");
+        input.apply(PadEvent::Release { x: 1, y: 1, t_us: 600_000 }, Some(2_600_000));
+        input.advance(700_000);
+        assert_eq!(lit(&r.render_input(2_700_000, None, Some(&input))), 0, "released");
+        // A hold is cut after 10 s; a lost input (release all) ends every hold.
+        let mut input = PadInput::default();
+        input.apply(PadEvent::Press { x: 1, y: 1, velocity: 100, t_us: 0 }, Some(2_000_000));
+        input.advance(PadInput::MAX_HOLD_US + 1);
+        assert_eq!(lit(&r.render_input(2_500_000, None, Some(&input))), 0, "10 s cap");
+        let mut input = PadInput::default();
+        input.apply(PadEvent::Press { x: 1, y: 1, velocity: 100, t_us: 0 }, Some(2_000_000));
+        input.apply(PadEvent::Press { x: 2, y: 2, velocity: 100, t_us: 0 }, Some(2_000_000));
+        input.apply(PadEvent::ReleaseAll { t_us: 100 }, None);
+        input.advance(200);
+        assert_eq!(lit(&r.render_input(2_500_000, None, Some(&input))), 0, "release all");
+        // On release: a ripple appears at the release, not at the press.
+        let ripple = crate::edit::default_effect("builtin.ripple").unwrap();
+        let mut r = Renderer::new(&triggered_show(ripple, on(TriggerOn::Release))).unwrap();
+        let mut input = PadInput::default();
+        input.apply(PadEvent::Press { x: 4, y: 4, velocity: 100, t_us: 0 }, Some(2_000_000));
+        input.advance(300_000);
+        assert_eq!(lit(&r.render_input(2_300_000, None, Some(&input))), 0, "still held");
+        input.apply(PadEvent::Release { x: 4, y: 4, t_us: 300_000 }, Some(2_300_000));
+        input.advance(300_001);
+        assert!(lit(&r.render_input(2_300_001, None, Some(&input))) > 0, "fired by the release");
+    }
+
+    #[test]
+    fn clip_start_and_interval_fire_from_the_clip_time() {
+        let ripple = crate::edit::default_effect("builtin.ripple").unwrap(); // 6 cells/s, 1.2 s
+        let mut r = Renderer::new(&triggered_show(ripple.clone(), on(TriggerOn::ClipStart))).unwrap();
+        // 0.5 s into the clip: a ring of radius 3 around the centre; the same on a replay (seek safe).
+        let a = r.render_input(1_500_000, None, None);
+        assert!(lit(&a) > 0);
+        assert_eq!(r.render(1_500_000, None), a);
+        assert_eq!(lit(&r.render(3_000_000, None)), 0, "only once, at the clip start");
+        let mut r = Renderer::new(&triggered_show(ripple, on(TriggerOn::Interval))).unwrap();
+        assert!(lit(&r.render(3_000_000, None)) > 0, "every 500 ms");
+        // Once the first rings have lived out their 1.2 s, the picture repeats every 500 ms.
+        assert_eq!(r.render(3_100_000, None), r.render(3_600_000, None), "periodic in the clip's local time");
+        assert_ne!(r.render(1_100_000, None), r.render(1_600_000, None), "but not before (one ring, then two)");
+    }
+
     #[test]
     fn renderer_passes_pad_input_only_to_ripple() {
         let mut s = demo();
@@ -1396,7 +1615,7 @@ mod tests {
         }
         let mut r = Renderer::new(&s).unwrap();
         let mut input = PadInput::default();
-        input.push(PadHit { x: 3, y: 3, velocity: 100, t_us: 1_000 });
+        input.push(PadHit::press(3, 3, 100, 1_000));
         input.advance(1_000);
         // Without input the frame is the same as before; with a fresh hit the pad lights up.
         let plain = r.render(5_000_000, None);

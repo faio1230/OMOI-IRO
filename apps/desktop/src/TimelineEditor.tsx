@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as ipc from "./ipc/commands";
 import type { ClipDto, EditCommand, EditorView, LayerDto, Snap } from "./ipc/types";
-import { LayerInspector, PresetPanel, ShowSyncPanel, type PresetEditMode } from "./ShowInspectors";
+import { LayerInspector, PresetPanel, ShowSyncPanel, TRIGGER_JA, type PresetEditMode } from "./ShowInspectors";
 import UnsavedChoice from "./UnsavedChoice";
 
 const ROW_H = 46;
@@ -257,6 +257,7 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
         </label>
         <button onClick={() => apply({ op: "add_layer", name: "", index: null })}>レイヤーを追加</button>
         <button disabled={!presetId} onClick={() => apply({ op: "add_continuous_layer", name: "", preset_id: presetId, index: null })}>常時レイヤーを追加</button>
+        <button onClick={() => apply({ op: "add_triggered_layer", name: "", on: "press", index: null })} title="パッドなどで発火する演出のレイヤー。クリップが有効な区間">発火レイヤーを追加</button>
         <span className={view.dirty ? "badge warn" : "badge"}>{view.dirty ? "未保存の変更あり" : "保存済みと同じ"}</span>
         {view.runtime_revision !== null && <span className="badge good">Runtime に反映 rev {view.runtime_revision}</span>}
         <span className={view.flash_warnings.length ? "badge warn" : "badge"}>点滅 {view.flash_warnings.length} 件（{view.preview_bpm} bpm、上限 {view.max_flash_hz} Hz）</span>
@@ -283,11 +284,11 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
               <div key={layer.id} className={selLayer === layer.id ? "tl-row sel" : "tl-row"} style={{ width: HEAD_W + widthPx, height: ROW_H }} onPointerDown={() => { setSelLayer(layer.id); setSelClip(null); }}>
                 <div className="tl-head" style={{ width: HEAD_W }}>
                   <div className="tl-name" title={layer.id}>{layer.name}</div>
-                  <div className="tl-meta">{layer.kind === "timeline" ? `${layer.blend} · ${Math.round(layer.opacity * 100)}%` : `常時 · ${presetOf(layer.preset_id ?? "")?.name ?? ""}`}</div>
+                  <div className="tl-meta">{layer.kind === "continuous" ? `常時 · ${presetOf(layer.preset_id ?? "")?.name ?? ""}` : layer.kind === "triggered" ? `発火 · ${TRIGGER_JA[layer.trigger?.on ?? "press"]}` : `${layer.blend} · ${Math.round(layer.opacity * 100)}%`}</div>
                   <div className="tl-btns">
                     <button className="tiny" title="手前へ" disabled={idx === view.layers.length - 1} onClick={() => apply({ op: "move_layer", layer_id: layer.id, to_index: idx + 1 })}>▲</button>
                     <button className="tiny" title="奥へ" disabled={idx === 0} onClick={() => apply({ op: "move_layer", layer_id: layer.id, to_index: idx - 1 })}>▼</button>
-                    {layer.kind === "timeline" && <button className="tiny" title="クリップを追加（再生位置、なければ末尾）" onClick={() => addClip(layer)}>＋</button>}
+                    {layer.kind !== "continuous" && <button className="tiny" title="クリップを追加（再生位置、なければ末尾）" onClick={() => addClip(layer)}>＋</button>}
                     <button className="tiny danger" title="レイヤーを削除" onClick={() => apply({ op: "delete_layer", layer_id: layer.id })}>×</button>
                   </div>
                 </div>
@@ -355,7 +356,7 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
             <label className="field">
               <span>レイヤー</span>
               <select value={selected.layer.id} onChange={(e) => apply({ op: "move_clip", clip_id: selected.clip.id, start_us: selected.clip.start_us, to_layer_id: e.target.value })}>
-                {view.layers.filter((l) => l.kind === "timeline").map((l) => (
+                {view.layers.filter((l) => l.kind === selected.layer.kind).map((l) => (
                   <option key={l.id} value={l.id}>{l.name}</option>
                 ))}
               </select>

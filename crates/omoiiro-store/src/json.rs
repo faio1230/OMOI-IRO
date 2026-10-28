@@ -169,6 +169,44 @@ mod tests {
     }
 
     #[test]
+    fn version_0_1_2_fixtures_load_unchanged_as_0_1_3() {
+        // Every 0.1.2 fixture loads, saves as the current version with nothing
+        // else changed, and renders the same before and after.
+        for (name, text) in [
+            ("effects", include_str!("../../../fixtures/shows/effects-0.1.2.show.json")),
+            ("ripple", include_str!("../../../fixtures/shows/ripple-0.1.2.show.json")),
+            ("rain-wave-orb", include_str!("../../../fixtures/shows/rain-wave-orb-0.1.2.show.json")),
+            ("d-effects", include_str!("../../../fixtures/shows/d-effects-0.1.2.show.json")),
+        ] {
+            let show = load_str(text).unwrap_or_else(|e| panic!("{name}: {e}"));
+            assert_eq!(show.schema_version, SCHEMA_VERSION, "{name}");
+            // Same values (some fixtures are not in the canonical layout).
+            let saved = to_canonical_string(&show);
+            let mut expected: Value = serde_json::from_str(text).unwrap();
+            expected["schema_version"] = json!(SCHEMA_VERSION);
+            assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), expected, "{name}");
+            let again = load_str(&saved).unwrap();
+            let mut a = omoiiro_core::render::Renderer::new(&show).unwrap();
+            let mut b = omoiiro_core::render::Renderer::new(&again).unwrap();
+            for t in [0, 1_500_000, 9_300_000, 23_000_000] {
+                assert_eq!(a.render(t, None), b.render(t, None), "{name} at {t}");
+            }
+        }
+    }
+
+    #[test]
+    fn triggered_layer_round_trips_and_needs_its_interval() {
+        let mut v = demo_value();
+        v["layers"][0]["content"] = json!({"kind": "triggered", "clips": [], "trigger": {"on": "interval"}});
+        assert!(schema_pointers(&v).iter().any(|p| p.starts_with("/layers/0/content")), "interval without interval_ms");
+        v["layers"][0]["content"]["trigger"]["interval_ms"] = json!(800);
+        v["layers"][0]["content"]["trigger"]["origin_x"] = json!(2.5);
+        let show = load_str(&v.to_string()).unwrap();
+        let back: Value = serde_json::to_value(&show).unwrap();
+        assert_eq!(back["layers"][0]["content"], v["layers"][0]["content"]);
+    }
+
+    #[test]
     fn serialized_model_passes_the_schema() {
         let show = load_str(DEMO).unwrap();
         let v: Value = serde_json::to_value(&show).unwrap();
@@ -253,12 +291,12 @@ mod tests {
     fn version_0_1_0_is_migrated_on_load() {
         let old = include_str!("../../../fixtures/shows/demo-0.1.0.show.json");
         let show = load_str(old).unwrap();
-        assert_eq!(show.schema_version, "0.1.2");
+        assert_eq!(show.schema_version, SCHEMA_VERSION);
         assert_eq!(show.sync.timecode.source, omoiiro_core::model::TimecodeSource::Mtc);
         assert_eq!(show.sync.mtc_output, None);
         // Saving writes the current version; nothing else changes.
         let saved = to_canonical_string(&show);
-        assert_eq!(saved, old.replace("\"schema_version\": \"0.1.0\"", "\"schema_version\": \"0.1.2\""));
+        assert_eq!(saved, old.replace("\"schema_version\": \"0.1.0\"", &format!("\"schema_version\": \"{SCHEMA_VERSION}\"")));
     }
 
     #[test]

@@ -14,7 +14,7 @@
 
 use crate::model::{
     Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, TapGlowParams, Content, Effect, Layer, Loss, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
-    StopBehavior, StrobeMode, StrobeParams, Sync, Target, TimecodeSettings, TimecodeSource, Waveform, SCHEMA_VERSION,
+    StopBehavior, StrobeMode, StrobeParams, Sync, TriggerOn, TriggerSpec, Target, TimecodeSettings, TimecodeSource, Waveform, SCHEMA_VERSION,
 };
 use crate::surface::GRID64_PROFILE;
 use crate::time::FrameRate;
@@ -99,6 +99,10 @@ pub enum EditCommand {
     /// writes `sync.mtc_output.enabled` (the frame rate and origin come from
     /// `sync.timecode`).
     SetSync { beat_source: Option<BeatSource>, mtc_output_enabled: Option<bool> },
+    /// New triggered layer (no clips yet; add clips as its active windows).
+    AddTriggeredLayer { name: String, on: TriggerOn, index: Option<usize> },
+    /// Replace the trigger of a triggered layer.
+    SetLayerTrigger { layer_id: String, trigger: TriggerSpec },
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -299,7 +303,7 @@ pub fn preset_users(show: &Show, preset_id: &str) -> (Vec<String>, Vec<String>) 
     let mut layers = Vec::new();
     for l in &show.layers {
         match &l.content {
-            Content::Timeline { clips: cs } => clips.extend(cs.iter().filter(|c| c.preset_id == preset_id).map(|c| c.id.clone())),
+            Content::Timeline { clips: cs } | Content::Triggered { clips: cs, .. } => clips.extend(cs.iter().filter(|c| c.preset_id == preset_id).map(|c| c.id.clone())),
             Content::Continuous { preset_id: p } if p == preset_id => layers.push(l.id.clone()),
             Content::Continuous { .. } => {}
         }
@@ -330,6 +334,8 @@ impl EditCommand {
             EditCommand::SetClipPreset { .. } => "クリップのプリセット",
             EditCommand::EditClipEffect { .. } => "クリップの効果を編集",
             EditCommand::SetSync { .. } => "同期の設定",
+            EditCommand::AddTriggeredLayer { .. } => "発火レイヤーを追加",
+            EditCommand::SetLayerTrigger { .. } => "発火の設定",
         }
     }
 }
@@ -374,16 +380,16 @@ fn non_negative(name: &str, v: i64) -> Result<u64, EditError> {
 
 fn clips_mut<'a>(show: &'a mut Show, layer_id: &str) -> Result<&'a mut Vec<Clip>, EditError> {
     let layer = show.layers.iter_mut().find(|l| l.id == layer_id).ok_or_else(|| EditError::NotFound(format!("layer {layer_id:?}")))?;
-    match &mut layer.content {
-        Content::Timeline { clips } => Ok(clips),
-        Content::Continuous { .. } => Err(EditError::Invalid(format!("layer {layer_id:?} is continuous, not a timeline"))),
+    match layer.content.clips_mut() {
+        Some(clips) => Ok(clips),
+        None => Err(EditError::Invalid(format!("layer {layer_id:?} is continuous, not a timeline"))),
     }
 }
 
 /// (layer index, clip index) of a clip.
 fn find_clip(show: &Show, clip_id: &str) -> Result<(usize, usize), EditError> {
     for (li, l) in show.layers.iter().enumerate() {
-        if let Content::Timeline { clips } = &l.content {
+        if let Some(clips) = l.content.clips() {
             if let Some(ci) = clips.iter().position(|c| c.id == clip_id) {
                 return Ok((li, ci));
             }
@@ -393,9 +399,9 @@ fn find_clip(show: &Show, clip_id: &str) -> Result<(usize, usize), EditError> {
 }
 
 fn all_clip_ids(show: &Show) -> impl Iterator<Item = &str> {
-    show.layers.iter().flat_map(|l| match &l.content {
-        Content::Timeline { clips } => clips.iter().map(|c| c.id.as_str()).collect::<Vec<_>>(),
-        Content::Continuous { .. } => Vec::new(),
+    show.layers.iter().flat_map(|l| match l.content.clips() {
+        Some(clips) => clips.iter().map(|c| c.id.as_str()).collect::<Vec<_>>(),
+        None => Vec::new(),
     })
 }
 
@@ -499,6 +505,25 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             s.layers.insert(i, layer);
             out.layer_id = Some(id);
         }
+        EditCommand::AddTriggeredLayer { name, on, index } => {
+            let target_id = s.targets.first().map(|t| t.id.clone()).ok_or_else(|| EditError::Invalid("the show has no target".into()))?;
+            let id = fresh_id("layer", s.layers.iter().map(|l| l.id.as_str()));
+            let name = if name.trim().is_empty() { id.clone() } else { name.trim().to_string() };
+            let interval_ms = (*on == TriggerOn::Interval).then_some(1000);
+            let trigger = TriggerSpec { on: *on, interval_ms, origin_x: None, origin_y: None };
+            let layer = Layer { id: id.clone(), name, target_id, enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Triggered { clips: Vec::new(), trigger } };
+            let i = index.unwrap_or(s.layers.len()).min(s.layers.len());
+            s.layers.insert(i, layer);
+            out.layer_id = Some(id);
+        }
+        EditCommand::SetLayerTrigger { layer_id, trigger } => {
+            let l = s.layers.iter_mut().find(|l| &l.id == layer_id).ok_or_else(|| EditError::NotFound(format!("layer {layer_id:?}")))?;
+            match &mut l.content {
+                Content::Triggered { trigger: t, .. } => *t = trigger.clone(),
+                _ => return Err(EditError::Invalid(format!("layer {layer_id:?} is not a triggered layer"))),
+            }
+            out.layer_id = Some(layer_id.clone());
+        }
         EditCommand::DeleteLayer { layer_id } => {
             let i = s.layers.iter().position(|l| &l.id == layer_id).ok_or_else(|| EditError::NotFound(format!("layer {layer_id:?}")))?;
             s.layers.remove(i);
@@ -541,7 +566,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             let l = s.layers.iter_mut().find(|l| &l.id == layer_id).ok_or_else(|| EditError::NotFound(format!("layer {layer_id:?}")))?;
             match &mut l.content {
                 Content::Continuous { preset_id: p } => *p = preset_id.clone(),
-                Content::Timeline { .. } => return Err(EditError::Invalid(format!("layer {layer_id:?} is a timeline; set the preset per clip"))),
+                Content::Timeline { .. } | Content::Triggered { .. } => return Err(EditError::Invalid(format!("layer {layer_id:?} has clips; set the preset per clip"))),
             }
             out.layer_id = Some(layer_id.clone());
         }
@@ -916,6 +941,27 @@ mod tests {
         assert_eq!(s.sync.mtc_output, Some(MtcOutput { enabled: false }));
         let h = History::new_unsaved(s);
         assert!(h.dirty() && !h.can_undo());
+    }
+
+    #[test]
+    fn triggered_layers_take_clips_and_a_trigger() {
+        let s = demo();
+        let (s, o) = apply(&s, &EditCommand::AddPreset { name: "r".into(), effect_type: "builtin.ripple".into() }, Snap::None).unwrap();
+        let ripple = o.preset_id.unwrap();
+        let (s, o) = apply(&s, &EditCommand::AddTriggeredLayer { name: "発火".into(), on: TriggerOn::Press, index: None }, Snap::None).unwrap();
+        let layer = o.layer_id.unwrap();
+        // Clips are its active windows, added and edited like timeline clips.
+        let (s, o) = apply(&s, &EditCommand::AddClip { layer_id: layer.clone(), preset_id: ripple, start_us: 0, duration_us: 8_000_000 }, Snap::None).unwrap();
+        let clip = o.clip_id.unwrap();
+        let (s, _) = apply(&s, &EditCommand::ResizeClip { clip_id: clip, duration_us: 4_000_000 }, Snap::None).unwrap();
+        let trigger = TriggerSpec { on: TriggerOn::Interval, interval_ms: Some(700), origin_x: Some(1.0), origin_y: None };
+        let (s, _) = apply(&s, &EditCommand::SetLayerTrigger { layer_id: layer.clone(), trigger: trigger.clone() }, Snap::None).unwrap();
+        let l = s.layers.iter().find(|l| l.id == layer).unwrap();
+        assert!(matches!(&l.content, Content::Triggered { clips, trigger: t } if clips[0].duration_us == 4_000_000 && *t == trigger));
+        // Interval without its interval is refused; other layers have no trigger.
+        let bad = TriggerSpec { on: TriggerOn::Interval, interval_ms: None, origin_x: None, origin_y: None };
+        assert!(matches!(apply(&s, &EditCommand::SetLayerTrigger { layer_id: layer, trigger: bad.clone() }, Snap::None), Err(EditError::Rejected(_))));
+        assert!(matches!(apply(&s, &EditCommand::SetLayerTrigger { layer_id: "base".into(), trigger: bad }, Snap::None), Err(EditError::Invalid(_))));
     }
 
     #[test]

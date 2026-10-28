@@ -12,7 +12,7 @@
 //!   preview shows what the device would receive.
 
 use omoiiro_core::model::{Content, Show};
-use omoiiro_core::render::{PadHit, PadInput, Renderer};
+use omoiiro_core::render::{PadEvent, PadInput, Renderer};
 use omoiiro_core::time::BeatState;
 use omoiiro_core::validation::Issue;
 use omoiiro_devices::adapter::DeviceFrame;
@@ -82,7 +82,7 @@ pub fn show_length_us(show: &Show) -> Option<i64> {
     show.layers
         .iter()
         .filter_map(|l| match &l.content {
-            Content::Timeline { clips } => clips.iter().map(|c| c.end_us()).max(),
+            Content::Timeline { clips } | Content::Triggered { clips, .. } => clips.iter().map(|c| c.end_us()).max(),
             Content::Continuous { .. } => None,
         })
         .max()
@@ -141,8 +141,10 @@ impl LocalPreview {
     }
 
     /// A click on preview pad (x, y) at monotonic `now_us` (bottom-left origin).
-    pub fn press(&mut self, x: u8, y: u8, now_us: i64) {
-        self.pads.push(PadHit { x: x.min(7), y: y.min(7), velocity: 127, t_us: now_us });
+    pub fn press(&mut self, x: u8, y: u8, pressed: bool, now_us: i64) {
+        let (x, y) = (x.min(7), y.min(7));
+        let ev = if pressed { PadEvent::Press { x, y, velocity: 127, t_us: now_us } } else { PadEvent::Release { x, y, t_us: now_us } };
+        self.pads.apply(ev, Some(self.clock.position(now_us)));
     }
 
     /// `render_at` with the preview pad clicks (Ripple) at monotonic `now_us`.

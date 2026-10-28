@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://omoi-iro.invalid/schemas/show.schema.json",
-  "title": "OMOI-IRO Show 0.1.2",
-  "description": "Show file schema. Cross-reference, ID uniqueness, drop-frame and interval checks require semantic validation. 0.1.0 and 0.1.1 files are read by migration (version only; 0.1.2 adds builtin.strobe, builtin.noise, builtin.ripple, builtin.rain, builtin.wave, builtin.orb, builtin.regions, builtin.tap_glow, builtin.cross and the optional chase reverse, ripple shape / interval trigger, wave phase and orb orbit_phase).",
+  "title": "OMOI-IRO Show 0.1.3",
+  "description": "Show file schema. Cross-reference, ID uniqueness, drop-frame and interval checks require semantic validation. 0.1.0, 0.1.1 and 0.1.2 files are read by migration (version only; 0.1.3 adds the triggered layer; 0.1.2 adds builtin.strobe, builtin.noise, builtin.ripple, builtin.rain, builtin.wave, builtin.orb, builtin.regions, builtin.tap_glow, builtin.cross and the optional chase reverse, ripple shape / interval trigger, wave phase and orb orbit_phase).",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -24,7 +24,7 @@
       "maxLength": 1024
     },
     "schema_version": {
-      "const": "0.1.2"
+      "const": "0.1.3"
     },
     "id": {
       "$ref": "#/$defs/id"
@@ -1247,7 +1247,8 @@
         "kind": {
           "enum": [
             "timeline",
-            "continuous"
+            "continuous",
+            "triggered"
           ]
         }
       },
@@ -1306,6 +1307,40 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "triggered"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "clips",
+              "trigger"
+            ],
+            "properties": {
+              "kind": {
+                "const": "triggered"
+              },
+              "clips": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/clip"
+                },
+                "minItems": 0,
+                "maxItems": 4096
+              },
+              "trigger": {
+                "$ref": "#/$defs/trigger"
+              }
+            }
+          }
         }
       ]
     },
@@ -1348,6 +1383,58 @@
           "$ref": "#/$defs/content"
         }
       }
+    },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "on"
+      ],
+      "properties": {
+        "on": {
+          "enum": [
+            "press",
+            "release",
+            "hold",
+            "clip_start",
+            "interval"
+          ]
+        },
+        "interval_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 10000
+        },
+        "origin_x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 7
+        },
+        "origin_y": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 7
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "on": {
+                "const": "interval"
+              }
+            },
+            "required": [
+              "on"
+            ]
+          },
+          "then": {
+            "required": [
+              "interval_ms"
+            ]
+          }
+        }
+      ]
     }
   }
 }

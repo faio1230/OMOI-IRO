@@ -3,7 +3,7 @@
 // hand-off as the timeline); ranges shown here follow the show schema.
 import { useEffect, useState } from "react";
 import * as ipc from "./ipc/commands";
-import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern } from "./ipc/types";
+import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, TriggerOn, TriggerSpec } from "./ipc/types";
 
 const TYPE_JA: Record<EffectType, string> = {
   "builtin.solid": "単色（Solid）",
@@ -428,7 +428,7 @@ export function LayerInspector({ view, layer, apply }: { view: EditorView; layer
     apply({ op: "set_layer", layer_id: layer.id, name: patch.name ?? null, enabled: patch.enabled ?? null, opacity: patch.opacity ?? null, blend: patch.blend ?? null, target_id: patch.target_id ?? null });
   return (
     <div className="inspector">
-      <div className="insp-title">レイヤー <span className="mono">{layer.id}</span>（{layer.kind === "timeline" ? "タイムライン" : "常時"}）</div>
+      <div className="insp-title">レイヤー <span className="mono">{layer.id}</span>（{layer.kind === "timeline" ? "タイムライン" : layer.kind === "triggered" ? "発火" : "常時"}）</div>
       <div className="insp-grid">
         <label className="field">
           <span>名前</span>
@@ -457,6 +457,7 @@ export function LayerInspector({ view, layer, apply }: { view: EditorView; layer
             {view.targets.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </label>
+        {layer.kind === "triggered" && layer.trigger && <TriggerFields layer={layer} trigger={layer.trigger} apply={apply} />}
         {layer.kind === "continuous" && (
           <label className="field">
             <span>プリセット</span>
@@ -467,6 +468,38 @@ export function LayerInspector({ view, layer, apply }: { view: EditorView; layer
         )}
       </div>
     </div>
+  );
+}
+
+/** Japanese names of the triggers. */
+export const TRIGGER_JA: Record<TriggerOn, string> = {
+  press: "押したとき",
+  release: "離したとき",
+  hold: "押している間",
+  clip_start: "クリップの開始",
+  interval: "一定の間隔",
+};
+
+/** Trigger of a triggered layer: clips are its active windows. */
+function TriggerFields({ layer, trigger, apply }: { layer: LayerDto; trigger: TriggerSpec; apply: (c: EditCommand) => void }) {
+  const set = (patch: Partial<TriggerSpec>) => apply({ op: "set_layer_trigger", layer_id: layer.id, trigger: { ...trigger, ...patch } });
+  const positioned = trigger.on === "clip_start" || trigger.on === "interval";
+  return (
+    <>
+      <label className="field">
+        <span>発火</span>
+        <select value={trigger.on} onChange={(e) => {
+          const on = e.target.value as TriggerOn;
+          set(on === "interval" ? { on, interval_ms: trigger.interval_ms ?? 1000 } : { on });
+        }}>
+          {Object.entries(TRIGGER_JA).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        <span className="hint">{positioned ? "曲の時刻で決まる（巻き戻しても同じ）" : "パッドの入力で出る（巻き戻しでは再現しない）。クリップの区間内の入力だけ"}</span>
+      </label>
+      {trigger.on === "interval" && <NumberField label="間隔（ms）" value={trigger.interval_ms ?? 1000} min={100} max={10000} step={100} hint="100〜10000" onChange={(v) => set({ interval_ms: Math.round(v) })} />}
+      {positioned && <NumberField label="位置 x（セル）" value={trigger.origin_x ?? 3.5} min={0} max={7} step={0.5} onChange={(origin_x) => set({ origin_x })} />}
+      {positioned && <NumberField label="位置 y（セル）" value={trigger.origin_y ?? 3.5} min={0} max={7} step={0.5} onChange={(origin_y) => set({ origin_y })} />}
+    </>
   );
 }
 

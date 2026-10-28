@@ -25,7 +25,7 @@ use crate::output::mailbox::Mailbox;
 use crate::scheduler::{FrameScheduler, RenderRate};
 use crate::sync::transport::{OutputState, Transport};
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
-use omoiiro_core::render::PadHit;
+use omoiiro_core::render::PadEvent;
 use omoiiro_midi::routing::RouteOutcome;
 use serde_json::{json, Value};
 use omoiiro_devices::adapter::DeviceAdapter;
@@ -65,8 +65,8 @@ pub struct FollowShared {
     pub status: Mutex<FollowStatus>,
     /// Pad presses for input-driven effects (Ripple): copied by the control
     /// thread after forwarding to Live, drained by the render thread.
-    pub pad_tx: Sender<PadHit>,
-    pub pad_rx: Receiver<PadHit>,
+    pub pad_tx: Sender<PadEvent>,
+    pub pad_rx: Receiver<PadEvent>,
 }
 
 impl FollowShared {
@@ -153,7 +153,7 @@ pub struct RenderLoop {
     last_show_time: Option<i64>,
     /// Frames whose show time moved backwards or by more than 1 s (seek / loop).
     pub jumps: u64,
-    /// Pad presses taken into the renderer's input.
+    /// Pad presses taken into the renderer's input (releases not counted).
     pub pad_hits: u64,
 }
 
@@ -170,9 +170,10 @@ impl RenderLoop {
         self.perf.skipped_frames += tick.skipped;
         self.engine.adopt(&shared.exchange);
         let snap = shared.transport.lock().unwrap().snapshot(tick.due_us.max(t0));
-        for hit in shared.pad_rx.try_iter() {
-            self.engine.pads.push(hit);
-            self.pad_hits += 1;
+        // Each event is stamped with the show time it arrived at (triggered clips accept it inside them).
+        for ev in shared.pad_rx.try_iter() {
+            self.engine.pads.apply(ev, snap.show_time_us);
+            self.pad_hits += matches!(ev, PadEvent::Press { .. }) as u64;
         }
         self.engine.pads.advance(t0);
         let eval = self.engine.evaluate(&snap, &shared.overrides);
@@ -475,10 +476,12 @@ pub fn spawn_control(shared: Arc<FollowShared>, clock: MonotonicClock, mut route
             let now = || clock.now_us();
             let mut next_maintain = i64::MIN;
             let mut seen_reconnect = shared.reconnect_request.load(Ordering::SeqCst);
+            let mut input_ready = false;
             while !shared.stop.load(Ordering::SeqCst) {
                 let req = shared.reconnect_request.load(Ordering::SeqCst);
                 if req != seen_reconnect {
                     seen_reconnect = req;
+                    let _ = shared.pad_tx.try_send(PadEvent::ReleaseAll { t_us: now() });
                     route.reconnect(now());
                     next_maintain = i64::MIN;
                 }
@@ -490,6 +493,12 @@ pub fn spawn_control(shared: Arc<FollowShared>, clock: MonotonicClock, mut route
                 if t >= next_maintain {
                     route.maintain(backend.lock().unwrap().as_mut(), t);
                     next_maintain = t + MAINTAIN_US;
+                    // Input gone (unplugged): no release will come, so release every held pad.
+                    let ready = route.input.state() == crate::connections::BindingState::Ready;
+                    if input_ready && !ready {
+                        let _ = shared.pad_tx.try_send(PadEvent::ReleaseAll { t_us: t });
+                    }
+                    input_ready = ready;
                 }
                 match rx.recv_timeout(Duration::from_millis(20)) {
                     Ok(ev) => {
@@ -523,19 +532,23 @@ pub fn spawn_control(shared: Arc<FollowShared>, clock: MonotonicClock, mut route
 
 /// A forwarded grid-pad Note On, as a pad hit for the renderer (dropped if the queue is full).
 fn copy_pad(shared: &FollowShared, ev: &RawIn, out: &RouteOutcome) {
-    if let Some(hit) = pad_hit(ev.t_mono_us, out) {
-        let _ = shared.pad_tx.try_send(hit);
+    if let Some(e) = pad_event(ev.t_mono_us, out) {
+        let _ = shared.pad_tx.try_send(e);
     }
 }
 
-/// Note On (velocity > 0) of a Launchpad X grid pad in Programmer Mode.
-pub fn pad_hit(t_us: i64, out: &RouteOutcome) -> Option<PadHit> {
+/// Note On (velocity > 0) or Note Off of a Launchpad X grid pad in
+/// Programmer Mode, as forwarded (Note On velocity 0 is already Note Off).
+pub fn pad_event(t_us: i64, out: &RouteOutcome) -> Option<PadEvent> {
     let RouteOutcome::Send { bytes, .. } = out else { return None };
-    if bytes[0] & 0xF0 != 0x90 || bytes[2] == 0 {
-        return None;
-    }
+    let on = match bytes[0] & 0xF0 {
+        0x90 if bytes[2] > 0 => true,
+        0x80 | 0x90 => false,
+        _ => return None,
+    };
     let i = omoiiro_devices::launchpad_x::pad_to_led_index(bytes[1])?;
-    Some(PadHit { x: (i % 8) as u8, y: (i / 8) as u8, velocity: bytes[2], t_us })
+    let (x, y) = ((i % 8) as u8, (i / 8) as u8);
+    Some(if on { PadEvent::Press { x, y, velocity: bytes[2], t_us } } else { PadEvent::Release { x, y, t_us } })
 }
 
 /// Summary JSON of a finished run (T07).
@@ -674,12 +687,12 @@ mod tests {
     fn forwarded_pad_presses_reach_the_ripple_in_the_render_loop() {
         // Only grid Note Ons (velocity > 0) are pad hits; buttons, Note Off and CC are not.
         let send = |b: [u8; 3]| RouteOutcome::Send { bytes: b, normalized: false };
-        assert_eq!(pad_hit(5, &send([0x90, 11, 100])), Some(PadHit { x: 0, y: 0, velocity: 100, t_us: 5 }));
-        assert_eq!(pad_hit(5, &send([0x90, 88, 1])).map(|h| (h.x, h.y)), Some((7, 7)));
-        assert_eq!(pad_hit(5, &send([0x90, 19, 100])), None, "side button");
-        assert_eq!(pad_hit(5, &send([0x80, 11, 0])), None);
-        assert_eq!(pad_hit(5, &send([0xB0, 11, 127])), None);
-        assert_eq!(pad_hit(5, &RouteOutcome::Ignored), None, "not forwarded, not drawn");
+        assert_eq!(pad_event(5, &send([0x90, 11, 100])), Some(PadEvent::Press { x: 0, y: 0, velocity: 100, t_us: 5 }));
+        assert_eq!(pad_event(5, &send([0x90, 88, 1])), Some(PadEvent::Press { x: 7, y: 7, velocity: 1, t_us: 5 }));
+        assert_eq!(pad_event(5, &send([0x90, 19, 100])), None, "side button");
+        assert_eq!(pad_event(5, &send([0x80, 11, 0])), Some(PadEvent::Release { x: 0, y: 0, t_us: 5 }));
+        assert_eq!(pad_event(5, &send([0xB0, 11, 127])), None);
+        assert_eq!(pad_event(5, &RouteOutcome::Ignored), None, "not forwarded, not drawn");
 
         // A show whose continuous layer is a ripple: a pad press lights the frame.
         let (clock, time) = MonotonicClock::fake();
@@ -696,7 +709,7 @@ mod tests {
         while time.now_us() < 500_000 {
             feed.until(&shared, time.now_us());
             if time.now_us() == 300_000 {
-                shared.pad_tx.send(pad_hit(time.now_us(), &send([0x90, 44, 100])).unwrap()).unwrap();
+                shared.pad_tx.send(pad_event(time.now_us(), &send([0x90, 44, 100])).unwrap()).unwrap();
             }
             if let Some(m) = r.step(&shared, &|| clock.now_us()) {
                 if time.now_us() < 300_000 {

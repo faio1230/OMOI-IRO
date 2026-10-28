@@ -49,7 +49,7 @@ pub struct LayerDto {
     pub id: String,
     pub name: String,
     pub target_id: String,
-    /// "timeline" or "continuous".
+    /// "timeline", "continuous" or "triggered".
     pub kind: &'static str,
     pub enabled: bool,
     pub opacity: f64,
@@ -57,6 +57,8 @@ pub struct LayerDto {
     /// Continuous layers: their preset.
     pub preset_id: Option<String>,
     pub clips: Vec<ClipDto>,
+    /// Triggered layers: when they fire.
+    pub trigger: Option<omoiiro_core::model::TriggerSpec>,
 }
 
 #[derive(Debug, Serialize)]
@@ -145,6 +147,7 @@ fn view(doc: &EditorDoc, runtime_revision: Option<u64>, outcome: Option<EditOutc
                 kind: match l.content {
                     Content::Timeline { .. } => "timeline",
                     Content::Continuous { .. } => "continuous",
+                    Content::Triggered { .. } => "triggered",
                 },
                 enabled: l.enabled,
                 opacity: l.opacity,
@@ -155,14 +158,18 @@ fn view(doc: &EditorDoc, runtime_revision: Option<u64>, outcome: Option<EditOutc
                 },
                 preset_id: match &l.content {
                     Content::Continuous { preset_id } => Some(preset_id.clone()),
-                    Content::Timeline { .. } => None,
+                    Content::Timeline { .. } | Content::Triggered { .. } => None,
                 },
-                clips: match &l.content {
-                    Content::Timeline { clips } => clips
+                clips: match l.content.clips() {
+                    Some(clips) => clips
                         .iter()
                         .map(|c| ClipDto { id: c.id.clone(), preset_id: c.preset_id.clone(), start_us: c.start_us, duration_us: c.duration_us, fade_in_us: c.fade_in_us, fade_out_us: c.fade_out_us })
                         .collect(),
-                    Content::Continuous { .. } => Vec::new(),
+                    None => Vec::new(),
+                },
+                trigger: match &l.content {
+                    Content::Triggered { trigger, .. } => Some(trigger.clone()),
+                    _ => None,
                 },
             })
             .collect(),

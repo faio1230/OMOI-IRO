@@ -268,17 +268,18 @@ pub fn preview_seek(ps: State<'_, Arc<PreviewState>>, position_us: i64) -> CmdRe
 /// in the source being shown (the runtime while it follows, else the local
 /// preview). For checking only; it is not device input and nothing goes to Live.
 #[tauri::command]
-pub fn preview_pad(app_state: State<'_, AppState>, ps: State<'_, Arc<PreviewState>>, x: u8, y: u8) -> CmdResult<()> {
+pub fn preview_pad(app_state: State<'_, AppState>, ps: State<'_, Arc<PreviewState>>, x: u8, y: u8, pressed: Option<bool>) -> CmdResult<()> {
+    let pressed = pressed.unwrap_or(true);
     let mut inner = ps.inner.lock().unwrap();
     if inner.mode == PreviewSource::Runtime {
         if let Some(s) = app_state.session.lock().unwrap().as_ref() {
-            s.press_pad(x, y);
+            s.press_pad(x, y, pressed);
             return Ok(());
         }
     }
     let now = ps.clock.now_us();
     let p = inner.local.as_mut().ok_or_else(|| CommandError::new("no_preview", "open a show for the local preview first"))?;
-    p.press(x, y, now);
+    p.press(x, y, pressed, now);
     Ok(())
 }
 

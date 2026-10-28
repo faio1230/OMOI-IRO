@@ -1,0 +1,164 @@
+{
+  "$schema": "../../schemas/show.schema.json",
+  "schema_version": "0.1.3",
+  "id": "triggered-0-1-3",
+  "name": "0.1.3 の発火レイヤー",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "glow",
+      "name": "余熱",
+      "effect": {
+        "type": "builtin.tap_glow",
+        "version": 1,
+        "params": {
+          "color_start": "#FFFFFF",
+          "color_mid": "#FFB040",
+          "color_end": "#400000",
+          "lifetime_ms": 1200,
+          "radius": 1.5,
+          "repeats": 1,
+          "repeat_interval_ms": 300,
+          "repeat_decay": 0.6
+        }
+      }
+    },
+    {
+      "id": "blinder",
+      "name": "ブラインダー",
+      "effect": {
+        "type": "builtin.solid",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF"
+        }
+      }
+    },
+    {
+      "id": "ring",
+      "name": "間隔の輪",
+      "effect": {
+        "type": "builtin.ripple",
+        "version": 1,
+        "params": {
+          "color": "#00DCC8",
+          "speed": 6,
+          "ring_width": 1,
+          "lifetime_ms": 1200,
+          "fade": "linear",
+          "max_concurrent": 8,
+          "trigger": "any_pad"
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "ring",
+      "name": "間隔の輪",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "ring-1",
+            "preset_id": "ring",
+            "start_us": 0,
+            "duration_us": 60000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ],
+        "trigger": {
+          "on": "interval",
+          "interval_ms": 1000,
+          "origin_x": 3.5,
+          "origin_y": 3.5
+        }
+      }
+    },
+    {
+      "id": "glow",
+      "name": "押した所の余熱",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "glow-1",
+            "preset_id": "glow",
+            "start_us": 0,
+            "duration_us": 60000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ],
+        "trigger": {
+          "on": "press"
+        }
+      }
+    },
+    {
+      "id": "blinder",
+      "name": "押している間のブラインダー",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 0.5,
+      "blend": "add",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "blinder-1",
+            "preset_id": "blinder",
+            "start_us": 0,
+            "duration_us": 60000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ],
+        "trigger": {
+          "on": "hold"
+        }
+      }
+    }
+  ]
+}

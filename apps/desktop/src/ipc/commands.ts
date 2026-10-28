@@ -26,7 +26,7 @@ export const previewPlay = (playing: boolean) => invoke<PreviewInfo>("preview_pl
 export const previewSeek = (positionUs: number) => invoke<PreviewInfo>("preview_seek", { positionUs });
 export const previewSetBpm = (bpm: number) => invoke<PreviewInfo>("preview_set_bpm", { bpm });
 /** Preview grid click (bottom-left origin): a pad press for Ripple; nothing goes to Live. */
-export const previewPad = (x: number, y: number) => invoke<void>("preview_pad", { x, y });
+export const previewPad = (x: number, y: number, pressed: boolean) => invoke<void>("preview_pad", { x, y, pressed });
 
 export const settingsGet = () => invoke<SettingsView>("settings_get");
 /** Lists ports and checks the roles; sends nothing. */
