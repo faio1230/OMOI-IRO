@@ -97,10 +97,11 @@
 | §4-1 発火モデル（triggered レイヤー、press / release / hold / clip_start / interval、Schema 0.1.3） | 完了（242件） | 0aba923 |
 | §4-2 キーフレーム（Param<T>::Keyframes、ease、最悪値の安全解析） | 完了（249件） | 88f4548 |
 | §4-3 領域・経路・図形（regions custom、builtin.path、builtin.shape、shape モジュール） | 完了（257件） | 5724e07 |
-| §4-4 マスク（shape の invert / wipe、レイヤーの self マスク。下を隠す遷移は黒図形の over） | 実装中 | — |
-| §4-5 以降 | 未着手 | — |
+| §4-4 マスク（shape の invert / wipe、レイヤーの self マスク。下を隠す遷移は黒図形の over） | 完了（262件） | 43f3d8f |
+| §4-5 粒子（builtin.particles：burst / fountain / rocket / implode、解析解で seek 可、bounce は折り返し） | 実装中 | — |
+| §4-6 以降 | 未着手 | — |
 
-これで 05 / 06 / 07 / 08 / 12 / 22 / 28 / 42 / 45〜52 / 35 / 36 が作れるようになった（対応表の「小拡張」はすべて解消、「新基盤」のうち 13 ブラインダー相当の hold も可）。Mac 実機での表示確認は未実施。
+これで 05 / 06 / 07 / 08 / 12 / 22 / 28 / 42 / 45〜52 / 35 / 36 / 37 / 38 が作れるようになった（対応表の「小拡張」はすべて解消、「新基盤」のうち 13 ブラインダー相当の hold も可）。Mac 実機での表示確認は未実施。
 
 ## 4. 基盤（Codex 案を採用、順序案。§3 の後に着手）
 

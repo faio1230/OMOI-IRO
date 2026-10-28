@@ -42,11 +42,13 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 | `builtin.cross` | 十字 | `color`, `speed`（セル/秒 1〜32）, `length`（尾 0.5〜8）, `lifetime_ms`（100〜3000） | 押した位置から上下左右へ光が走る。入力駆動 |
 
 | `builtin.path` | 経路 | `color`, `path`（`line` / `perimeter` / `orbit` / `figure8` / `points`）, `speed`, `size`（光点の半径 0.5〜3）, `tail`（0〜8）, `loop`（bool）, `phase`（0〜1）, `mirror`（`none` / `x` / `y` / `xy`）。`line` は `from_x` / `from_y` / `to_x` / `to_y`、`orbit` と `figure8` は `center_x` / `center_y` / `orbit_radius`、`points` は `points`（[[x,y],…] 2〜32点） | 光点が経路に沿って動く。閉じた経路（perimeter / orbit / figure8）の speed は周/秒（0.05〜4）、line / points はセル/秒（0.5〜16）。loop false は終点で止まり、true は往復か周回。mirror で対称の分身（ムービングヘッドのペア） |
-| `builtin.shape` | 図形 | `shape`（`line` / `circle` / `rect` / `diamond`）, `color`, `fill`（bool、false で輪郭）, `stroke`（0.5〜3）, `center_x` / `center_y`, `size`（半径または半辺 0.5〜6）, `angle`（0〜360）, `edge`（0〜2）。任意 `size_y`（rect の縦） | 静止した形。拡大・移動・回転はキーフレームで作る。黒い図形を `over` で重ねると下を隠せる（アイリス・シャッターの作り方） |
+| `builtin.shape` | 図形 | `shape`（`line` / `circle` / `rect` / `diamond` / `wipe`）, `color`, `fill`（bool、false で輪郭）, `stroke`（0.5〜3）, `center_x` / `center_y`（−4〜11、盤の外も可）, `size`（半径または半辺 0〜6）, `angle`（0〜360）, `edge`（0〜2）。任意 `size_y`（rect の縦）、`invert`（bool、図形の外側を塗る） | 静止した形。拡大・移動・回転はキーフレームで作る。`wipe` は半平面（angle 0 で center から右側）。**下を隠す遷移は黒い図形を `over` で重ねる**：アイリス = 黒 circle + invert + size 0→6、シャッター = 黒 wipe 2枚（angle 0 / 180、center を中央から外へ）または黒 rect の size 4→0 |
+
+レイヤーには任意の `mask` を付けられる（そのレイヤー自身の描画だけを切り抜く）：`{ "shape": "circle" | "rect" | "diamond" | "wipe", "center_x", "center_y", "size", "size_y"?, "angle"?, "edge", "invert" }`。全項目キーフレーム可で、時間の基準はそのレイヤーの content と同じ。例：雨を円の中だけに出す（`fixtures/shows/transitions-0.1.3.show.json` の冒頭）。
 
 `builtin.regions` の `pattern` に `custom` を指定すると `groups`（[[セル番号,…],…] 1〜32群、セル番号 = 行×8+列）が必須になり、任意の `offset`（群ごとの位相差 0〜1、群数と同じ長さ）が使える。
 
-すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）、`d-effects-0.1.2.show.json`（領域ステップ・余熱・十字・形つき波紋）、`triggered-0.1.3.show.json`（発火レイヤー）、`keyframes-0.1.3.show.json`（粒から豪雨へ、加速する走査）、`paths-shapes-0.1.3.show.json`（外周ランナー2種、ムービングヘッド対、ひし形の拡大、自由グループ）。
+すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）、`d-effects-0.1.2.show.json`（領域ステップ・余熱・十字・形つき波紋）、`triggered-0.1.3.show.json`（発火レイヤー）、`keyframes-0.1.3.show.json`（粒から豪雨へ、加速する走査）、`paths-shapes-0.1.3.show.json`（外周ランナー2種、ムービングヘッド対、ひし形の拡大、自由グループ）、`transitions-0.1.3.show.json`（円の中の雨、アイリス、シャッター2種）。
 
 ## 3b. 発火レイヤーとキーフレーム（0.1.3）
 
