@@ -73,3 +73,15 @@ Liveのメーターは平滑化済みの値で、拍の立ち上がりは1〜2�
 | LED追従（GUI、`OMOI-IRO.app`、demo.show.json、実機LPX） | 利用者が「開始」→ LiveをPlay → LaunchpadのLEDがショーに追従（17:10ごろ、利用者の目視「LED光りました」）。途中でLPXの接続が一度切れて挿し直したが、その後の開始で復帰。Mac + Live 12.4.6 + OmoiIroBridge + IAC Clock + Launchpad X の本番構成で通し動作を確認。数値の記録はアプリの診断を本番前に控える |
 | Pulseが見えない（2件） | (a) demoの `beat_source` が `ableton_link` で、MacはLinkなし → 拍unknownでPulse透明。`editor_new` の既定もLinkで、GUIに変更欄がなかった。→ Opusが同日修正（既定 midi_clock、`set_sync` 編集欄、未保存時の3択。215件pass）。Macには `examples/demo-mac.show.json`（midi_clock版）を配置。(b) Liveが再生中にアプリを「開始」すると、Clockのtickは届く（10 sで480 tick）がStart/SPPが来ないため位相未確定でPulse透明。Stop → Playで位置情報+Continueが来て復帰（`/tmp/mac-clk-peek2.jsonl`：song_positions 2、continues 1、position_valid true）。→ 運用ルール「開始してからPlay、再起動したらStop → Play」を §8 に追加。根本対応としてOpusに「Clock原点未確定のときブリッジのbeatsを仮の原点として一度使う」をGO → 同日実装（218件pass）：`ClockDecoder::seed_origin`。拍源midi_clockで原点未確定、ブリッジlocked・playing・advancing、Clock推定bpmとブリッジtempoの差5%未満のとき、1接続につき1回だけブリッジbeats（age×tempoで外挿、×24で丸め）を原点に入れる。Start/SPPで上書き。イベントログ・拍源タイル「bridge の拍で原点を補完」・診断 `clock_seeded`。Windows実機で確認（18:40、Live 12.4.7のループ再生中に新releaseを開始）：0.02 sでブリッジlocked、0.12 sで原点補完（8.54 beats）、拍源タイルlocked「bridge の拍で原点を補完」、補完件数1。`artifacts/m6/win-m6-seed-01.jsonl`。Macは再ビルド後に確認 |
 
+
+## Mac：本番版の導入（2026-10-29 早朝）
+
+| 項目 | 結果 |
+| --- | --- |
+| ビルド | `~/OMOI-IRO-src` を `7aac3a1` に切り替え、`apps/desktop` で `npm ci` → `npx tauri build`（node_modules が無く 1 回失敗、入れ直して成功）。`.app` と `.dmg` 生成 |
+| インストール | `/Applications/OMOI-IRO.app` を差し替え（アプリ・Live とも停止中）。実行ファイルの md5 がバンドルと一致 |
+| Remote Script | `Remote Scripts/OmoiIroBridge` を新版（v=3 meter）に差し替え、`__pycache__` 削除。Live は再起動が必要 |
+| ショー | `~/OMOI-IRO/shows/` に雛形とパレット（0.1.4） |
+| 端末設定 | 2026-10-28 17:24 のものをそのまま使用 |
+| 後片付け | `cargo clean`（1.2 GiB）、空き 5.1 GB。omoiiro-probe は Mac では未ビルド |
+| 未実施 | 新しいアプリでの Live 追従・実機 LPX の表示確認（素材バンク、ripple / tap_glow / cross / triggered / frames / meter） |
