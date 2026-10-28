@@ -310,9 +310,12 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  // A new show without a file starts with the edited content (no path).
+  const newDoc = status?.document?.path === "";
+  const showPath = newDoc ? "" : req.show_path;
   const start = () =>
     run(async () => {
-      const r = await ipc.runtimeStart(req);
+      const r = await ipc.runtimeStart({ ...req, show_path: showPath });
       setNotes(r.notes);
       setEvents([]);
     });
@@ -379,7 +382,7 @@ export default function App() {
             <TimelineEditor showPath={req.show_path} playheadUs={running ? s?.show_time_us ?? null : null} running={running} docKey={`${s?.document?.path ?? ""}|${s?.document?.dirty ?? ""}`} newRequested={newRequested} onNewHandled={() => setNewRequested(false)} />
           </div>
           <div className="col">
-            <LedPreview showPath={req.show_path} running={running} onError={setPreviewError} />
+            <LedPreview showPath={showPath} running={running} onError={setPreviewError} />
             {previewError && <p className="error">{previewError}</p>}
           </div>
         </div>
@@ -391,7 +394,11 @@ export default function App() {
               <div className="show-row">
                 <label className="field grow">
                   <span>ショーファイル（ポートとブリッジは「接続設定」）</span>
-                  <input value={req.show_path} placeholder="C:\…\demo.show.json" disabled={running} spellCheck={false} onChange={(e) => setReq((r) => ({ ...r, show_path: e.target.value }))} />
+                  {newDoc ? (
+                    <input value="新規ショー（未保存）— 編集中の内容で開始" readOnly disabled />
+                  ) : (
+                    <input value={req.show_path} placeholder="ショーファイル（.show.json）を選ぶか、新規ショーをそのまま開始" disabled={running} spellCheck={false} onChange={(e) => setReq((r) => ({ ...r, show_path: e.target.value }))} />
+                  )}
                 </label>
                 <button disabled={busy} onClick={pickAndOpen}>開く…</button>
                 <label className="inline">
@@ -462,7 +469,7 @@ export default function App() {
             </section>
           </div>
           <div className="col">
-            <LedPreview showPath={req.show_path} running={running} onError={setPreviewError} />
+            <LedPreview showPath={showPath} running={running} onError={setPreviewError} />
             {previewError && <p className="error">{previewError}</p>}
           </div>
         </div>

@@ -34,6 +34,9 @@ pub struct AppState {
     session: Mutex<Option<FollowSession>>,
     backend: SharedBackend,
     show_path: Mutex<Option<PathBuf>>,
+    /// The runtime runs the edited new show that has no file yet (show_path
+    /// is None); its edits are handed over until it is saved or replaced.
+    follows_new: std::sync::atomic::AtomicBool,
     initial_show_path: Option<String>,
     /// Set when closing was stopped because of unsaved changes.
     close_requested: std::sync::atomic::AtomicBool,
@@ -51,6 +54,7 @@ impl AppState {
             session: Mutex::new(None),
             backend: Arc::new(Mutex::new(Box::new(MidirBackend::new("omoiiro")) as Box<dyn MidiBackend>)),
             show_path: Mutex::new(None),
+            follows_new: std::sync::atomic::AtomicBool::new(false),
             settings: Mutex::new(TerminalSettings::default()),
             settings_dir: Mutex::new(None),
             settings_load_error: Mutex::new(None),
@@ -85,9 +89,14 @@ fn list_ports(state: State<'_, AppState>) -> CmdResult<PortsDto> {
 
 #[tauri::command(async)]
 fn runtime_start(state: State<'_, AppState>, ed: State<'_, editor::EditorState>, req: StartRequest) -> CmdResult<StartResult> {
+    start_runtime(&state, &ed, req)
+}
+
+/// No show path: the edited document (a new show without a file included).
+fn start_runtime(state: &AppState, ed: &editor::EditorState, req: StartRequest) -> CmdResult<StartResult> {
     let mut slot = state.session.lock().unwrap();
     if slot.is_some() {
-        return Err(CommandError::new("busy", "the runtime is already running; stop it first"));
+        return Err(CommandError::new("busy", "既に開始している（先に停止する）"));
     }
     let settings = state.settings.lock().unwrap().clone();
     let (inputs, outputs) = state.port_lists()?;
@@ -95,9 +104,14 @@ fn runtime_start(state: State<'_, AppState>, ed: State<'_, editor::EditorState>,
     if !check.ok {
         return Err(CommandError::new("settings", format!("接続設定に誤りがある：{}", check.errors.join(" / "))));
     }
-    let path = PathBuf::from(req.show_path.trim());
+    let mut path = PathBuf::from(req.show_path.trim());
+    if path.as_os_str().is_empty() {
+        if let Some(p) = editor::document_path(ed) {
+            path = p;
+        }
+    }
     // The timeline's current (possibly unsaved) show when it edits this file.
-    let edited = editor::current_show_for(&ed, &path);
+    let edited = editor::current_show_for(ed, &path);
     let cfg = req.validate(&settings, edited)?;
     let session = FollowSession::start(cfg, state.backend.clone()).map_err(|e| CommandError::new("start", e))?;
     let mut notes = check.warnings.clone();
@@ -108,15 +122,20 @@ fn runtime_start(state: State<'_, AppState>, ed: State<'_, editor::EditorState>,
     let result = StartResult { revision: session.revision, notes };
     *slot = Some(session);
     drop(slot);
-    *state.show_path.lock().unwrap() = Some(path.clone());
-    settings::remember_show(&state, &path.display().to_string());
-    settings::remember_time_source(&state, req.time_source);
+    let new_show = path.as_os_str().is_empty();
+    *state.show_path.lock().unwrap() = (!new_show).then(|| path.clone());
+    state.follows_new.store(new_show, std::sync::atomic::Ordering::SeqCst);
+    if !new_show {
+        settings::remember_show(state, &path.display().to_string());
+    }
+    settings::remember_time_source(state, req.time_source);
     Ok(result)
 }
 
 #[tauri::command(async)]
 fn runtime_stop(state: State<'_, AppState>) -> CmdResult<StopResult> {
-    let session = state.session.lock().unwrap().take().ok_or_else(|| CommandError::new("not_running", "the runtime is not running"))?;
+    let session = state.session.lock().unwrap().take().ok_or_else(|| CommandError::new("not_running", "開始していない（先に「開始」を押す）"))?;
+    state.follows_new.store(false, std::sync::atomic::Ordering::SeqCst);
     let summary = session.stop().map_err(|e| CommandError::new("stop", e))?;
     Ok(StopResult { summary })
 }
@@ -186,7 +205,7 @@ fn reset_control_fault(state: State<'_, AppState>) -> CmdResult<()> {
 fn with_local(state: &State<'_, AppState>, f: impl FnOnce(&FollowSession) -> Result<LocalTransport, String>) -> CmdResult<LocalTransport> {
     match state.session.lock().unwrap().as_ref() {
         Some(s) => f(s).map_err(|e| CommandError::new("time_source", e)),
-        None => Err(CommandError::new("not_running", "the runtime is not running")),
+        None => Err(CommandError::new("not_running", "開始していない（先に「開始」を押す）")),
     }
 }
 
@@ -216,7 +235,7 @@ fn reset_input(state: State<'_, AppState>) -> CmdResult<()> {
 fn recording_start(state: State<'_, AppState>) -> CmdResult<i64> {
     match state.session.lock().unwrap().as_ref() {
         Some(s) => s.start_recording().map_err(|e| CommandError::new("recording", e)),
-        None => Err(CommandError::new("not_running", "the runtime is not running")),
+        None => Err(CommandError::new("not_running", "開始していない（先に「開始」を押す）")),
     }
 }
 
@@ -226,7 +245,7 @@ fn with_session(state: &State<'_, AppState>, f: impl FnOnce(&FollowSession)) -> 
             f(s);
             Ok(())
         }
-        None => Err(CommandError::new("not_running", "the runtime is not running")),
+        None => Err(CommandError::new("not_running", "開始していない（先に「開始」を押す）")),
     }
 }
 
@@ -234,11 +253,9 @@ impl StartRequest {
     /// Load and check the show; ports and addresses come from the terminal settings.
     fn validate(&self, settings: &TerminalSettings, edited: Option<omoiiro_core::model::Show>) -> CmdResult<SessionConfig> {
         let path = self.show_path.trim();
-        if path.is_empty() {
-            return Err(CommandError::new("invalid", "choose a show file"));
-        }
         let show = match edited {
             Some(s) => s,
+            None if path.is_empty() => return Err(CommandError::new("invalid", "ショーファイルを選ぶか、新規ショーを開く")),
             None => {
                 let p = files::for_read(path, files::Kind::Show)?;
                 omoiiro_store::load_path(&p).map_err(|e| files::load_error(&p, e))?
@@ -247,7 +264,7 @@ impl StartRequest {
         let bind = settings.bridge_bind.as_str();
         bind.parse::<std::net::SocketAddr>().map_err(|e| CommandError::new("settings", format!("bridge address {bind:?}: {e}")))?;
         if settings.link && !cfg!(feature = "link") {
-            return Err(CommandError::new("settings", "this build has no Ableton Link support"));
+            return Err(CommandError::new("settings", "このビルドは Ableton Link に対応していない"));
         }
         let p = &settings.ports;
         let led_out = match &p.led_out {
@@ -367,6 +384,47 @@ mod tests {
 
     fn demo() -> String {
         concat!(env!("CARGO_MANIFEST_DIR"), "/../../../examples/demo.show.json").to_string()
+    }
+
+    /// A new show without a file starts as it is (local clock), takes edits,
+    /// and keeps taking them after "save as" gives it a file.
+    #[test]
+    fn a_new_show_starts_without_a_file_and_keeps_following_after_save_as() {
+        use omoiiro_core::edit::{EditCommand, Snap};
+        let (be, ports) = omoiiro_midi::fake::fake_backend();
+        ports.add_output(omoiiro_midi::ports::names::CONTROL_PORT);
+        let state = AppState::new(None);
+        *state.backend.lock().unwrap() = Box::new(be);
+        let ed = editor::EditorState::default();
+        let ps = preview::PreviewState::new();
+        let req = || StartRequest { show_path: String::new(), time_source: omoiiro_runtime::session::TimeSource::Local };
+        // Nothing open: refused in Japanese.
+        assert!(start_runtime(&state, &ed, req()).unwrap_err().message.contains("新規ショー"));
+
+        // The new show starts; the runtime has no show path but follows the document.
+        let mut doc = editor::EditorDoc { path: PathBuf::new(), history: omoiiro_core::edit::History::new_unsaved(omoiiro_core::edit::new_show("x")) };
+        doc.history.apply(&EditCommand::AddPreset { name: "白".into(), effect_type: "builtin.solid".into() }, Snap::None).unwrap();
+        *ed.doc.lock().unwrap() = Some(doc);
+        let r = start_runtime(&state, &ed, req()).unwrap();
+        assert_eq!(r.revision, 1);
+        assert!(state.show_path.lock().unwrap().is_none());
+        let v = editor::apply_command(&ed, &state, &ps, EditCommand::AddLayer { name: "a".into(), index: None }, Snap::None).unwrap();
+        assert_eq!(v.runtime_revision, Some(2), "the edit reached the runtime");
+
+        // Save as: the runtime now follows the file.
+        let dir = std::env::temp_dir().join(format!("omoiiro-newstart-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("new.show.json");
+        let v = editor::save_as(&ed, &state, file.to_str().unwrap()).unwrap();
+        assert_eq!(v.runtime_revision, Some(2));
+        assert_eq!(state.show_path.lock().unwrap().as_deref(), Some(file.as_path()));
+        let v = editor::apply_command(&ed, &state, &ps, EditCommand::AddLayer { name: "b".into(), index: None }, Snap::None).unwrap();
+        assert_eq!(v.runtime_revision, Some(3), "still following after the save");
+        std::thread::sleep(std::time::Duration::from_millis(200)); // adopted at the next frame
+        let st = state.session.lock().unwrap().as_ref().unwrap().status();
+        assert_eq!((st.follow.revision, st.time_source), (3, omoiiro_runtime::session::TimeSource::Local));
+        state.session.lock().unwrap().take().unwrap().stop().unwrap();
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]

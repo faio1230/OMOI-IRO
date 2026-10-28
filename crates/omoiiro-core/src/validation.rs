@@ -776,7 +776,7 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                     for (ci, clip) in clips.iter().enumerate() {
                         if let Some(&pi) = preset_ids.get(clip.preset_id.as_str()) {
                             if trigger.on != TriggerOn::Hold && !show.presets[pi].effect.takes_instances() {
-                                c.push(format!("{p}/content/clips/{ci}/preset_id"), format!("{} draws at fixed positions: use it with trigger on hold, or use ripple / tap_glow / cross", show.presets[pi].effect.type_name()));
+                                c.push(format!("{p}/content/clips/{ci}/preset_id"), format!("{} は盤面全体に描く効果です。発火条件を「押している間」にするか、ripple / tap_glow / cross を使ってください", show.presets[pi].effect.type_name()));
                             }
                         }
                     }

@@ -270,18 +270,31 @@ fn same_file(a: &std::path::Path, b: &std::path::Path) -> bool {
     }
 }
 
+/// The running runtime follows the document at `path`: the same file, or the
+/// new show without a file it was started with.
+fn runtime_follows(app: &AppState, path: &std::path::Path) -> bool {
+    match app.show_path.lock().unwrap().as_deref() {
+        Some(p) => same_file(p, path),
+        None => path.as_os_str().is_empty() && app.follows_new.load(std::sync::atomic::Ordering::SeqCst),
+    }
+}
+
 /// Hand the current state to the runtime (if it follows this file) and to
 /// the local preview (if it shows this file). Never holds two locks at once.
 fn propagate(app: &AppState, ps: &PreviewState, path: &std::path::Path, show: &Show) -> Result<Option<u64>, CommandError> {
-    let runtime_path = app.show_path.lock().unwrap().clone();
     let mut revision = None;
-    if runtime_path.as_deref().is_some_and(|p| same_file(p, path)) {
+    if runtime_follows(app, path) {
         if let Some(s) = app.session.lock().unwrap().as_mut() {
             revision = Some(s.submit_show(show).map_err(|i| CommandError::new("edit", format!("runtime rejected the show: {i:?}")))?);
         }
     }
     ps.replace_local_if(path, show);
     Ok(revision)
+}
+
+/// Path of the open document (empty for a new show), if any.
+pub fn document_path(ed: &EditorState) -> Option<PathBuf> {
+    ed.doc.lock().unwrap().as_ref().map(|d| d.path.clone())
 }
 
 /// The current editor show, if it is the given file (used by `runtime_start`).
@@ -305,6 +318,7 @@ pub fn editor_open(ed: State<'_, EditorState>, app: State<'_, AppState>, show_pa
     let doc = EditorDoc { path: path.clone(), history: History::new(show) };
     let v = view(&doc, None, None, limits(&app));
     *ed.doc.lock().unwrap() = Some(doc);
+    app.follows_new.store(false, std::sync::atomic::Ordering::SeqCst);
     crate::settings::remember_show(&app, &path.display().to_string());
     Ok(v)
 }
@@ -312,15 +326,21 @@ pub fn editor_open(ed: State<'_, EditorState>, app: State<'_, AppState>, show_pa
 /// A new, empty show (unsaved; "save as" gives it a file). `discard` as in `editor_open`.
 #[tauri::command]
 pub fn editor_new(ed: State<'_, EditorState>, app: State<'_, AppState>, name: String, discard: Option<bool>) -> CmdResult<EditorView> {
+    new_document(&ed, &app, &name, discard)
+}
+
+/// A runtime running the previous new show keeps running it but no longer follows edits.
+fn new_document(ed: &EditorState, app: &AppState, name: &str, discard: Option<bool>) -> CmdResult<EditorView> {
     {
         let g = ed.doc.lock().unwrap();
         if !discard.unwrap_or(false) && g.as_ref().is_some_and(|d| d.history.dirty()) {
             return Err(CommandError::new("unsaved", "編集中のショーに未保存の変更がある。保存してから新規を作る"));
         }
     }
-    let doc = EditorDoc { path: PathBuf::new(), history: History::new_unsaved(omoiiro_core::edit::new_show(&name)) };
-    let v = view(&doc, None, None, limits(&app));
+    let doc = EditorDoc { path: PathBuf::new(), history: History::new_unsaved(omoiiro_core::edit::new_show(name)) };
+    let v = view(&doc, None, None, limits(app));
     *ed.doc.lock().unwrap() = Some(doc);
+    app.follows_new.store(false, std::sync::atomic::Ordering::SeqCst);
     Ok(v)
 }
 
@@ -353,17 +373,28 @@ pub fn editor_save(ed: State<'_, EditorState>, app: State<'_, AppState>) -> CmdR
 /// Save under a new name (`*.show.json`); the document then refers to it.
 #[tauri::command(async)]
 pub fn editor_save_as(ed: State<'_, EditorState>, app: State<'_, AppState>, path: String) -> CmdResult<EditorView> {
-    let target = files::for_write(&path, Kind::Show)?;
-    let l = limits(&app);
-    let v = {
+    save_as(&ed, &app, &path)
+}
+
+/// A runtime started with the new show follows the saved file from now on.
+pub(crate) fn save_as(ed: &EditorState, app: &AppState, path: &str) -> CmdResult<EditorView> {
+    let target = files::for_write(path, Kind::Show)?;
+    let l = limits(app);
+    let was_new = {
         let mut g = ed.doc.lock().unwrap();
         let doc = g.as_mut().ok_or_else(|| CommandError::new("no_document", "open a show in the timeline first"))?;
         save_to(doc, &target)?;
+        let was_new = doc.path.as_os_str().is_empty();
         doc.path = target.clone();
-        view(doc, None, None, l)
+        was_new
     };
-    crate::settings::remember_show(&app, &target.display().to_string());
-    Ok(v)
+    if was_new && app.follows_new.swap(false, std::sync::atomic::Ordering::SeqCst) {
+        *app.show_path.lock().unwrap() = Some(target.clone());
+    }
+    crate::settings::remember_show(app, &target.display().to_string());
+    let rev = runtime_revision_for(app, &target);
+    let g = ed.doc.lock().unwrap();
+    Ok(view(g.as_ref().expect("document"), rev, None, l))
 }
 
 /// Save the open document if it has changes (used when closing).
@@ -406,8 +437,7 @@ pub fn current_view(ed: &EditorState, app: &AppState, outcome: Option<EditOutcom
 
 /// Revision the running runtime uses, when it follows this file (else None).
 fn runtime_revision_for(app: &AppState, path: &std::path::Path) -> Option<u64> {
-    let runtime_path = app.show_path.lock().unwrap().clone();
-    if !runtime_path.as_deref().is_some_and(|p| same_file(p, path)) {
+    if !runtime_follows(app, path) {
         return None;
     }
     app.session.lock().unwrap().as_ref().map(|s| s.revision)
@@ -467,6 +497,10 @@ pub fn preset_export(ed: State<'_, EditorState>, preset_id: String, path: String
 
 #[tauri::command(async)]
 pub fn editor_apply(ed: State<'_, EditorState>, app: State<'_, AppState>, ps: State<'_, Arc<PreviewState>>, command: EditCommand, snap: Snap) -> CmdResult<EditorView> {
+    apply_command(&ed, &app, &ps, command, snap)
+}
+
+pub(crate) fn apply_command(ed: &EditorState, app: &AppState, ps: &PreviewState, command: EditCommand, snap: Snap) -> CmdResult<EditorView> {
     let (path, show, outcome) = {
         let mut g = ed.doc.lock().unwrap();
         let doc = g.as_mut().ok_or_else(|| CommandError::new("no_document", "open a show in the timeline first"))?;
