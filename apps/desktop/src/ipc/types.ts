@@ -289,20 +289,25 @@ export type Blend = "over" | "add" | "max";
 export type EffectType = "builtin.solid" | "builtin.chase" | "builtin.pulse" | "builtin.strobe" | "builtin.noise" | "builtin.ripple" | "builtin.rain" | "builtin.wave" | "builtin.orb" | "builtin.regions" | "builtin.tap_glow" | "builtin.cross";
 export type OnConflict = "error" | "rename";
 
+export type Ease = "linear" | "step" | "ease_in" | "ease_out" | "ease_in_out";
+export interface Keyframe<T> { t_us: number; v: T; ease?: Ease }
+/** A parameter value or its keyframes (0.1.3). */
+export type K<T> = T | { keyframes: Keyframe<T>[] };
+
 /** Effect as saved in the show (schemas/show.schema.json `effect`). */
 export type Effect =
-  | { type: "builtin.solid"; version: number; params: { color: string } }
-  | { type: "builtin.chase"; version: number; params: { color: string; period_us: number; width: number; axis: "x" | "y"; reverse?: boolean } }
-  | { type: "builtin.pulse"; version: number; params: { color: string; beats_per_cycle: number; depth: number; waveform: "sine" | "triangle" } }
-  | { type: "builtin.strobe"; version: number; params: { color: string; mode: "hz" | "beat"; rate_hz: number; beats_per_cycle: number; duty: number; phase_offset: number } }
-  | { type: "builtin.noise"; version: number; params: { base_color: string; highlight_color: string; density: number; rate_hz: number; seed: number; smooth: boolean; depth: number } }
-  | { type: "builtin.ripple"; version: number; params: { color: string; speed: number; ring_width: number; lifetime_ms: number; fade: "linear" | "exp"; max_concurrent: number; trigger: "any_pad" | "interval"; shape?: "circle" | "diamond" | "square"; origin_x?: number; origin_y?: number; interval_ms?: number } }
-  | { type: "builtin.rain"; version: number; params: { color: string; head_color?: string; direction: "down" | "up" | "left" | "right"; speed: number; density: number; tail: number; seed: number; flicker: number } }
-  | { type: "builtin.wave"; version: number; params: { color: string; axis: "x" | "y"; wavelength: number; amplitude: number; center: number; speed: number; thickness: number; beat_amplitude: boolean; phase?: number } }
-  | { type: "builtin.orb"; version: number; params: { color: string; center_x: number; center_y: number; radius: number; edge: number; light_angle: number; shading: number; dither: number; dither_rate_hz: number; seed: number; motion: "none" | "orbit" | "bounce"; speed: number; orbit_radius: number; bounce_angle: number; orbit_phase?: number } }
-  | { type: "builtin.regions"; version: number; params: { pattern: RegionPattern; color: string; color_b?: string; step_mode: "beat" | "seconds"; step_beats: number; step_ms: number; order: "forward" | "reverse" | "pingpong"; soft: number; duty: number } }
-  | { type: "builtin.tap_glow"; version: number; params: { color_start: string; color_mid: string; color_end: string; lifetime_ms: number; radius: number; repeats: number; repeat_interval_ms: number; repeat_decay: number } }
-  | { type: "builtin.cross"; version: number; params: { color: string; speed: number; length: number; lifetime_ms: number } };
+  | { type: "builtin.solid"; version: number; params: { color: K<string> } }
+  | { type: "builtin.chase"; version: number; params: { color: K<string>; period_us: K<number>; width: K<number>; axis: "x" | "y"; reverse?: boolean } }
+  | { type: "builtin.pulse"; version: number; params: { color: K<string>; beats_per_cycle: K<number>; depth: K<number>; waveform: "sine" | "triangle" } }
+  | { type: "builtin.strobe"; version: number; params: { color: K<string>; mode: "hz" | "beat"; rate_hz: K<number>; beats_per_cycle: K<number>; duty: K<number>; phase_offset: K<number> } }
+  | { type: "builtin.noise"; version: number; params: { base_color: K<string>; highlight_color: K<string>; density: K<number>; rate_hz: K<number>; seed: K<number>; smooth: boolean; depth: K<number> } }
+  | { type: "builtin.ripple"; version: number; params: { color: K<string>; speed: K<number>; ring_width: K<number>; lifetime_ms: K<number>; fade: "linear" | "exp"; max_concurrent: K<number>; trigger: "any_pad" | "interval"; shape?: "circle" | "diamond" | "square"; origin_x?: K<number>; origin_y?: K<number>; interval_ms?: K<number> } }
+  | { type: "builtin.rain"; version: number; params: { color: K<string>; head_color?: K<string>; direction: "down" | "up" | "left" | "right"; speed: K<number>; density: K<number>; tail: K<number>; seed: K<number>; flicker: K<number> } }
+  | { type: "builtin.wave"; version: number; params: { color: K<string>; axis: "x" | "y"; wavelength: K<number>; amplitude: K<number>; center: K<number>; speed: K<number>; thickness: K<number>; beat_amplitude: boolean; phase?: K<number> } }
+  | { type: "builtin.orb"; version: number; params: { color: K<string>; center_x: K<number>; center_y: K<number>; radius: K<number>; edge: K<number>; light_angle: K<number>; shading: K<number>; dither: K<number>; dither_rate_hz: K<number>; seed: K<number>; motion: "none" | "orbit" | "bounce"; speed: K<number>; orbit_radius: K<number>; bounce_angle: K<number>; orbit_phase?: K<number> } }
+  | { type: "builtin.regions"; version: number; params: { pattern: RegionPattern; color: K<string>; color_b?: K<string>; step_mode: "beat" | "seconds"; step_beats: K<number>; step_ms: K<number>; order: "forward" | "reverse" | "pingpong"; soft: K<number>; duty: K<number> } }
+  | { type: "builtin.tap_glow"; version: number; params: { color_start: K<string>; color_mid: K<string>; color_end: K<string>; lifetime_ms: K<number>; radius: K<number>; repeats: K<number>; repeat_interval_ms: K<number>; repeat_decay: K<number> } }
+  | { type: "builtin.cross"; version: number; params: { color: K<string>; speed: K<number>; length: K<number>; lifetime_ms: K<number> } };
 
 export type RegionPattern = "halves_lr" | "halves_tb" | "checker" | "quadrants" | "columns" | "rows" | "perimeter" | "fan";
 

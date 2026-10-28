@@ -26,36 +26,158 @@ pub fn ser_num<S: Serializer>(v: &f64, s: S) -> Result<S::Ok, S::Error> {
 
 /// An effect parameter (U04 provision for automation, docs/12).
 ///
-/// Schema 0.1.x stores only plain values, and `Param` serializes as exactly
-/// that value, so files are unchanged. The enum is the extension point: a
-/// keyframe / automation variant is added with Schema 0.2, and the renderer
-/// then samples it per frame at the clip's local time (`CompiledEffect`
-/// keeps per-parameter values today; it would keep per-parameter curves).
-/// Undo / Redo stores whole-show snapshots, so a new variant does not change
-/// the history format.
+/// `Value` serializes as exactly that value, so files without automation are
+/// unchanged. `Keyframes` (0.1.3, docs/14 §4-2) is `{"keyframes": [{"t_us",
+/// "v", "ease"}]}`: `t_us` ascending, 1..=64 points; before the first point
+/// the first value holds, after the last the last value; `ease` shapes the
+/// way from a point to the next. The time axis is chosen by the renderer:
+/// the clip's local time, the show time for continuous layers, an
+/// instance's age for input-driven effects.
+///
+/// Numbers (and integers, rounded) and colors interpolate; enums and bools
+/// only step (other eases are refused when reading).
 #[derive(Clone, Debug, PartialEq)]
 pub enum Param<T> {
-    /// A constant value (the only form in Schema 0.1.x).
+    /// A constant value.
     Value(T),
+    Keyframes(Vec<Keyframe<T>>),
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Keyframe<T> {
+    pub t_us: u64,
+    pub v: T,
+    #[serde(default)]
+    pub ease: Ease,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Ease {
+    #[default]
+    Linear,
+    Step,
+    EaseIn,
+    EaseOut,
+    EaseInOut,
+}
+
+impl Ease {
+    /// Shape the fraction 0..=1 of a segment.
+    pub fn apply(self, f: f64) -> f64 {
+        let f = f.clamp(0.0, 1.0);
+        match self {
+            Ease::Linear => f,
+            Ease::Step => 0.0,
+            Ease::EaseIn => f * f,
+            Ease::EaseOut => 1.0 - (1.0 - f) * (1.0 - f),
+            Ease::EaseInOut => f * f * (3.0 - 2.0 * f),
+        }
+    }
+}
+
+/// Most points in one keyframe list.
+pub const MAX_KEYFRAMES: usize = 64;
+
+/// How a parameter type follows keyframes.
+pub trait Sample: Clone {
+    /// Interpolates between points (numbers, colors); otherwise only `step`.
+    const INTERPOLATES: bool;
+    /// Value at fraction `f` (already eased) from `a` to `b`.
+    fn mix(a: &Self, b: &Self, f: f64) -> Self {
+        if f >= 1.0 {
+            b.clone()
+        } else {
+            a.clone()
+        }
+    }
+}
+
+impl Sample for f64 {
+    const INTERPOLATES: bool = true;
+    fn mix(a: &f64, b: &f64, f: f64) -> f64 {
+        a + (b - a) * f
+    }
+}
+
+impl Sample for u32 {
+    const INTERPOLATES: bool = true;
+    fn mix(a: &u32, b: &u32, f: f64) -> u32 {
+        (*a as f64 + (*b as f64 - *a as f64) * f).round() as u32
+    }
+}
+
+impl Sample for u64 {
+    const INTERPOLATES: bool = true;
+    fn mix(a: &u64, b: &u64, f: f64) -> u64 {
+        (*a as f64 + (*b as f64 - *a as f64) * f).round() as u64
+    }
+}
+
+/// Colors: interpolated by the renderer in sRGB (`Param::segment`); `at` steps.
+impl Sample for String {
+    const INTERPOLATES: bool = true;
+}
+
+impl Sample for bool {
+    const INTERPOLATES: bool = false;
+}
+
+macro_rules! step_only {
+    ($($t:ty),*) => { $(impl Sample for $t { const INTERPOLATES: bool = false; })* };
 }
 
 impl<T> Param<T> {
-    /// The constant value. Every 0.1.x parameter is constant.
+    /// The constant value, or the first keyframe's value.
     pub fn value(&self) -> &T {
         match self {
             Param::Value(v) => v,
+            Param::Keyframes(k) => &k[0].v,
         }
     }
 
-    pub fn value_mut(&mut self) -> &mut T {
-        match self {
-            Param::Value(v) => v,
-        }
+    /// Every value the parameter can take (for range checks and worst cases).
+    pub fn values(&self) -> impl Iterator<Item = &T> {
+        let (one, many) = match self {
+            Param::Value(v) => (Some(v), None),
+            Param::Keyframes(k) => (None, Some(k.iter().map(|k| &k.v))),
+        };
+        one.into_iter().chain(many.into_iter().flatten())
     }
 
     /// True when the parameter does not change over time.
     pub fn is_constant(&self) -> bool {
         matches!(self, Param::Value(_))
+    }
+
+    /// The point in force at `t_us` and, inside a segment, the next point
+    /// with the eased fraction towards it.
+    pub fn segment(&self, t_us: u64) -> (&T, Option<(&T, f64)>) {
+        match self {
+            Param::Value(v) => (v, None),
+            Param::Keyframes(k) => {
+                let i = k.partition_point(|p| p.t_us <= t_us);
+                if i == 0 {
+                    return (&k[0].v, None);
+                }
+                let a = &k[i - 1];
+                match k.get(i) {
+                    Some(b) if b.t_us > a.t_us => (&a.v, Some((&b.v, a.ease.apply((t_us - a.t_us) as f64 / (b.t_us - a.t_us) as f64)))),
+                    _ => (&a.v, None),
+                }
+            }
+        }
+    }
+}
+
+impl<T: Sample> Param<T> {
+    /// Value at `t_us` on the parameter's time axis.
+    pub fn at(&self, t_us: u64) -> T {
+        match self.segment(t_us) {
+            (a, None) => a.clone(),
+            (a, Some((b, f))) => T::mix(a, b, f),
+        }
     }
 }
 
@@ -65,31 +187,84 @@ impl<T> From<T> for Param<T> {
     }
 }
 
+#[derive(Serialize)]
+struct KeyframesRef<'a, T> {
+    keyframes: &'a [Keyframe<T>],
+}
+
 impl<T: Serialize> Serialize for Param<T> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        self.value().serialize(s)
+        match self {
+            Param::Value(v) => v.serialize(s),
+            Param::Keyframes(k) => KeyframesRef { keyframes: k }.serialize(s),
+        }
     }
 }
 
-impl<'de, T: Deserialize<'de>> Deserialize<'de> for Param<T> {
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum ParamRepr<T> {
+    Keyframes(KeyframesOwned<T>),
+    Value(T),
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct KeyframesOwned<T> {
+    keyframes: Vec<Keyframe<T>>,
+}
+
+impl<'de, T: Deserialize<'de> + Sample> Deserialize<'de> for Param<T> {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Param<T>, D::Error> {
-        T::deserialize(d).map(Param::Value)
+        use serde::de::Error;
+        match ParamRepr::<T>::deserialize(d)? {
+            ParamRepr::Value(v) => Ok(Param::Value(v)),
+            ParamRepr::Keyframes(KeyframesOwned { keyframes: k }) => {
+                if k.is_empty() || k.len() > MAX_KEYFRAMES {
+                    return Err(D::Error::custom(format!("keyframes must have 1..={MAX_KEYFRAMES} points (got {})", k.len())));
+                }
+                if k.windows(2).any(|w| w[1].t_us < w[0].t_us) {
+                    return Err(D::Error::custom("keyframes must be in ascending t_us"));
+                }
+                if !T::INTERPOLATES && k.iter().any(|p| p.ease != Ease::Step) {
+                    return Err(D::Error::custom("this parameter only steps: every keyframe ease must be \"step\""));
+                }
+                Ok(Param::Keyframes(k))
+            }
+        }
     }
 }
 
-/// `ser_num` for a numeric parameter.
+/// `ser_num` for a numeric parameter (keyframe values too).
 pub fn ser_param_num<S: Serializer>(v: &Param<f64>, s: S) -> Result<S::Ok, S::Error> {
-    ser_num(v.value(), s)
+    #[derive(Serialize)]
+    struct Num(#[serde(serialize_with = "ser_num")] f64);
+    #[derive(Serialize)]
+    struct NumKey {
+        t_us: u64,
+        v: Num,
+        ease: Ease,
+    }
+    match v {
+        Param::Value(x) => ser_num(x, s),
+        Param::Keyframes(k) => {
+            let k: Vec<NumKey> = k.iter().map(|p| NumKey { t_us: p.t_us, v: Num(p.v), ease: p.ease }).collect();
+            #[derive(Serialize)]
+            struct Keys {
+                keyframes: Vec<NumKey>,
+            }
+            Keys { keyframes: k }.serialize(s)
+        }
+    }
 }
 
 /// `ser_num` for an optional numeric parameter (skipped when absent).
 pub fn ser_opt_param_num<S: Serializer>(v: &Option<Param<f64>>, s: S) -> Result<S::Ok, S::Error> {
     match v {
-        Some(p) => ser_num(p.value(), s),
+        Some(p) => ser_param_num(p, s),
         None => s.serialize_none(),
     }
 }
-
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Show {
@@ -750,4 +925,60 @@ pub(crate) fn demo_for_tests() -> Show {
     let mut s: Show = serde_json::from_str(include_str!("../../../examples/demo.show.json")).unwrap();
     s.schema_version = SCHEMA_VERSION.to_string();
     s
+}
+
+step_only!(Axis, Waveform, StrobeMode, RippleFade, RippleTrigger, RippleShape, RainDirection, OrbMotion, RegionPattern, StepMode, StepOrder);
+
+#[cfg(test)]
+mod keyframe_tests {
+    use super::*;
+
+    fn kf(json: &str) -> Result<Param<f64>, serde_json::Error> {
+        serde_json::from_str(json)
+    }
+
+    #[test]
+    fn plain_values_are_unchanged_and_keyframes_round_trip() {
+        let p: Param<f64> = serde_json::from_str("0.5").unwrap();
+        assert_eq!(p, Param::Value(0.5));
+        #[derive(Serialize)]
+        struct W(#[serde(serialize_with = "ser_param_num")] Param<f64>);
+        assert_eq!(serde_json::to_string(&W(Param::Value(6.0))).unwrap(), "6");
+        let text = r#"{"keyframes":[{"t_us":0,"v":4,"ease":"linear"},{"t_us":1000000,"v":16.5,"ease":"step"}]}"#;
+        let k = kf(text).unwrap();
+        assert_eq!(serde_json::to_string(&W(k.clone())).unwrap(), text, "integral values stay integers");
+        // ease defaults to linear when absent.
+        assert_eq!(kf(r#"{"keyframes":[{"t_us":0,"v":1}]}"#).unwrap(), Param::Keyframes(vec![Keyframe { t_us: 0, v: 1.0, ease: Ease::Linear }]));
+    }
+
+    #[test]
+    fn bad_keyframe_lists_are_refused_when_reading() {
+        assert!(kf(r#"{"keyframes":[]}"#).is_err(), "empty");
+        assert!(kf(r#"{"keyframes":[{"t_us":5,"v":1},{"t_us":2,"v":2}]}"#).is_err(), "descending");
+        let many = (0..65).map(|i| format!(r#"{{"t_us":{i},"v":1}}"#)).collect::<Vec<_>>().join(",");
+        assert!(kf(&format!(r#"{{"keyframes":[{many}]}}"#)).is_err(), "more than 64");
+        // Enums and bools only step.
+        assert!(serde_json::from_str::<Param<Axis>>(r#"{"keyframes":[{"t_us":0,"v":"x","ease":"linear"}]}"#).is_err());
+        assert!(serde_json::from_str::<Param<bool>>(r#"{"keyframes":[{"t_us":0,"v":true,"ease":"step"},{"t_us":9,"v":false,"ease":"step"}]}"#).is_ok());
+    }
+
+    #[test]
+    fn sampling_holds_the_ends_and_follows_the_ease() {
+        let p = kf(r#"{"keyframes":[{"t_us":1000,"v":10},{"t_us":3000,"v":20,"ease":"step"},{"t_us":5000,"v":40}]}"#).unwrap();
+        assert_eq!(p.at(0), 10.0, "before the first point");
+        assert_eq!(p.at(2000), 15.0, "linear midpoint");
+        assert_eq!(p.at(4000), 20.0, "step holds until the next point");
+        assert_eq!(p.at(5000), 40.0);
+        assert_eq!(p.at(99_000), 40.0, "after the last point");
+        let e = |ease: Ease| Param::Keyframes(vec![Keyframe { t_us: 0, v: 0.0, ease }, Keyframe { t_us: 100, v: 1.0, ease: Ease::Linear }]).at(50);
+        assert_eq!(e(Ease::EaseIn), 0.25);
+        assert_eq!(e(Ease::EaseOut), 0.75);
+        assert_eq!(e(Ease::EaseInOut), 0.5);
+        // Integers interpolate rounded; enums step.
+        let n: Param<u32> = Param::Keyframes(vec![Keyframe { t_us: 0, v: 100, ease: Ease::Linear }, Keyframe { t_us: 10, v: 200, ease: Ease::Linear }]);
+        assert_eq!(n.at(3), 130);
+        let a: Param<Axis> = Param::Keyframes(vec![Keyframe { t_us: 0, v: Axis::X, ease: Ease::Step }, Keyframe { t_us: 10, v: Axis::Y, ease: Ease::Step }]);
+        assert_eq!((a.at(9), a.at(10)), (Axis::X, Axis::Y));
+        assert_eq!(p.values().copied().collect::<Vec<_>>(), vec![10.0, 20.0, 40.0]);
+    }
 }

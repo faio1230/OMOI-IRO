@@ -1,0 +1,195 @@
+{
+  "$schema": "../../schemas/show.schema.json",
+  "schema_version": "0.1.3",
+  "id": "keyframes-0-1-3",
+  "name": "0.1.3 のキーフレーム（粒から豪雨へ・加速する走査）",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "rain-storm",
+      "name": "粒から豪雨へ",
+      "effect": {
+        "type": "builtin.rain",
+        "version": 1,
+        "params": {
+          "color": "#2060FF",
+          "head_color": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": "#80A0FF",
+                "ease": "linear"
+              },
+              {
+                "t_us": 16000000,
+                "v": "#FFFFFF",
+                "ease": "linear"
+              }
+            ]
+          },
+          "direction": "down",
+          "speed": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 4,
+                "ease": "ease_in"
+              },
+              {
+                "t_us": 16000000,
+                "v": 16,
+                "ease": "linear"
+              }
+            ]
+          },
+          "density": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 0.05,
+                "ease": "ease_in"
+              },
+              {
+                "t_us": 16000000,
+                "v": 1,
+                "ease": "linear"
+              }
+            ]
+          },
+          "tail": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 1,
+                "ease": "linear"
+              },
+              {
+                "t_us": 16000000,
+                "v": 6,
+                "ease": "linear"
+              }
+            ]
+          },
+          "seed": 3,
+          "flicker": 0
+        }
+      }
+    },
+    {
+      "id": "chase-accel",
+      "name": "加速する走査",
+      "effect": {
+        "type": "builtin.chase",
+        "version": 1,
+        "params": {
+          "color": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": "#00DCC8",
+                "ease": "linear"
+              },
+              {
+                "t_us": 16000000,
+                "v": "#FF2060",
+                "ease": "linear"
+              }
+            ]
+          },
+          "period_us": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 4000000,
+                "ease": "ease_in"
+              },
+              {
+                "t_us": 16000000,
+                "v": 250000,
+                "ease": "linear"
+              }
+            ]
+          },
+          "width": 2,
+          "axis": "x"
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "storm",
+      "name": "35 粒から豪雨へ",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "storm-1",
+            "preset_id": "rain-storm",
+            "start_us": 0,
+            "duration_us": 16000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "scan",
+      "name": "36 加速する走査",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "scan-1",
+            "preset_id": "chase-accel",
+            "start_us": 16000000,
+            "duration_us": 16000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    }
+  ]
+}

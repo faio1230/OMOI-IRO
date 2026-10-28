@@ -190,133 +190,139 @@ pub const MAX_INSTANCES: usize = 64;
 
 impl CompiledEffect {
     pub fn compile(e: &Effect) -> Option<CompiledEffect> {
+        CompiledEffect::compile_at(e, 0)
+    }
+
+    /// The effect with its parameters sampled at `t` on their time axis
+    /// (keyframes; constant parameters are the same at any time).
+    pub fn compile_at(e: &Effect, t: u64) -> Option<CompiledEffect> {
         Some(match e {
             // Parameters are constant in Schema 0.1.x (`Param::Value`).
-            Effect::Solid { params, .. } => CompiledEffect::Solid { color: Rgb::from_hex(params.color.value())? },
+            Effect::Solid { params, .. } => CompiledEffect::Solid { color: col(&params.color, t)? },
             Effect::Chase { params, .. } => CompiledEffect::Chase {
-                color: Rgb::from_hex(params.color.value())?,
-                period_us: (*params.period_us.value()).max(1),
-                width: (*params.width.value()).clamp(1, 8),
-                axis: *params.axis.value(),
-                reverse: params.reverse.as_ref().is_some_and(|r| *r.value()),
+                color: col(&params.color, t)?,
+                period_us: (params.period_us.at(t)).max(1),
+                width: (params.width.at(t)).clamp(1, 8),
+                axis: params.axis.at(t),
+                reverse: params.reverse.as_ref().is_some_and(|r| r.at(t)),
             },
             Effect::Pulse { params, .. } => CompiledEffect::Pulse {
-                color: Rgb::from_hex(params.color.value())?,
-                beats_per_cycle: *params.beats_per_cycle.value(),
-                depth: *params.depth.value(),
-                waveform: *params.waveform.value(),
+                color: col(&params.color, t)?,
+                beats_per_cycle: params.beats_per_cycle.at(t),
+                depth: params.depth.at(t),
+                waveform: params.waveform.at(t),
             },
             Effect::Strobe { params, .. } => CompiledEffect::Strobe {
-                color: Rgb::from_hex(params.color.value())?,
-                mode: *params.mode.value(),
-                rate_hz: *params.rate_hz.value(),
-                beats_per_cycle: *params.beats_per_cycle.value(),
-                duty: *params.duty.value(),
-                phase_offset: *params.phase_offset.value(),
+                color: col(&params.color, t)?,
+                mode: params.mode.at(t),
+                rate_hz: params.rate_hz.at(t),
+                beats_per_cycle: params.beats_per_cycle.at(t),
+                duty: params.duty.at(t),
+                phase_offset: params.phase_offset.at(t),
             },
             Effect::Ripple { params, .. } => CompiledEffect::Ripple {
                 look: RippleLook {
-                    color: Rgb::from_hex(params.color.value())?,
-                    speed: *params.speed.value(),
-                    ring_width: *params.ring_width.value(),
-                    lifetime_us: *params.lifetime_ms.value() as i64 * 1000,
-                    fade: *params.fade.value(),
-                    max_concurrent: (*params.max_concurrent.value()).clamp(1, PadInput::CAPACITY as u32) as usize,
-                    shape: params.shape.as_ref().map(|s| *s.value()).unwrap_or(RippleShape::Circle),
+                    color: col(&params.color, t)?,
+                    speed: params.speed.at(t),
+                    ring_width: params.ring_width.at(t),
+                    lifetime_us: params.lifetime_ms.at(t) as i64 * 1000,
+                    fade: params.fade.at(t),
+                    max_concurrent: (params.max_concurrent.at(t)).clamp(1, PadInput::CAPACITY as u32) as usize,
+                    shape: params.shape.as_ref().map(|s| s.at(t)).unwrap_or(RippleShape::Circle),
                 },
-                interval: match params.trigger.value() {
+                interval: match params.trigger.at(t) {
                     RippleTrigger::AnyPad => None,
                     RippleTrigger::Interval => Some((
-                        *params.origin_x.as_ref()?.value(),
-                        *params.origin_y.as_ref()?.value(),
-                        (*params.interval_ms.as_ref()?.value()).max(1) as i64 * 1000,
+                        params.origin_x.as_ref()?.at(t),
+                        params.origin_y.as_ref()?.at(t),
+                        (params.interval_ms.as_ref()?.at(t)).max(1) as i64 * 1000,
                     )),
                 },
             },
             Effect::Rain { params, .. } => {
-                let color = Rgb::from_hex(params.color.value())?;
+                let color = col(&params.color, t)?;
                 CompiledEffect::Rain {
                     color,
                     head: match &params.head_color {
-                        Some(h) => Rgb::from_hex(h.value())?,
+                        Some(h) => col(h, t)?,
                         None => color,
                     },
-                    direction: *params.direction.value(),
-                    speed: *params.speed.value(),
-                    density: *params.density.value(),
-                    tail: *params.tail.value(),
-                    seed: *params.seed.value(),
-                    flicker: *params.flicker.value(),
+                    direction: params.direction.at(t),
+                    speed: params.speed.at(t),
+                    density: params.density.at(t),
+                    tail: params.tail.at(t),
+                    seed: params.seed.at(t),
+                    flicker: params.flicker.at(t),
                 }
             }
             Effect::Wave { params, .. } => CompiledEffect::Wave {
-                color: Rgb::from_hex(params.color.value())?,
-                axis: *params.axis.value(),
-                wavelength: *params.wavelength.value(),
-                amplitude: *params.amplitude.value(),
-                center: *params.center.value(),
-                speed: *params.speed.value(),
-                thickness: *params.thickness.value(),
-                beat_amplitude: *params.beat_amplitude.value(),
-                phase: params.phase.as_ref().map(|p| *p.value()).unwrap_or(0.0),
+                color: col(&params.color, t)?,
+                axis: params.axis.at(t),
+                wavelength: params.wavelength.at(t),
+                amplitude: params.amplitude.at(t),
+                center: params.center.at(t),
+                speed: params.speed.at(t),
+                thickness: params.thickness.at(t),
+                beat_amplitude: params.beat_amplitude.at(t),
+                phase: params.phase.as_ref().map(|p| p.at(t)).unwrap_or(0.0),
             },
             Effect::Orb { params, .. } => {
-                let (la, ba) = (params.light_angle.value().to_radians(), params.bounce_angle.value().to_radians());
+                let (la, ba) = (params.light_angle.at(t).to_radians(), params.bounce_angle.at(t).to_radians());
                 CompiledEffect::Orb {
-                    color: Rgb::from_hex(params.color.value())?,
-                    center: (*params.center_x.value(), *params.center_y.value()),
-                    radius: *params.radius.value(),
-                    edge: *params.edge.value(),
+                    color: col(&params.color, t)?,
+                    center: (params.center_x.at(t), params.center_y.at(t)),
+                    radius: params.radius.at(t),
+                    edge: params.edge.at(t),
                     light: (la.cos(), la.sin()),
-                    shading: *params.shading.value(),
-                    dither: *params.dither.value(),
-                    dither_rate_hz: *params.dither_rate_hz.value(),
-                    seed: *params.seed.value(),
-                    motion: *params.motion.value(),
-                    speed: *params.speed.value(),
-                    orbit_radius: *params.orbit_radius.value(),
+                    shading: params.shading.at(t),
+                    dither: params.dither.at(t),
+                    dither_rate_hz: params.dither_rate_hz.at(t),
+                    seed: params.seed.at(t),
+                    motion: params.motion.at(t),
+                    speed: params.speed.at(t),
+                    orbit_radius: params.orbit_radius.at(t),
                     bounce_dir: (ba.cos(), ba.sin()),
-                    orbit_phase: params.orbit_phase.as_ref().map(|p| *p.value()).unwrap_or(0.0),
+                    orbit_phase: params.orbit_phase.as_ref().map(|p| p.at(t)).unwrap_or(0.0),
                 }
             }
             Effect::TapGlow { params, .. } => CompiledEffect::TapGlow {
-                start: Rgb::from_hex(params.color_start.value())?,
-                mid: Rgb::from_hex(params.color_mid.value())?,
-                end: Rgb::from_hex(params.color_end.value())?,
-                lifetime_us: (*params.lifetime_ms.value()).max(1) as i64 * 1000,
-                radius: *params.radius.value(),
-                repeats: (*params.repeats.value()).clamp(1, 8),
-                repeat_us: *params.repeat_interval_ms.value() as i64 * 1000,
-                decay: *params.repeat_decay.value(),
+                start: col(&params.color_start, t)?,
+                mid: col(&params.color_mid, t)?,
+                end: col(&params.color_end, t)?,
+                lifetime_us: (params.lifetime_ms.at(t)).max(1) as i64 * 1000,
+                radius: params.radius.at(t),
+                repeats: (params.repeats.at(t)).clamp(1, 8),
+                repeat_us: params.repeat_interval_ms.at(t) as i64 * 1000,
+                decay: params.repeat_decay.at(t),
             },
             Effect::Cross { params, .. } => CompiledEffect::Cross {
-                color: Rgb::from_hex(params.color.value())?,
-                speed: *params.speed.value(),
-                length: *params.length.value(),
-                lifetime_us: (*params.lifetime_ms.value()).max(1) as i64 * 1000,
+                color: col(&params.color, t)?,
+                speed: params.speed.at(t),
+                length: params.length.at(t),
+                lifetime_us: (params.lifetime_ms.at(t)).max(1) as i64 * 1000,
             },
             Effect::Regions { params, .. } => CompiledEffect::Regions {
-                pattern: *params.pattern.value(),
-                color: Rgb::from_hex(params.color.value())?,
+                pattern: params.pattern.at(t),
+                color: col(&params.color, t)?,
                 color_b: match &params.color_b {
-                    Some(c) => Some(Rgb::from_hex(c.value())?),
+                    Some(c) => Some(col(c, t)?),
                     None => None,
                 },
-                mode: *params.step_mode.value(),
-                step_beats: *params.step_beats.value(),
-                step_s: (*params.step_ms.value()).max(1) as f64 / 1000.0,
-                order: *params.order.value(),
-                soft: *params.soft.value(),
-                duty: *params.duty.value(),
+                mode: params.step_mode.at(t),
+                step_beats: params.step_beats.at(t),
+                step_s: (params.step_ms.at(t)).max(1) as f64 / 1000.0,
+                order: params.order.at(t),
+                soft: params.soft.at(t),
+                duty: params.duty.at(t),
             },
             Effect::Noise { params, .. } => CompiledEffect::Noise {
-                base: Rgb::from_hex(params.base_color.value())?,
-                highlight: Rgb::from_hex(params.highlight_color.value())?,
-                density: *params.density.value(),
-                rate_hz: *params.rate_hz.value(),
-                seed: *params.seed.value(),
-                smooth: *params.smooth.value(),
-                depth: *params.depth.value(),
+                base: col(&params.base_color, t)?,
+                highlight: col(&params.highlight_color, t)?,
+                density: params.density.at(t),
+                rate_hz: params.rate_hz.at(t),
+                seed: params.seed.at(t),
+                smooth: params.smooth.at(t),
+                depth: params.depth.at(t),
             },
         })
     }
@@ -719,6 +725,14 @@ fn step_level(d: f64, duty: f64, soft: f64) -> f64 {
     rise.min(fall)
 }
 
+/// A color parameter at `t`, interpolated per sRGB channel (f32, no 8-bit rounding).
+fn col(p: &crate::model::Param<String>, t: u64) -> Option<Rgb> {
+    match p.segment(t) {
+        (a, None) => Rgb::from_hex(a),
+        (a, Some((b, f))) => Some(lerp_rgb(Rgb::from_hex(a)?, Rgb::from_hex(b)?, f as f32)),
+    }
+}
+
 /// Reflect a coordinate into 0..=7 (triangle wave, period 14).
 fn bounce(p: f64) -> f64 {
     let u = p.rem_euclid(14.0);
@@ -787,6 +801,37 @@ fn paint_rain(local_us: u64, color: Rgb, head: Rgb, direction: RainDirection, sp
     for (i, px) in layer.px.iter_mut().enumerate() {
         if cell_a[i] > 0.0 {
             over(px, Rgba::from_color(if cell_head[i] { head } else { color }, (cell_a[i] * alpha) as f32));
+        }
+    }
+}
+
+/// True when any parameter of the effect has keyframes (checked once at compile).
+pub fn has_keyframes(e: &Effect) -> bool {
+    serde_json::to_string(e).is_ok_and(|s| s.contains("\"keyframes\""))
+}
+
+/// Effect `i` at time `t` on its axis: the compiled constant unless it has keyframes.
+fn sample(effects: &[CompiledEffect], keyed: &[Option<Effect>], i: usize, t: u64) -> CompiledEffect {
+    match &keyed[i] {
+        Some(src) => CompiledEffect::compile_at(src, t).unwrap_or(effects[i]),
+        None => effects[i],
+    }
+}
+
+/// Instances of effect `i`; with keyframes each instance samples at its own age.
+fn paint_instances_sampled(effects: &[CompiledEffect], keyed: &[Option<Effect>], i: usize, inst: &[Instance], alpha: f64, layer: &mut LayerFrame) {
+    match &keyed[i] {
+        None => effects[i].paint_instances(inst, alpha, layer),
+        Some(src) => {
+            // Draw newest first up to the (first-keyframe) concurrency limit.
+            let limit = match effects[i] {
+                CompiledEffect::Ripple { look, .. } => look.max_concurrent,
+                _ => MAX_INSTANCES,
+            };
+            for one in inst.iter().filter(|x| x.2 >= 0).take(limit) {
+                let e = CompiledEffect::compile_at(src, one.2 as u64).unwrap_or(effects[i]);
+                e.paint_instances(std::slice::from_ref(one), alpha, layer);
+            }
         }
     }
 }
@@ -916,6 +961,9 @@ pub struct Renderer {
     muted: Vec<bool>,
     /// Instances of one triggered clip (reused, never grows past `MAX_INSTANCES`).
     inst: Vec<Instance>,
+    /// Presets with keyframes (same index as `effects`): sampled per frame
+    /// on their time axis; None = the compiled constant in `effects`.
+    keyed: Vec<Option<Effect>>,
 }
 
 impl Renderer {
@@ -927,8 +975,10 @@ impl Renderer {
         }
         let mut by_id = HashMap::new();
         let mut effects = Vec::with_capacity(show.presets.len());
+        let mut keyed = Vec::with_capacity(show.presets.len());
         for (i, p) in show.presets.iter().enumerate() {
             effects.push(CompiledEffect::compile(&p.effect).expect("validated color"));
+            keyed.push(has_keyframes(&p.effect).then(|| p.effect.clone()));
             by_id.insert(p.id.as_str(), i);
         }
         let mut max_clips = 0;
@@ -967,6 +1017,7 @@ impl Renderer {
             active: Vec::with_capacity(max_clips),
             muted: vec![false; show.layers.len()],
             inst: Vec::with_capacity(MAX_INSTANCES),
+            keyed,
         })
     }
 
@@ -998,12 +1049,22 @@ impl Renderer {
             self.buf.clear();
             match &layer.content {
                 LayerContent::Continuous { effect } => {
-                    self.effects[*effect].paint_input(t as u64, beat, input, 1.0, &mut self.buf);
+                    let e = sample(&self.effects, &self.keyed, *effect, t as u64);
+                    match (&self.keyed[*effect], input) {
+                        // Keyframed instance effects follow each instance's age.
+                        (Some(_), Some(input)) if e.takes_instances() && !matches!(e, CompiledEffect::Ripple { interval: Some(_), .. }) => {
+                            self.inst.clear();
+                            self.inst.extend(input.hits.iter().rev().map(|h| (h.x as f64, h.y as f64, input.now_us - h.t_us)));
+                            paint_instances_sampled(&self.effects, &self.keyed, *effect, &self.inst, 1.0, &mut self.buf);
+                        }
+                        _ => e.paint_input(t as u64, beat, input, 1.0, &mut self.buf),
+                    }
                 }
                 LayerContent::Timeline { index, effects } => {
                     index.active(t, &mut self.active);
                     for span in &self.active {
-                        self.effects[effects[span.order]].paint_input(span.local_us(t), beat, input, span.fade(t), &mut self.buf);
+                        let local = span.local_us(t);
+                        sample(&self.effects, &self.keyed, effects[span.order], local).paint_input(local, beat, input, span.fade(t), &mut self.buf);
                     }
                 }
                 LayerContent::Triggered { index, effects, on, interval_us, origin } => {
@@ -1011,12 +1072,12 @@ impl Renderer {
                     for span in &self.active {
                         let local = span.local_us(t) as i64;
                         triggered_instances(*on, *interval_us, *origin, span, local, input, &mut self.inst);
-                        let e = &self.effects[effects[span.order]];
-                        if e.takes_instances() {
-                            e.paint_instances(&self.inst, span.fade(t), &mut self.buf);
+                        let ei = effects[span.order];
+                        if self.effects[ei].takes_instances() {
+                            paint_instances_sampled(&self.effects, &self.keyed, ei, &self.inst, span.fade(t), &mut self.buf);
                         } else if !self.inst.is_empty() {
                             // A fixed-position effect on `hold`: drawn while a pad is held.
-                            e.paint(local as u64, beat, span.fade(t), &mut self.buf);
+                            sample(&self.effects, &self.keyed, ei, local as u64).paint(local as u64, beat, span.fade(t), &mut self.buf);
                         }
                     }
                 }
@@ -1604,6 +1665,57 @@ mod tests {
         // Once the first rings have lived out their 1.2 s, the picture repeats every 500 ms.
         assert_eq!(r.render(3_100_000, None), r.render(3_600_000, None), "periodic in the clip's local time");
         assert_ne!(r.render(1_100_000, None), r.render(1_600_000, None), "but not before (one ring, then two)");
+    }
+
+    #[test]
+    fn keyframes_follow_clip_time_and_instance_age() {
+        use crate::model::{Ease, Keyframe, Param};
+        let k = |a: f64, b: f64| Param::Keyframes(vec![Keyframe { t_us: 0, v: a, ease: Ease::Linear }, Keyframe { t_us: 4_000_000, v: b, ease: Ease::Linear }]);
+        // A solid whose color goes black → white over the clip's first 4 s (clip at 1 s).
+        let mut s = demo();
+        let solid = Effect::Solid {
+            version: 1,
+            params: crate::model::SolidParams {
+                color: Param::Keyframes(vec![Keyframe { t_us: 0, v: "#000000".into(), ease: Ease::Linear }, Keyframe { t_us: 4_000_000, v: "#FFFFFF".into(), ease: Ease::Linear }]),
+            },
+        };
+        s.presets.push(crate::model::Preset { id: "fade".into(), name: "fade".into(), effect: solid });
+        s.layers = vec![s.layers[0].clone()];
+        if let Content::Timeline { clips } = &mut s.layers[0].content {
+            clips.truncate(1);
+            clips[0].preset_id = "fade".into();
+            clips[0].start_us = 1_000_000;
+            clips[0].duration_us = 10_000_000;
+            clips[0].fade_in_us = 0;
+            clips[0].fade_out_us = 0;
+        }
+        s.render.master_brightness = 1.0;
+        let mut r = Renderer::new(&s).unwrap();
+        let g = |r: &mut Renderer, t| r.render(t, None).leds[0].g;
+        assert!((g(&mut r, 3_000_000) - 0.5).abs() < 1e-6, "half way (local 2 s)");
+        assert_eq!(g(&mut r, 9_000_000), 1.0, "held after the last point");
+        // Seek safe: the same time gives the same frame in any order.
+        let a = r.render(2_000_000, None);
+        let _ = r.render(8_000_000, None);
+        assert_eq!(r.render(2_000_000, None), a);
+        // An instance effect samples at each instance's age: a cross whose speed
+        // ramps 4 → 32 cells/s draws a younger and an older instance differently.
+        let mut cross = crate::edit::default_effect("builtin.cross").unwrap();
+        if let Effect::Cross { params, .. } = &mut cross {
+            params.speed = k(4.0, 32.0);
+            params.lifetime_ms = 3000.into();
+        }
+        assert!(has_keyframes(&cross) && !has_keyframes(&crate::edit::default_effect("builtin.cross").unwrap()));
+        let ce = CompiledEffect::compile(&cross).unwrap();
+        let keyed = [Some(cross)];
+        let paint = |age: i64| {
+            let mut l = LayerFrame::default();
+            paint_instances_sampled(&[ce], &keyed, 0, &[(0.0, 0.0, age)], 1.0, &mut l);
+            (0..8).filter(|&x| l.px[x].a > 0.0).max()
+        };
+        // Age 0.5 s: speed 7.5 → head at 3.75 cells; age 1 s: speed 11 → head at 11 (tail off the board).
+        assert_eq!(paint(500_000), Some(3));
+        assert_eq!(paint(1_000_000), None);
     }
 
     #[test]

@@ -16,7 +16,7 @@
 //! * 3 Hz is the default: whole-field flashing faster than that is treated
 //!   as fast flashing (common photosensitivity guidance).
 
-use crate::model::{Content, Effect, Show, StrobeMode};
+use crate::model::{Content, Effect, Param, Show, StrobeMode};
 use crate::surface::Frame;
 use serde::{Deserialize, Serialize};
 
@@ -105,34 +105,50 @@ pub fn chase_hz(period_us: u64, width: u32) -> f64 {
     (8.0 / width.clamp(1, 8) as f64) / period_s
 }
 
+fn max(p: &Param<f64>) -> f64 {
+    p.values().copied().fold(f64::MIN, f64::max)
+}
+
+fn min(p: &Param<f64>) -> f64 {
+    p.values().copied().fold(f64::MAX, f64::min)
+}
+
+/// How an effect flashes, judged at the worst values of its keyframes
+/// (fastest rate, shortest period / step, deepest pulse; a mode switched by
+/// keyframes counts as the time mode if it is ever used).
 pub fn effect_flash(e: &Effect) -> Option<FlashSource> {
     match e {
         Effect::Solid { .. } => None,
-        Effect::Chase { params, .. } => Some(FlashSource::Chase { hz: chase_hz(*params.period_us.value(), *params.width.value()) }),
+        Effect::Chase { params, .. } => {
+            let period = params.period_us.values().copied().min().unwrap_or(1);
+            let width = params.width.values().copied().min().unwrap_or(1);
+            Some(FlashSource::Chase { hz: chase_hz(period, width) })
+        }
         // A Pulse with depth 0 does not change brightness.
-        Effect::Pulse { params, .. } if *params.depth.value() <= 0.0 => None,
-        Effect::Pulse { params, .. } => Some(FlashSource::Pulse { beats_per_cycle: *params.beats_per_cycle.value() }),
-        Effect::Strobe { params, .. } => Some(match params.mode.value() {
-            StrobeMode::Hz => FlashSource::Strobe { hz: *params.rate_hz.value() },
-            StrobeMode::Beat => FlashSource::StrobeBeat { beats_per_cycle: *params.beats_per_cycle.value() },
+        Effect::Pulse { params, .. } if max(&params.depth) <= 0.0 => None,
+        Effect::Pulse { params, .. } => Some(FlashSource::Pulse { beats_per_cycle: min(&params.beats_per_cycle) }),
+        Effect::Strobe { params, .. } => Some(if params.mode.values().any(|m| *m == StrobeMode::Hz) {
+            FlashSource::Strobe { hz: max(&params.rate_hz) }
+        } else {
+            FlashSource::StrobeBeat { beats_per_cycle: min(&params.beats_per_cycle) }
         }),
-        Effect::Noise { params, .. } => Some(FlashSource::Noise { hz: *params.rate_hz.value() / 2.0 }),
+        Effect::Noise { params, .. } => Some(FlashSource::Noise { hz: max(&params.rate_hz) / 2.0 }),
         // Driven by pad presses, not by time: not judged statically.
         Effect::Ripple { .. } | Effect::TapGlow { .. } | Effect::Cross { .. } => None,
-        Effect::Rain { params, .. } if *params.flicker.value() > 0.0 => Some(FlashSource::Grain { hz: 4.0 }),
+        Effect::Rain { params, .. } if max(&params.flicker) > 0.0 => Some(FlashSource::Grain { hz: 4.0 }),
         Effect::Rain { .. } => None,
-        Effect::Wave { params, .. } => Some(FlashSource::Wave { hz: params.speed.value().abs() * 2.0 }),
-        Effect::Orb { params, .. } if *params.dither.value() > 0.0 => Some(FlashSource::Grain { hz: *params.dither_rate_hz.value() / 2.0 }),
+        Effect::Wave { params, .. } => Some(FlashSource::Wave { hz: params.speed.values().map(|s| s.abs()).fold(0.0, f64::max) * 2.0 }),
+        Effect::Orb { params, .. } if max(&params.dither) > 0.0 => Some(FlashSource::Grain { hz: max(&params.dither_rate_hz) / 2.0 }),
         Effect::Orb { .. } => None,
         // A soft hand-over (>= 0.5) does not switch abruptly.
-        Effect::Regions { params, .. } if *params.soft.value() >= 0.5 => None,
-        Effect::Regions { params, .. } => Some(match params.step_mode.value() {
-            crate::model::StepMode::Seconds => FlashSource::Step { hz: 1000.0 / (*params.step_ms.value()).max(1) as f64 },
-            crate::model::StepMode::Beat => FlashSource::StepBeat { beats_per_step: *params.step_beats.value() },
+        Effect::Regions { params, .. } if min(&params.soft) >= 0.5 => None,
+        Effect::Regions { params, .. } => Some(if params.step_mode.values().any(|m| *m == crate::model::StepMode::Seconds) {
+            FlashSource::Step { hz: 1000.0 / params.step_ms.values().copied().min().unwrap_or(1).max(1) as f64 }
+        } else {
+            FlashSource::StepBeat { beats_per_step: min(&params.step_beats) }
         }),
     }
 }
-
 /// A flashing preset used by a layer, with the clips that use it there.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LayerPresetFlash {
@@ -307,6 +323,19 @@ mod tests {
         assert_eq!(p.layer_hz(0, 120.0), 12.0);
         // Raising the terminal limit lets it through.
         assert!(p.warnings(120.0, 15.0).is_empty());
+    }
+
+    #[test]
+    fn keyframed_parameters_are_judged_at_their_worst() {
+        use crate::model::{Ease, Keyframe};
+        let k = |v: &[f64]| Param::Keyframes(v.iter().enumerate().map(|(i, x)| Keyframe { t_us: i as u64 * 1000, v: *x, ease: Ease::Linear }).collect());
+        let Effect::Strobe { version, mut params } = crate::edit::default_effect("builtin.strobe").unwrap() else { unreachable!() };
+        params.mode = Param::Keyframes(vec![Keyframe { t_us: 0, v: StrobeMode::Beat, ease: Ease::Step }, Keyframe { t_us: 5000, v: StrobeMode::Hz, ease: Ease::Step }]);
+        params.rate_hz = k(&[1.0, 12.0, 2.0]);
+        assert_eq!(effect_flash(&Effect::Strobe { version, params }), Some(FlashSource::Strobe { hz: 12.0 }), "the time mode is used once, at its fastest");
+        let Effect::Regions { version, mut params } = crate::edit::default_effect("builtin.regions").unwrap() else { unreachable!() };
+        params.soft = k(&[1.0, 0.2]);
+        assert!(effect_flash(&Effect::Regions { version, params }).is_some(), "soft dips under 0.5");
     }
 
     #[test]

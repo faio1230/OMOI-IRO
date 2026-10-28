@@ -195,6 +195,24 @@ mod tests {
     }
 
     #[test]
+    fn keyframed_show_round_trips_byte_for_byte() {
+        let text = include_str!("../../../fixtures/shows/keyframes-0.1.3.show.json");
+        let show = load_str(text).unwrap();
+        assert_eq!(to_canonical_string(&show), text);
+        // A keyframe value out of range is a semantic error with the parameter's pointer.
+        let mut v: Value = serde_json::from_str(text).unwrap();
+        v["presets"][0]["effect"]["params"]["density"]["keyframes"][1]["v"] = json!(1.5);
+        match load_str(&v.to_string()) {
+            Err(LoadError::Semantic(i)) => assert!(i.iter().any(|x| x.pointer == "/presets/0/effect/params/density"), "{i:?}"),
+            other => panic!("{other:?}"),
+        }
+        // An enum with an interpolating ease is refused.
+        let mut v: Value = serde_json::from_str(text).unwrap();
+        v["presets"][0]["effect"]["params"]["direction"] = json!({"keyframes": [{"t_us": 0, "v": "down", "ease": "linear"}]});
+        assert!(load_str(&v.to_string()).is_err());
+    }
+
+    #[test]
     fn triggered_layer_round_trips_and_needs_its_interval() {
         let mut v = demo_value();
         v["layers"][0]["content"] = json!({"kind": "triggered", "clips": [], "trigger": {"on": "interval"}});

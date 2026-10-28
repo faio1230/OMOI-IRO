@@ -7,6 +7,5 @@ publish.workspace = true
 
 [dependencies]
 serde.workspace = true
-
-[dev-dependencies]
+# Finding keyframes in an effect once at compile time (render::has_keyframes).
 serde_json.workspace = true

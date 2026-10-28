@@ -77,6 +77,15 @@ impl Ctx {
         }
     }
 
+    /// Counts (seed, repeats, ...) only step between keyframes.
+    fn step_only<T>(&mut self, p: &crate::model::Param<T>, pointer: String) {
+        if let crate::model::Param::Keyframes(k) = p {
+            if k.iter().any(|x| x.ease != crate::model::Ease::Step) {
+                self.push(pointer, "a count only steps: every keyframe ease must be \"step\"");
+            }
+        }
+    }
+
     fn range(&mut self, v: f64, lo: f64, hi: f64, pointer: String) {
         if !(lo..=hi).contains(&v) {
             self.push(pointer, format!("must be within {lo}..={hi} (got {v})"));
@@ -167,152 +176,288 @@ pub fn validate(show: &Show) -> Vec<Issue> {
             c.push(format!("{e}/version"), format!("{} supports version 1 (got {})", pr.effect.type_name(), pr.effect.version()));
         }
         match &pr.effect {
-            Effect::Solid { params, .. } => c.color(params.color.value(), format!("{e}/params/color")),
+            Effect::Solid { params, .. } => {
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
+                }
+            },
             Effect::Chase { params, .. } => {
-                c.color(params.color.value(), format!("{e}/params/color"));
-                if !(1_000..=3_600_000_000).contains(params.period_us.value()) {
+                {
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
+                }
+            };
+                if !params.period_us.values().all(|v| (1_000..=3_600_000_000).contains(v)) {
                     c.push(format!("{e}/params/period_us"), "period_us must be within 1000..=3600000000");
                 }
-                if !(1..=8).contains(params.width.value()) {
+                if !params.width.values().all(|v| (1..=8).contains(v)) {
                     c.push(format!("{e}/params/width"), "width must be within 1..=8");
                 }
+                c.step_only(&params.width, format!("{e}/params/width"));
             }
             Effect::Pulse { params, .. } => {
-                c.color(params.color.value(), format!("{e}/params/color"));
-                if ![0.25, 0.5, 1.0].contains(params.beats_per_cycle.value()) {
+                {
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
+                }
+            };
+                if !params.beats_per_cycle.values().all(|v| [0.25, 0.5, 1.0].contains(v)) {
                     c.push(format!("{e}/params/beats_per_cycle"), "beats_per_cycle must be 0.25, 0.5 or 1");
                 }
-                c.unit(*params.depth.value(), format!("{e}/params/depth"));
+                for v in params.depth.values() {
+                    c.unit(*v, format!("{e}/params/depth"));
+                }
             }
             Effect::Strobe { params, .. } => {
-                c.color(params.color.value(), format!("{e}/params/color"));
-                c.range(*params.rate_hz.value(), 0.5, 30.0, format!("{e}/params/rate_hz"));
-                if ![0.25, 0.5, 1.0, 2.0].contains(params.beats_per_cycle.value()) {
+                {
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
+                }
+            };
+                for v in params.rate_hz.values() {
+                    c.range(*v, 0.5, 30.0, format!("{e}/params/rate_hz"));
+                }
+                if !params.beats_per_cycle.values().all(|v| [0.25, 0.5, 1.0, 2.0].contains(v)) {
                     c.push(format!("{e}/params/beats_per_cycle"), "beats_per_cycle must be 0.25, 0.5, 1 or 2");
                 }
-                c.range(*params.duty.value(), 0.05, 0.95, format!("{e}/params/duty"));
-                c.unit(*params.phase_offset.value(), format!("{e}/params/phase_offset"));
+                for v in params.duty.values() {
+                    c.range(*v, 0.05, 0.95, format!("{e}/params/duty"));
+                }
+                for v in params.phase_offset.values() {
+                    c.unit(*v, format!("{e}/params/phase_offset"));
+                }
             }
             Effect::Rain { params, .. } => {
-                c.color(params.color.value(), format!("{e}/params/color"));
-                if let Some(h) = &params.head_color {
-                    c.color(h.value(), format!("{e}/params/head_color"));
+                {
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
                 }
-                c.range(*params.speed.value(), 0.5, 16.0, format!("{e}/params/speed"));
-                c.unit(*params.density.value(), format!("{e}/params/density"));
-                c.range(*params.tail.value(), 0.0, 8.0, format!("{e}/params/tail"));
-                if *params.seed.value() > i32::MAX as u32 {
+            };
+                if let Some(h) = &params.head_color {
+                    for v in h.values() {
+                        c.color(v, format!("{e}/params/head_color"));
+                    }
+                }
+                for v in params.speed.values() {
+                    c.range(*v, 0.5, 16.0, format!("{e}/params/speed"));
+                }
+                for v in params.density.values() {
+                    c.unit(*v, format!("{e}/params/density"));
+                }
+                for v in params.tail.values() {
+                    c.range(*v, 0.0, 8.0, format!("{e}/params/tail"));
+                }
+                if params.seed.values().any(|v| *v > i32::MAX as u32) {
                     c.push(format!("{e}/params/seed"), "seed must be within 0..=2147483647");
                 }
-                c.unit(*params.flicker.value(), format!("{e}/params/flicker"));
+                c.step_only(&params.seed, format!("{e}/params/seed"));
+                for v in params.flicker.values() {
+                    c.unit(*v, format!("{e}/params/flicker"));
+                }
             }
             Effect::Wave { params, .. } => {
-                c.color(params.color.value(), format!("{e}/params/color"));
-                c.range(*params.wavelength.value(), 2.0, 16.0, format!("{e}/params/wavelength"));
-                c.range(*params.amplitude.value(), 0.5, 3.5, format!("{e}/params/amplitude"));
-                c.range(*params.center.value(), 0.0, 7.0, format!("{e}/params/center"));
-                c.range(*params.speed.value(), -4.0, 4.0, format!("{e}/params/speed"));
-                c.range(*params.thickness.value(), 0.5, 3.0, format!("{e}/params/thickness"));
+                {
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
+                }
+            };
+                for v in params.wavelength.values() {
+                    c.range(*v, 2.0, 16.0, format!("{e}/params/wavelength"));
+                }
+                for v in params.amplitude.values() {
+                    c.range(*v, 0.5, 3.5, format!("{e}/params/amplitude"));
+                }
+                for v in params.center.values() {
+                    c.range(*v, 0.0, 7.0, format!("{e}/params/center"));
+                }
+                for v in params.speed.values() {
+                    c.range(*v, -4.0, 4.0, format!("{e}/params/speed"));
+                }
+                for v in params.thickness.values() {
+                    c.range(*v, 0.5, 3.0, format!("{e}/params/thickness"));
+                }
                 if let Some(p) = &params.phase {
-                    c.unit(*p.value(), format!("{e}/params/phase"));
+                    for v in p.values() {
+                        c.unit(*v, format!("{e}/params/phase"));
+                    }
                 }
             }
             Effect::Orb { params, .. } => {
-                c.color(params.color.value(), format!("{e}/params/color"));
-                c.range(*params.center_x.value(), 0.0, 7.0, format!("{e}/params/center_x"));
-                c.range(*params.center_y.value(), 0.0, 7.0, format!("{e}/params/center_y"));
-                c.range(*params.radius.value(), 0.5, 6.0, format!("{e}/params/radius"));
-                c.range(*params.edge.value(), 0.0, 2.0, format!("{e}/params/edge"));
-                c.range(*params.light_angle.value(), 0.0, 360.0, format!("{e}/params/light_angle"));
-                c.unit(*params.shading.value(), format!("{e}/params/shading"));
-                c.unit(*params.dither.value(), format!("{e}/params/dither"));
-                c.range(*params.dither_rate_hz.value(), 0.5, 15.0, format!("{e}/params/dither_rate_hz"));
-                if *params.seed.value() > i32::MAX as u32 {
+                {
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
+                }
+            };
+                for v in params.center_x.values() {
+                    c.range(*v, 0.0, 7.0, format!("{e}/params/center_x"));
+                }
+                for v in params.center_y.values() {
+                    c.range(*v, 0.0, 7.0, format!("{e}/params/center_y"));
+                }
+                for v in params.radius.values() {
+                    c.range(*v, 0.5, 6.0, format!("{e}/params/radius"));
+                }
+                for v in params.edge.values() {
+                    c.range(*v, 0.0, 2.0, format!("{e}/params/edge"));
+                }
+                for v in params.light_angle.values() {
+                    c.range(*v, 0.0, 360.0, format!("{e}/params/light_angle"));
+                }
+                for v in params.shading.values() {
+                    c.unit(*v, format!("{e}/params/shading"));
+                }
+                for v in params.dither.values() {
+                    c.unit(*v, format!("{e}/params/dither"));
+                }
+                for v in params.dither_rate_hz.values() {
+                    c.range(*v, 0.5, 15.0, format!("{e}/params/dither_rate_hz"));
+                }
+                if params.seed.values().any(|v| *v > i32::MAX as u32) {
                     c.push(format!("{e}/params/seed"), "seed must be within 0..=2147483647");
                 }
-                // The speed range depends on the motion (unused for none).
-                match params.motion.value() {
-                    crate::model::OrbMotion::None => c.range(*params.speed.value(), 0.0, 12.0, format!("{e}/params/speed")),
-                    crate::model::OrbMotion::Orbit => c.range(*params.speed.value(), 0.05, 2.0, format!("{e}/params/speed")),
-                    crate::model::OrbMotion::Bounce => c.range(*params.speed.value(), 0.5, 12.0, format!("{e}/params/speed")),
+                c.step_only(&params.seed, format!("{e}/params/seed"));
+                // The speed range depends on the motion (unused for none); keyframed
+                // motions take the widest range of the motions they use.
+                let (lo, hi) = params.motion.values().fold((f64::MAX, 0.0f64), |(lo, hi), m| match m {
+                    crate::model::OrbMotion::None => (lo.min(0.0), hi.max(12.0)),
+                    crate::model::OrbMotion::Orbit => (lo.min(0.05), hi.max(2.0)),
+                    crate::model::OrbMotion::Bounce => (lo.min(0.5), hi.max(12.0)),
+                });
+                for v in params.speed.values() {
+                    c.range(*v, lo, hi, format!("{e}/params/speed"));
                 }
-                c.range(*params.orbit_radius.value(), 0.0, 4.0, format!("{e}/params/orbit_radius"));
-                c.range(*params.bounce_angle.value(), 0.0, 360.0, format!("{e}/params/bounce_angle"));
+                for v in params.orbit_radius.values() {
+                    c.range(*v, 0.0, 4.0, format!("{e}/params/orbit_radius"));
+                }
+                for v in params.bounce_angle.values() {
+                    c.range(*v, 0.0, 360.0, format!("{e}/params/bounce_angle"));
+                }
                 if let Some(p) = &params.orbit_phase {
-                    c.unit(*p.value(), format!("{e}/params/orbit_phase"));
+                    for v in p.values() {
+                        c.unit(*v, format!("{e}/params/orbit_phase"));
+                    }
                 }
             }
             Effect::Regions { params, .. } => {
-                c.color(params.color.value(), format!("{e}/params/color"));
-                if let Some(b) = &params.color_b {
-                    c.color(b.value(), format!("{e}/params/color_b"));
+                {
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
                 }
-                if ![0.25, 0.5, 1.0, 2.0, 4.0].contains(params.step_beats.value()) {
+            };
+                if let Some(b) = &params.color_b {
+                    for v in b.values() {
+                        c.color(v, format!("{e}/params/color_b"));
+                    }
+                }
+                if !params.step_beats.values().all(|v| [0.25, 0.5, 1.0, 2.0, 4.0].contains(v)) {
                     c.push(format!("{e}/params/step_beats"), "step_beats must be 0.25, 0.5, 1, 2 or 4");
                 }
-                if !(50..=5000).contains(params.step_ms.value()) {
+                if !params.step_ms.values().all(|v| (50..=5000).contains(v)) {
                     c.push(format!("{e}/params/step_ms"), "step_ms must be within 50..=5000");
                 }
-                c.unit(*params.soft.value(), format!("{e}/params/soft"));
-                c.range(*params.duty.value(), 0.05, 1.0, format!("{e}/params/duty"));
+                for v in params.soft.values() {
+                    c.unit(*v, format!("{e}/params/soft"));
+                }
+                for v in params.duty.values() {
+                    c.range(*v, 0.05, 1.0, format!("{e}/params/duty"));
+                }
             }
             Effect::TapGlow { params, .. } => {
                 for (name, v) in [("color_start", &params.color_start), ("color_mid", &params.color_mid), ("color_end", &params.color_end)] {
-                    c.color(v.value(), format!("{e}/params/{name}"));
+                    for v in v.values() {
+                        c.color(v, format!("{e}/params/{name}"));
+                    }
                 }
-                if !(100..=5000).contains(params.lifetime_ms.value()) {
+                if !params.lifetime_ms.values().all(|v| (100..=5000).contains(v)) {
                     c.push(format!("{e}/params/lifetime_ms"), "lifetime_ms must be within 100..=5000");
                 }
-                c.range(*params.radius.value(), 0.0, 3.0, format!("{e}/params/radius"));
-                if !(1..=8).contains(params.repeats.value()) {
+                for v in params.radius.values() {
+                    c.range(*v, 0.0, 3.0, format!("{e}/params/radius"));
+                }
+                if !params.repeats.values().all(|v| (1..=8).contains(v)) {
                     c.push(format!("{e}/params/repeats"), "repeats must be within 1..=8");
                 }
-                if !(50..=2000).contains(params.repeat_interval_ms.value()) {
+                c.step_only(&params.repeats, format!("{e}/params/repeats"));
+                if !params.repeat_interval_ms.values().all(|v| (50..=2000).contains(v)) {
                     c.push(format!("{e}/params/repeat_interval_ms"), "repeat_interval_ms must be within 50..=2000");
                 }
-                c.unit(*params.repeat_decay.value(), format!("{e}/params/repeat_decay"));
+                for v in params.repeat_decay.values() {
+                    c.unit(*v, format!("{e}/params/repeat_decay"));
+                }
             }
             Effect::Cross { params, .. } => {
-                c.color(params.color.value(), format!("{e}/params/color"));
-                c.range(*params.speed.value(), 1.0, 32.0, format!("{e}/params/speed"));
-                c.range(*params.length.value(), 0.5, 8.0, format!("{e}/params/length"));
-                if !(100..=3000).contains(params.lifetime_ms.value()) {
+                {
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
+                }
+            };
+                for v in params.speed.values() {
+                    c.range(*v, 1.0, 32.0, format!("{e}/params/speed"));
+                }
+                for v in params.length.values() {
+                    c.range(*v, 0.5, 8.0, format!("{e}/params/length"));
+                }
+                if !params.lifetime_ms.values().all(|v| (100..=3000).contains(v)) {
                     c.push(format!("{e}/params/lifetime_ms"), "lifetime_ms must be within 100..=3000");
                 }
             }
             Effect::Ripple { params, .. } => {
-                c.color(params.color.value(), format!("{e}/params/color"));
-                c.range(*params.speed.value(), 0.5, 16.0, format!("{e}/params/speed"));
-                c.range(*params.ring_width.value(), 0.5, 4.0, format!("{e}/params/ring_width"));
-                if !(200..=4000).contains(params.lifetime_ms.value()) {
+                {
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
+                }
+            };
+                for v in params.speed.values() {
+                    c.range(*v, 0.5, 16.0, format!("{e}/params/speed"));
+                }
+                for v in params.ring_width.values() {
+                    c.range(*v, 0.5, 4.0, format!("{e}/params/ring_width"));
+                }
+                if !params.lifetime_ms.values().all(|v| (200..=4000).contains(v)) {
                     c.push(format!("{e}/params/lifetime_ms"), "lifetime_ms must be within 200..=4000");
                 }
-                if !(1..=16).contains(params.max_concurrent.value()) {
+                if !params.max_concurrent.values().all(|v| (1..=16).contains(v)) {
                     c.push(format!("{e}/params/max_concurrent"), "max_concurrent must be within 1..=16");
                 }
-                let interval = *params.trigger.value() == crate::model::RippleTrigger::Interval;
+                c.step_only(&params.max_concurrent, format!("{e}/params/max_concurrent"));
+                let interval = params.trigger.values().any(|t| *t == crate::model::RippleTrigger::Interval);
                 for (name, v) in [("origin_x", &params.origin_x), ("origin_y", &params.origin_y)] {
                     match v {
-                        Some(v) => c.range(*v.value(), 0.0, 7.0, format!("{e}/params/{name}")),
+                        Some(v) => v.values().for_each(|x| c.range(*x, 0.0, 7.0, format!("{e}/params/{name}"))),
                         None if interval => c.push(format!("{e}/params/{name}"), "required when trigger is interval"),
                         None => {}
                     }
                 }
                 match &params.interval_ms {
-                    Some(v) if !(100..=10_000).contains(v.value()) => c.push(format!("{e}/params/interval_ms"), "interval_ms must be within 100..=10000"),
+                    Some(v) if !v.values().all(|x| (100..=10_000).contains(x)) => c.push(format!("{e}/params/interval_ms"), "interval_ms must be within 100..=10000"),
                     None if interval => c.push(format!("{e}/params/interval_ms"), "required when trigger is interval"),
                     _ => {}
                 }
             }
             Effect::Noise { params, .. } => {
-                c.color(params.base_color.value(), format!("{e}/params/base_color"));
-                c.color(params.highlight_color.value(), format!("{e}/params/highlight_color"));
-                c.unit(*params.density.value(), format!("{e}/params/density"));
-                c.range(*params.rate_hz.value(), 0.5, 30.0, format!("{e}/params/rate_hz"));
-                if *params.seed.value() > i32::MAX as u32 {
+                {
+                for v in params.base_color.values() {
+                    c.color(v, format!("{e}/params/base_color"));
+                }
+            };
+                {
+                for v in params.highlight_color.values() {
+                    c.color(v, format!("{e}/params/highlight_color"));
+                }
+            };
+                for v in params.density.values() {
+                    c.unit(*v, format!("{e}/params/density"));
+                }
+                for v in params.rate_hz.values() {
+                    c.range(*v, 0.5, 30.0, format!("{e}/params/rate_hz"));
+                }
+                if params.seed.values().any(|v| *v > i32::MAX as u32) {
                     c.push(format!("{e}/params/seed"), "seed must be within 0..=2147483647");
                 }
-                c.unit(*params.depth.value(), format!("{e}/params/depth"));
+                c.step_only(&params.seed, format!("{e}/params/seed"));
+                for v in params.depth.values() {
+                    c.unit(*v, format!("{e}/params/depth"));
+                }
             }
         }
     }
@@ -402,6 +547,21 @@ fn check_trigger(c: &mut Ctx, t: &TriggerSpec, p: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_keyframe_value_is_checked_and_counts_only_step() {
+        use crate::model::{Ease, Keyframe, Param};
+        let mut s = crate::model::demo_for_tests();
+        let mut tg = crate::edit::default_effect("builtin.tap_glow").unwrap();
+        if let Effect::TapGlow { params, .. } = &mut tg {
+            params.radius = Param::Keyframes(vec![Keyframe { t_us: 0, v: 1.0, ease: Ease::Linear }, Keyframe { t_us: 10, v: 9.0, ease: Ease::Linear }]);
+            params.repeats = Param::Keyframes(vec![Keyframe { t_us: 0, v: 1, ease: Ease::Linear }, Keyframe { t_us: 10, v: 3, ease: Ease::Linear }]);
+        }
+        s.presets.push(crate::model::Preset { id: "tg".into(), name: "tg".into(), effect: tg });
+        let e = validate(&s);
+        assert!(e.iter().any(|i| i.pointer.ends_with("/params/radius")), "the 9.0 keyframe is out of range: {e:?}");
+        assert!(e.iter().any(|i| i.pointer.ends_with("/params/repeats") && i.message.contains("step")), "{e:?}");
+    }
 
     #[test]
     fn triggered_layers_check_their_trigger_and_effects() {

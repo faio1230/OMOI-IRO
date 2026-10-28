@@ -1,9 +1,9 @@
 // U05: layer properties, preset library and effect parameters. Every change
 // is an EditCommand applied and validated in Rust (same history and runtime
 // hand-off as the timeline); ranges shown here follow the show schema.
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import * as ipc from "./ipc/commands";
-import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, TriggerOn, TriggerSpec } from "./ipc/types";
+import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, TriggerOn, TriggerSpec, K, Keyframe, Ease } from "./ipc/types";
 
 const TYPE_JA: Record<EffectType, string> = {
   "builtin.solid": "単色（Solid）",
@@ -20,29 +20,104 @@ const TYPE_JA: Record<EffectType, string> = {
   "builtin.cross": "十字（Cross）",
 };
 
-/** Numeric input clamped to [min, max] on change. */
-function NumberField(props: { label: string; value: number; min: number; max: number; step: number; hint?: string; onChange: (v: number) => void }) {
+const isKeyed = <T,>(v: K<T>): v is { keyframes: Keyframe<T>[] } => typeof v === "object" && v !== null && "keyframes" in v;
+/** The value in force at the start (a constant, or the first keyframe). */
+export const first = <T,>(v: K<T>): T => (isKeyed(v) ? v.keyframes[0].v : v);
+
+const EASE_JA: Record<Ease, string> = { linear: "直線", step: "段", ease_in: "ゆっくり始まる", ease_out: "ゆっくり終わる", ease_in_out: "両端ゆっくり" };
+
+/** "時間変化" toggle and the keyframe table (time in seconds, value, ease). */
+function Keyed<T>(props: { value: K<T>; onChange: (v: K<T>) => void; editor: (v: T, set: (v: T) => void) => ReactElement; children: ReactElement }) {
+  const { value, onChange } = props;
+  if (!isKeyed(value)) {
+    return (
+      <>
+        {props.children}
+        <label className="check tiny-check">
+          <input type="checkbox" checked={false} onChange={() => onChange({ keyframes: [{ t_us: 0, v: value, ease: "linear" }] })} />
+          <span>時間変化</span>
+        </label>
+      </>
+    );
+  }
+  const k = value.keyframes;
+  const put = (i: number, patch: Partial<Keyframe<T>>) => onChange({ keyframes: k.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
+  const sorted = (rows: Keyframe<T>[]) => [...rows].sort((a, b) => a.t_us - b.t_us);
+  return (
+    <div className="keyframes">
+      <table>
+        <thead>
+          <tr><th>時刻（秒）</th><th>値</th><th>次への補間</th><th /></tr>
+        </thead>
+        <tbody>
+          {k.map((x, i) => (
+            <tr key={i}>
+              <td><input type="number" min={0} step={0.1} value={x.t_us / 1e6} onChange={(e) => onChange({ keyframes: sorted(k.map((y, j) => (j === i ? { ...y, t_us: Math.max(0, Math.round(Number(e.target.value) * 1e6)) } : y))) })} /></td>
+              <td>{props.editor(x.v, (v) => put(i, { v }))}</td>
+              <td>
+                <select value={x.ease ?? "linear"} onChange={(e) => put(i, { ease: e.target.value as Ease })}>
+                  {Object.entries(EASE_JA).map(([e, l]) => <option key={e} value={e}>{l}</option>)}
+                </select>
+              </td>
+              <td><button className="tiny danger" disabled={k.length === 1} onClick={() => onChange({ keyframes: k.filter((_, j) => j !== i) })}>×</button></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="actions">
+        <button className="small" disabled={k.length >= 64} onClick={() => onChange({ keyframes: sorted([...k, { ...k[k.length - 1], t_us: k[k.length - 1].t_us + 1_000_000 }]) })}>点を追加（1秒後）</button>
+        <button className="small" onClick={() => window.confirm("時間変化をやめて、最初の値だけを残しますか？") && onChange(k[0].v)}>時間変化をやめる</button>
+        <span className="hint">時刻はクリップの中の時刻（常時レイヤーは曲の時刻、パッドで出る演出は発火からの時間）</span>
+      </div>
+    </div>
+  );
+}
+
+/** Numeric input clamped to [min, max]; `scale` shows value / scale (e.g. µs as s); `integer` rounds; `fixed` has no time change (not an effect parameter). */
+function NumberField(props: { label: string; value: K<number>; min: number; max: number; step: number; hint?: string; integer?: boolean; scale?: number; fixed?: boolean; onChange: (v: K<number>) => void }) {
+  const scale = props.scale ?? 1;
+  const input = (v: number, set: (v: number) => void) => (
+    <input type="number" min={props.min} max={props.max} step={props.step} value={v / scale} onChange={(e) => {
+      const x = Math.min(props.max, Math.max(props.min, Number(e.target.value))) * scale;
+      set(props.integer ? Math.round(x) : x);
+    }} />
+  );
   return (
     <label className="field">
       <span>{props.label}</span>
-      <input type="number" min={props.min} max={props.max} step={props.step} value={props.value} onChange={(e) => props.onChange(Math.min(props.max, Math.max(props.min, Number(e.target.value))))} />
+      {props.fixed ? input(first(props.value), props.onChange) : <Keyed value={props.value} onChange={props.onChange} editor={input}>{input(first(props.value), props.onChange)}</Keyed>}
       {props.hint && <span className="hint">{props.hint}</span>}
     </label>
   );
 }
 
-function ColorField({ value, onChange, label = "色（#RRGGBB）" }: { value: string; onChange: (v: string) => void; label?: string }) {
+/** Slider (0..1 style values); `percent` shows the value as a percentage in the label. */
+function SliderField(props: { label: string; value: K<number>; min: number; max: number; step: number; hint?: string; percent?: boolean; onChange: (v: K<number>) => void }) {
+  const slider = (v: number, set: (v: number) => void) => <input type="range" min={props.min} max={props.max} step={props.step} value={v} onChange={(e) => set(Number(e.target.value))} />;
+  const v0 = first(props.value);
   return (
     <label className="field">
-      <span>{label}</span>
-      <div className="color-row">
-        <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(value) ? value : "#000000"} onChange={(e) => onChange(e.target.value.toUpperCase())} />
-        <input value={value} onChange={(e) => onChange(e.target.value)} spellCheck={false} />
-      </div>
+      <span>{props.label}{props.percent && !isKeyed(props.value) ? ` ${Math.round(v0 * 100)}%` : ""}</span>
+      <Keyed value={props.value} onChange={props.onChange} editor={(v, set) => <input type="number" min={props.min} max={props.max} step={props.step} value={v} onChange={(e) => set(Math.min(props.max, Math.max(props.min, Number(e.target.value))))} />}>{slider(v0, props.onChange)}</Keyed>
+      {props.hint && <span className="hint">{props.hint}</span>}
     </label>
   );
 }
 
+function ColorField({ value, onChange, label = "色（#RRGGBB）" }: { value: K<string>; onChange: (v: K<string>) => void; label?: string }) {
+  const editor = (v: string, set: (v: string) => void) => (
+    <div className="color-row">
+      <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(v) ? v : "#000000"} onChange={(e) => set(e.target.value.toUpperCase())} />
+      <input value={v} onChange={(e) => set(e.target.value)} spellCheck={false} />
+    </div>
+  );
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <Keyed value={value} onChange={onChange} editor={editor}>{editor(first(value), onChange)}</Keyed>
+    </label>
+  );
+}
 /** Parameter form for one effect. Ranges and units follow schemas/show.schema.json. */
 export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e: Effect) => void }) {
   if (effect.type === "builtin.solid") {
@@ -57,16 +132,8 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
     return (
       <div className="insp-grid">
         <ColorField value={p.color} onChange={(color) => onChange({ ...effect, params: { ...p, color } })} />
-        <label className="field">
-          <span>周期（秒）</span>
-          <input type="number" min={0.001} max={3600} step={0.1} value={p.period_us / 1e6} onChange={(e) => onChange({ ...effect, params: { ...p, period_us: Math.round(Number(e.target.value) * 1e6) } })} />
-          <span className="hint">0.001〜3600 秒（1周する時間）</span>
-        </label>
-        <label className="field">
-          <span>帯の幅（LED）</span>
-          <input type="number" min={1} max={8} step={1} value={p.width} onChange={(e) => onChange({ ...effect, params: { ...p, width: Math.round(Number(e.target.value)) } })} />
-          <span className="hint">1〜8</span>
-        </label>
+        <NumberField label="周期（秒）" value={p.period_us} min={0.001} max={3600} step={0.1} scale={1e6} integer hint="0.001〜3600 秒（1周する時間）" onChange={(period_us) => onChange({ ...effect, params: { ...p, period_us } })} />
+        <NumberField label="帯の幅（LED）" value={p.width} min={1} max={8} step={1} integer hint="1〜8（時間変化は段だけ）" onChange={(width) => onChange({ ...effect, params: { ...p, width } })} />
         <label className="field">
           <span>方向</span>
           <select value={p.axis} onChange={(e) => onChange({ ...effect, params: { ...p, axis: e.target.value as "x" | "y" } })}>
@@ -100,7 +167,7 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
         ) : (
           <label className="field">
             <span>1回の拍数</span>
-            <select value={String(p.beats_per_cycle)} onChange={(e) => set({ beats_per_cycle: Number(e.target.value) })}>
+            <select value={String(first(p.beats_per_cycle))} onChange={(e) => set({ beats_per_cycle: Number(e.target.value) })}>
               <option value="0.25">0.25 拍（16分）</option>
               <option value="0.5">0.5 拍（8分）</option>
               <option value="1">1 拍（4分）</option>
@@ -108,16 +175,8 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
             </select>
           </label>
         )}
-        <label className="field">
-          <span>点灯の割合 {Math.round(p.duty * 100)}%</span>
-          <input type="range" min={0.05} max={0.95} step={0.05} value={p.duty} onChange={(e) => set({ duty: Number(e.target.value) })} />
-          <span className="hint">0.05〜0.95</span>
-        </label>
-        <label className="field">
-          <span>位相のずらし {Math.round(p.phase_offset * 100)}%</span>
-          <input type="range" min={0} max={1} step={0.05} value={p.phase_offset} onChange={(e) => set({ phase_offset: Number(e.target.value) })} />
-          <span className="hint">0〜1 周期</span>
-        </label>
+        <SliderField label="点灯の割合" value={p.duty} min={0.05} max={0.95} step={0.05} percent hint="0.05〜0.95" onChange={(v) => onChange({ ...effect, params: { ...p, duty: v } } as Effect)} />
+        <SliderField label="位相のずらし" value={p.phase_offset} min={0} max={1} step={0.05} percent hint="0〜1 周期" onChange={(v) => onChange({ ...effect, params: { ...p, phase_offset: v } } as Effect)} />
       </div>
     );
   }
@@ -129,14 +188,11 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
         <ColorField label="押した直後の色" value={p.color_start} onChange={(color_start) => set({ color_start })} />
         <ColorField label="途中の色" value={p.color_mid} onChange={(color_mid) => set({ color_mid })} />
         <ColorField label="消える前の色" value={p.color_end} onChange={(color_end) => set({ color_end })} />
-        <NumberField label="消えるまで（ms）" value={p.lifetime_ms} min={100} max={5000} step={100} hint="100〜5000" onChange={(v) => set({ lifetime_ms: Math.round(v) })} />
+        <NumberField label="消えるまで（ms）" value={p.lifetime_ms} min={100} max={5000} step={100} hint="100〜5000" integer onChange={(lifetime_ms) => set({ lifetime_ms })} />
         <NumberField label="広がり（セル）" value={p.radius} min={0} max={3} step={0.25} hint="0 で押したパッドだけ" onChange={(radius) => set({ radius })} />
-        <NumberField label="繰り返し回数" value={p.repeats} min={1} max={8} step={1} hint="1〜8" onChange={(v) => set({ repeats: Math.round(v) })} />
-        <NumberField label="繰り返しの間隔（ms）" value={p.repeat_interval_ms} min={50} max={2000} step={50} hint="50〜2000" onChange={(v) => set({ repeat_interval_ms: Math.round(v) })} />
-        <label className="field">
-          <span>繰り返すたびの明るさ {Math.round(p.repeat_decay * 100)}%</span>
-          <input type="range" min={0} max={1} step={0.05} value={p.repeat_decay} onChange={(e) => set({ repeat_decay: Number(e.target.value) })} />
-        </label>
+        <NumberField label="繰り返し回数" value={p.repeats} min={1} max={8} step={1} hint="1〜8" integer onChange={(repeats) => set({ repeats })} />
+        <NumberField label="繰り返しの間隔（ms）" value={p.repeat_interval_ms} min={50} max={2000} step={50} hint="50〜2000" integer onChange={(repeat_interval_ms) => set({ repeat_interval_ms })} />
+        <SliderField label="繰り返すたびの明るさ" value={p.repeat_decay} min={0} max={1} step={0.05} percent onChange={(v) => onChange({ ...effect, params: { ...p, repeat_decay: v } } as Effect)} />
         <p className="hint">パッドを押した位置が光って冷めていく。操作入力がないと何も出ない（プレビュー盤のクリックでも確認できる）。</p>
       </div>
     );
@@ -149,7 +205,7 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
         <ColorField value={p.color} onChange={(color) => set({ color })} />
         <NumberField label="走る速さ（セル/秒）" value={p.speed} min={1} max={32} step={1} hint="1〜32" onChange={(speed) => set({ speed })} />
         <NumberField label="尾の長さ（セル）" value={p.length} min={0.5} max={8} step={0.5} hint="0.5〜8" onChange={(length) => set({ length })} />
-        <NumberField label="消えるまで（ms）" value={p.lifetime_ms} min={100} max={3000} step={100} hint="100〜3000" onChange={(v) => set({ lifetime_ms: Math.round(v) })} />
+        <NumberField label="消えるまで（ms）" value={p.lifetime_ms} min={100} max={3000} step={100} hint="100〜3000" integer onChange={(lifetime_ms) => set({ lifetime_ms })} />
         <p className="hint">押した位置から上下左右へ光が走る。操作入力がないと何も出ない（プレビュー盤のクリックでも確認できる）。</p>
       </div>
     );
@@ -189,7 +245,7 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
         {p.step_mode === "beat" ? (
           <label className="field">
             <span>1段の拍数</span>
-            <select value={String(p.step_beats)} onChange={(e) => set({ step_beats: Number(e.target.value) })}>
+            <select value={String(first(p.step_beats))} onChange={(e) => set({ step_beats: Number(e.target.value) })}>
               <option value="0.25">0.25 拍</option>
               <option value="0.5">0.5 拍</option>
               <option value="1">1 拍</option>
@@ -198,7 +254,7 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
             </select>
           </label>
         ) : (
-          <NumberField label="1段の長さ（ms）" value={p.step_ms} min={50} max={5000} step={50} hint="50〜5000" onChange={(v) => set({ step_ms: Math.round(v) })} />
+          <NumberField label="1段の長さ（ms）" value={p.step_ms} min={50} max={5000} step={50} hint="50〜5000" integer onChange={(step_ms) => set({ step_ms })} />
         )}
         <label className="field">
           <span>順番</span>
@@ -208,15 +264,8 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
             <option value="pingpong">往復</option>
           </select>
         </label>
-        <label className="field">
-          <span>なめらかさ {Math.round(p.soft * 100)}%</span>
-          <input type="range" min={0} max={1} step={0.05} value={p.soft} onChange={(e) => set({ soft: Number(e.target.value) })} />
-          <span className="hint">50% 以上は点滅として扱わない</span>
-        </label>
-        <label className="field">
-          <span>1段のうち点く割合 {Math.round(p.duty * 100)}%</span>
-          <input type="range" min={0.05} max={1} step={0.05} value={p.duty} onChange={(e) => set({ duty: Number(e.target.value) })} />
-        </label>
+        <SliderField label="なめらかさ" value={p.soft} min={0} max={1} step={0.05} percent hint="50% 以上は点滅として扱わない" onChange={(v) => onChange({ ...effect, params: { ...p, soft: v } } as Effect)} />
+        <SliderField label="1段のうち点く割合" value={p.duty} min={0.05} max={1} step={0.05} percent onChange={(v) => onChange({ ...effect, params: { ...p, duty: v } } as Effect)} />
       </div>
     );
   }
@@ -237,18 +286,10 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
           </select>
         </label>
         <NumberField label="速さ（セル/秒）" value={p.speed} min={0.5} max={16} step={0.5} hint="0.5〜16" onChange={(speed) => set({ speed })} />
-        <label className="field">
-          <span>粒の多さ {Math.round(p.density * 100)}%</span>
-          <input type="range" min={0} max={1} step={0.05} value={p.density} onChange={(e) => set({ density: Number(e.target.value) })} />
-          <span className="hint">列ごと・0.5秒ごとに粒が出る確率</span>
-        </label>
+        <SliderField label="粒の多さ" value={p.density} min={0} max={1} step={0.05} percent hint="列ごと・0.5秒ごとに粒が出る確率" onChange={(v) => onChange({ ...effect, params: { ...p, density: v } } as Effect)} />
         <NumberField label="尾の長さ（セル）" value={p.tail} min={0} max={8} step={0.5} hint="0〜8" onChange={(tail) => set({ tail })} />
-        <label className="field">
-          <span>尾のちらつき {Math.round(p.flicker * 100)}%</span>
-          <input type="range" min={0} max={1} step={0.05} value={p.flicker} onChange={(e) => set({ flicker: Number(e.target.value) })} />
-          <span className="hint">0 より大きいと 4 Hz の明滅として安全判定</span>
-        </label>
-        <NumberField label="乱数の種" value={p.seed} min={0} max={2147483647} step={1} hint="同じ種なら同じ降り方" onChange={(seed) => set({ seed: Math.round(seed) })} />
+        <SliderField label="尾のちらつき" value={p.flicker} min={0} max={1} step={0.05} percent hint="0 より大きいと 4 Hz の明滅として安全判定" onChange={(v) => onChange({ ...effect, params: { ...p, flicker: v } } as Effect)} />
+        <NumberField label="乱数の種" value={p.seed} min={0} max={2147483647} step={1} hint="同じ種なら同じ降り方" integer onChange={(seed) => set({ seed })} />
       </div>
     );
   }
@@ -290,22 +331,17 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
         <NumberField label="半径（セル）" value={p.radius} min={0.5} max={6} step={0.25} hint="0.5〜6" onChange={(radius) => set({ radius })} />
         <NumberField label="輪郭のぼかし（セル）" value={p.edge} min={0} max={2} step={0.1} hint="0〜2" onChange={(edge) => set({ edge })} />
         <NumberField label="光の向き（度）" value={p.light_angle} min={0} max={360} step={15} hint="90 = 上から" onChange={(light_angle) => set({ light_angle })} />
-        <label className="field">
-          <span>陰影 {Math.round(p.shading * 100)}%</span>
-          <input type="range" min={0} max={1} step={0.05} value={p.shading} onChange={(e) => set({ shading: Number(e.target.value) })} />
-        </label>
-        <label className="field">
-          <span>粒状の揺らぎ {Math.round(p.dither * 100)}%</span>
-          <input type="range" min={0} max={1} step={0.05} value={p.dither} onChange={(e) => set({ dither: Number(e.target.value) })} />
-        </label>
+        <SliderField label="陰影" value={p.shading} min={0} max={1} step={0.05} percent onChange={(v) => onChange({ ...effect, params: { ...p, shading: v } } as Effect)} />
+        <SliderField label="粒状の揺らぎ" value={p.dither} min={0} max={1} step={0.05} percent onChange={(v) => onChange({ ...effect, params: { ...p, dither: v } } as Effect)} />
         <NumberField label="揺らぎの更新（回/秒）" value={p.dither_rate_hz} min={0.5} max={15} step={0.5} hint="0.5〜15。揺らぎがあるときこの半分を明滅として安全判定" onChange={(dither_rate_hz) => set({ dither_rate_hz })} />
-        <NumberField label="乱数の種" value={p.seed} min={0} max={2147483647} step={1} onChange={(seed) => set({ seed: Math.round(seed) })} />
+        <NumberField label="乱数の種" value={p.seed} min={0} max={2147483647} step={1} integer onChange={(seed) => set({ seed })} />
         <label className="field">
           <span>動き</span>
           <select value={p.motion} onChange={(e) => {
             const motion = e.target.value as typeof p.motion;
             // Keep the speed inside the range of the new motion.
-            const speed = motion === "orbit" ? Math.min(2, Math.max(0.05, p.speed)) : motion === "bounce" ? Math.min(12, Math.max(0.5, p.speed)) : p.speed;
+            const s0 = first(p.speed);
+            const speed = motion === "orbit" ? Math.min(2, Math.max(0.05, s0)) : motion === "bounce" ? Math.min(12, Math.max(0.5, s0)) : p.speed;
             set({ motion, speed });
           }}>
             <option value="none">止まる</option>
@@ -328,7 +364,7 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
         <ColorField value={p.color} onChange={(color) => set({ color })} />
         <NumberField label="広がる速さ（セル/秒）" value={p.speed} min={0.5} max={16} step={0.5} hint="0.5〜16" onChange={(speed) => set({ speed })} />
         <NumberField label="輪の太さ（セル）" value={p.ring_width} min={0.5} max={4} step={0.25} hint="0.5〜4" onChange={(ring_width) => set({ ring_width })} />
-        <NumberField label="消えるまで（ms）" value={p.lifetime_ms} min={200} max={4000} step={100} hint="200〜4000" onChange={(v) => set({ lifetime_ms: Math.round(v) })} />
+        <NumberField label="消えるまで（ms）" value={p.lifetime_ms} min={200} max={4000} step={100} hint="200〜4000" integer onChange={(lifetime_ms) => set({ lifetime_ms })} />
         <label className="field">
           <span>消え方</span>
           <select value={p.fade} onChange={(e) => set({ fade: e.target.value as "linear" | "exp" })}>
@@ -336,7 +372,7 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
             <option value="exp">はじめに速く</option>
           </select>
         </label>
-        <NumberField label="同時に出す数" value={p.max_concurrent} min={1} max={16} step={1} hint="1〜16（超えたら古い輪から消す）" onChange={(v) => set({ max_concurrent: Math.round(v) })} />
+        <NumberField label="同時に出す数" value={p.max_concurrent} min={1} max={16} step={1} hint="1〜16（超えたら古い輪から消す）" integer onChange={(max_concurrent) => set({ max_concurrent })} />
         <label className="field">
           <span>輪の形</span>
           <select value={p.shape ?? "circle"} onChange={(e) => set({ shape: e.target.value as "circle" | "diamond" | "square" })}>
@@ -360,7 +396,7 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
           <>
             <NumberField label="中心 x（セル）" value={p.origin_x ?? 3.5} min={0} max={7} step={0.5} onChange={(origin_x) => set({ origin_x })} />
             <NumberField label="中心 y（セル）" value={p.origin_y ?? 3.5} min={0} max={7} step={0.5} onChange={(origin_y) => set({ origin_y })} />
-            <NumberField label="間隔（ms）" value={p.interval_ms ?? 1000} min={100} max={10000} step={100} hint="100〜10000（クリップの時刻で決まる）" onChange={(v) => set({ interval_ms: Math.round(v) })} />
+            <NumberField label="間隔（ms）" value={p.interval_ms ?? 1000} min={100} max={10000} step={100} hint="100〜10000（クリップの時刻で決まる）" integer onChange={(interval_ms) => set({ interval_ms })} />
           </>
         )}
         <p className="hint">「パッドを押したとき」は押した位置から輪が広がる（操作入力がないと何も出ない。プレビュー盤のクリックでも確認できる）。「一定の間隔」は入力なしで指定の位置から出る。</p>
@@ -374,18 +410,10 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
       <div className="insp-grid">
         <ColorField label="地の色" value={p.base_color} onChange={(base_color) => set({ base_color })} />
         <ColorField label="粒の色" value={p.highlight_color} onChange={(highlight_color) => set({ highlight_color })} />
-        <label className="field">
-          <span>粒の割合 {Math.round(p.density * 100)}%</span>
-          <input type="range" min={0} max={1} step={0.05} value={p.density} onChange={(e) => set({ density: Number(e.target.value) })} />
-          <span className="hint">0〜1（点灯するセルの割合）</span>
-        </label>
+        <SliderField label="粒の割合" value={p.density} min={0} max={1} step={0.05} percent hint="0〜1（点灯するセルの割合）" onChange={(v) => onChange({ ...effect, params: { ...p, density: v } } as Effect)} />
         <NumberField label="模様の更新（回/秒）" value={p.rate_hz} min={0.5} max={30} step={0.5} hint="0.5〜30。セルの明滅はこの半分として安全判定" onChange={(rate_hz) => set({ rate_hz })} />
-        <label className="field">
-          <span>粒の明るさの揺らぎ {Math.round(p.depth * 100)}%</span>
-          <input type="range" min={0} max={1} step={0.05} value={p.depth} onChange={(e) => set({ depth: Number(e.target.value) })} />
-          <span className="hint">0 で全部同じ明るさ</span>
-        </label>
-        <NumberField label="乱数の種" value={p.seed} min={0} max={2147483647} step={1} hint="同じ種なら同じ模様" onChange={(seed) => set({ seed: Math.round(seed) })} />
+        <SliderField label="粒の明るさの揺らぎ" value={p.depth} min={0} max={1} step={0.05} percent hint="0 で全部同じ明るさ" onChange={(v) => onChange({ ...effect, params: { ...p, depth: v } } as Effect)} />
+        <NumberField label="乱数の種" value={p.seed} min={0} max={2147483647} step={1} hint="同じ種なら同じ模様" integer onChange={(seed) => set({ seed })} />
         <label className="field check">
           <input type="checkbox" checked={p.smooth} onChange={(e) => set({ smooth: e.target.checked })} />
           <span>次の模様へなめらかに移る</span>
@@ -399,17 +427,13 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
       <ColorField value={p.color} onChange={(color) => onChange({ ...effect, params: { ...p, color } })} />
       <label className="field">
         <span>1周期の拍数</span>
-        <select value={String(p.beats_per_cycle)} onChange={(e) => onChange({ ...effect, params: { ...p, beats_per_cycle: Number(e.target.value) } })}>
+        <select value={String(first(p.beats_per_cycle))} onChange={(e) => onChange({ ...effect, params: { ...p, beats_per_cycle: Number(e.target.value) } })}>
           <option value="0.25">0.25 拍（16分）</option>
           <option value="0.5">0.5 拍（8分）</option>
           <option value="1">1 拍（4分）</option>
         </select>
       </label>
-      <label className="field">
-        <span>深さ {Math.round(p.depth * 100)}%</span>
-        <input type="range" min={0} max={1} step={0.05} value={p.depth} onChange={(e) => onChange({ ...effect, params: { ...p, depth: Number(e.target.value) } })} />
-        <span className="hint">0〜1（1 で消灯まで落ちる）</span>
-      </label>
+      <SliderField label="深さ" value={p.depth} min={0} max={1} step={0.05} percent hint="0〜1（1 で消灯まで落ちる）" onChange={(v) => onChange({ ...effect, params: { ...p, depth: v } } as Effect)} />
       <label className="field">
         <span>波形</span>
         <select value={p.waveform} onChange={(e) => onChange({ ...effect, params: { ...p, waveform: e.target.value as "sine" | "triangle" } })}>
@@ -496,9 +520,9 @@ function TriggerFields({ layer, trigger, apply }: { layer: LayerDto; trigger: Tr
         </select>
         <span className="hint">{positioned ? "曲の時刻で決まる（巻き戻しても同じ）" : "パッドの入力で出る（巻き戻しでは再現しない）。クリップの区間内の入力だけ"}</span>
       </label>
-      {trigger.on === "interval" && <NumberField label="間隔（ms）" value={trigger.interval_ms ?? 1000} min={100} max={10000} step={100} hint="100〜10000" onChange={(v) => set({ interval_ms: Math.round(v) })} />}
-      {positioned && <NumberField label="位置 x（セル）" value={trigger.origin_x ?? 3.5} min={0} max={7} step={0.5} onChange={(origin_x) => set({ origin_x })} />}
-      {positioned && <NumberField label="位置 y（セル）" value={trigger.origin_y ?? 3.5} min={0} max={7} step={0.5} onChange={(origin_y) => set({ origin_y })} />}
+      {trigger.on === "interval" && <NumberField fixed label="間隔（ms）" value={trigger.interval_ms ?? 1000} min={100} max={10000} step={100} hint="100〜10000" integer onChange={(v) => set({ interval_ms: first(v) })} />}
+      {positioned && <NumberField fixed label="位置 x（セル）" value={trigger.origin_x ?? 3.5} min={0} max={7} step={0.5} onChange={(v) => set({ origin_x: first(v) })} />}
+      {positioned && <NumberField fixed label="位置 y（セル）" value={trigger.origin_y ?? 3.5} min={0} max={7} step={0.5} onChange={(v) => set({ origin_y: first(v) })} />}
     </>
   );
 }

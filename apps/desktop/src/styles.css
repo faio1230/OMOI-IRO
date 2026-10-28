@@ -189,3 +189,13 @@ button.preset .pname { flex: 1; white-space: nowrap; overflow: hidden; text-over
 .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; min-width: 420px; }
 .modal h2 { margin: 0 0 6px; font-size: 16px; }
 .issues.mono b { color: var(--text); font-weight: 600; margin-right: 6px; }
+
+/* Keyframes of an effect parameter (time change) */
+.tiny-check { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); }
+.keyframes { display: flex; flex-direction: column; gap: 4px; }
+.keyframes table { border-collapse: collapse; font-size: 12px; }
+.keyframes th { font-weight: normal; color: var(--muted); text-align: left; padding: 2px 4px; }
+.keyframes td { padding: 2px 4px; }
+.keyframes td input[type="number"] { width: 76px; }
+.keyframes select { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px; font: inherit; }
+.insp-grid .field:has(.keyframes) { grid-column: 1 / -1; }
