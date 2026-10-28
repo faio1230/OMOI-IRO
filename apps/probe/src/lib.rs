@@ -5,6 +5,7 @@
 
 pub mod bench_cmd;
 pub mod bridge;
+pub mod check_shows_cmd;
 pub mod follow_cmd;
 pub mod gen;
 pub mod import_frames_cmd;

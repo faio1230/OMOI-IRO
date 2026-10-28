@@ -1,0 +1,88 @@
+{
+  "schema_version": "0.1.3",
+  "id": "show-1",
+  "name": "新しいショー",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "preset-white",
+      "name": "白",
+      "effect": {
+        "type": "builtin.solid",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF"
+        }
+      }
+    },
+    {
+      "id": "preset-1",
+      "name": "preset-1",
+      "effect": {
+        "type": "builtin.solid",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF"
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer-1",
+      "name": "layer-1",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": []
+      }
+    },
+    {
+      "id": "layer-2",
+      "name": "layer-2",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "preset-white"
+      }
+    }
+  ]
+}

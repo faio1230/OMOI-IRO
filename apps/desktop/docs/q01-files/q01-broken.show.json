@@ -124,14 +124,17 @@
     "fps": 30,
     "master_brightness": 1
   },
-  "schema_version": "0.1.1",
+  "schema_version": "0.1.3",
   "seed": 1,
   "sync": {
-    "beat_source": "ableton_link",
+    "beat_source": "midi_clock",
     "loss": {
       "blackout_after_ms": 1000,
       "holdover_ms": 250,
       "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
     },
     "stop_behavior": "hold",
     "timecode": {

@@ -1,5 +1,5 @@
 {
-  "build": "debug",
+  "build": "release",
   "failed": 0,
   "files": {
     "failures": [
@@ -13,12 +13,12 @@
     "control": {
       "blocked": 0,
       "callback_to_send": {
-        "max_us": 64,
-        "mean_us": 41.5,
+        "max_us": 19,
+        "mean_us": 14.5,
         "n": 2,
-        "p50_us": 19,
-        "p95_us": 64,
-        "p99_us": 64
+        "p50_us": 10,
+        "p95_us": 19,
+        "p99_us": 19
       },
       "fault": null,
       "faults": 1,
@@ -59,21 +59,21 @@
       "mailbox_overwritten": 0,
       "packets": 60,
       "render_to_sent": {
-        "max_us": 214,
-        "mean_us": 43.8,
+        "max_us": 2131,
+        "mean_us": 30.2,
         "n": 363,
-        "p50_us": 39,
-        "p95_us": 69,
-        "p99_us": 115
+        "p50_us": 20,
+        "p95_us": 46,
+        "p99_us": 90
       },
       "send_errors": 0,
       "send_time": {
-        "max_us": 45,
-        "mean_us": 6.0,
+        "max_us": 46,
+        "mean_us": 1.6,
         "n": 363,
-        "p50_us": 4,
-        "p95_us": 20,
-        "p99_us": 25
+        "p50_us": 1,
+        "p95_us": 6,
+        "p99_us": 9
       },
       "sink": "virtual",
       "state": "virtual",
@@ -82,9 +82,9 @@
     "mtc_out": {
       "full_frames": 2,
       "jumps": 1,
-      "quarter_frames": 1447,
+      "quarter_frames": 1449,
       "records_dropped": 0,
-      "records_left": 1449,
+      "records_left": 1451,
       "resyncs": 0,
       "starts": 1,
       "stops": 0
@@ -92,21 +92,21 @@
     "render": {
       "frames": 363,
       "jitter": {
-        "max_us": 869,
-        "mean_us": 306.1,
+        "max_us": 5738,
+        "mean_us": 335.2,
         "n": 363,
-        "p50_us": 298,
-        "p95_us": 596,
-        "p99_us": 798
+        "p50_us": 307,
+        "p95_us": 538,
+        "p99_us": 1439
       },
       "jumps": 0,
       "render_time": {
-        "max_us": 196,
-        "mean_us": 26.4,
+        "max_us": 55,
+        "mean_us": 10.9,
         "n": 363,
-        "p50_us": 21,
-        "p95_us": 51,
-        "p99_us": 103
+        "p50_us": 9,
+        "p95_us": 19,
+        "p99_us": 39
       },
       "show_swaps": 2,
       "skipped_frames": 0
@@ -116,6 +116,8 @@
       "beat": null,
       "beat_health": "unknown",
       "beat_phase_valid": null,
+      "beat_seeded": false,
+      "clock_seeded": 0,
       "generations": {
         "bridge": 0,
         "clock": 0,
@@ -124,7 +126,7 @@
       "mtc_label": "01:00:12:03",
       "output": "follow",
       "output_gain": 1.0,
-      "show_time_us": 12124102,
+      "show_time_us": 12132483,
       "stalled": false,
       "tempo_bpm": null,
       "time_health": "holdover",
@@ -172,7 +174,7 @@
       "expect": "一時ファイル→置換で保存、未保存の印が消える",
       "id": "1.6",
       "pass": true,
-      "result": "apps/desktop/docs/q01-files\\q01-sample.show.json (3051 bytes)",
+      "result": "apps/desktop/docs/q01-files\\q01-sample.show.json (3099 bytes)",
       "title": "名前を付けて保存"
     },
     {
@@ -186,7 +188,7 @@
       "expect": "バイト単位で一致（差分なし）",
       "id": "2.2",
       "pass": true,
-      "result": "3051 bytes, identical true",
+      "result": "3099 bytes, identical true",
       "title": "無変更の保存"
     },
     {
@@ -256,14 +258,14 @@
       "expect": "Note Off を送って停止、要約が出る",
       "id": "4.8",
       "pass": true,
-      "result": "frames 363, Note Off true, MTC 1444 件, datagrams 708",
+      "result": "frames 363, Note Off true, MTC 1446 件, datagrams 711",
       "title": "停止"
     },
     {
       "expect": "jitter / render / LED 送信の p95 を記録（render p95 ≤ 5 ms は NFR03）",
       "id": "6.1",
       "pass": true,
-      "result": "jitter p95 596 us, render p95 51 us, LED 送信 p95 20 us, skipped 0",
+      "result": "jitter p95 538 us, render p95 19 us, LED 送信 p95 6 us, skipped 0",
       "title": "計測（追従中、合成源）"
     },
     {
@@ -277,14 +279,14 @@
       "expect": "読込前に版で拒否",
       "id": "5.2",
       "pass": true,
-      "result": "unsupported schema_version \"0.0.9\" (this build reads 0.1.1)",
+      "result": "unsupported schema_version \"0.0.9\" (this build reads 0.1.3)",
       "title": "未対応の版 0.0.9"
     },
     {
       "expect": "読込前に版で拒否",
       "id": "5.3",
       "pass": true,
-      "result": "unsupported schema_version \"0.2.0\" (this build reads 0.1.1)",
+      "result": "unsupported schema_version \"0.2.0\" (this build reads 0.1.3)",
       "title": "未対応の版 0.2.0"
     },
     {
@@ -295,5 +297,5 @@
       "title": "大きすぎるファイル"
     }
   ],
-  "unix_s": 1793147435
+  "unix_s": 1793188571
 }

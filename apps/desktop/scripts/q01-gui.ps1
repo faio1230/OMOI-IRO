@@ -6,6 +6,9 @@
 # `cargo run -p omoiiro-probe -- q01`, which writes the sample show):
 #   pwsh apps/desktop/scripts/q01-gui.ps1 -Scenario all
 #   pwsh apps/desktop/scripts/q01-gui.ps1 -Scenario soak -SoakSeconds 600
+#   Release build (`npx tauri build`) instead of the debug one: add -Release.
+#   Another bridge already sending to 9007 (a running Live): add -BridgePort 9017
+#   (the app's bridge address and fake_bridge use it; the settings are restored).
 #   2-hour test (M6, NFR07) on real Live / devices with the saved terminal settings:
 #   pwsh apps/desktop/scripts/q01-gui.ps1 -Scenario soak -SoakSeconds 7200 -SampleSeconds 300 -BaselineSeconds 1800 -Show <file> -NoFakeBridge
 # Scenarios: new-save, reopen, preview, follow, close, soak, all (= all but soak).
@@ -21,7 +24,9 @@ param(
   [int]$BaselineSeconds = 1800,
   # Show for the soak (default: the Q01 sample) and no synthetic bridge (real Live).
   [string]$Show = "",
-  [switch]$NoFakeBridge
+  [switch]$NoFakeBridge,
+  [switch]$Release,
+  [int]$BridgePort = 0
 )
 $ErrorActionPreference = "Stop"
 if (-not $OutDir) { $OutDir = Join-Path $Repo "apps\desktop\docs\q01-files" }
@@ -29,8 +34,10 @@ New-Item -ItemType Directory -Force $OutDir | Out-Null
 $Shots = Join-Path $Repo "apps\desktop\screenshots"
 # Build output: CARGO_TARGET_DIR when set (BUILD.md "ディスク容量"), else <repo>	arget.
 $TargetDir = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { Join-Path $Repo "target" }
-$Exe = Join-Path $TargetDir "debug\omoiiro.exe"
-$Probe = Join-Path $TargetDir "debug\omoiiro-probe.exe"
+$Build = if ($Release) { "release" } else { "debug" }
+$Exe = Join-Path $TargetDir "$Build\omoiiro.exe"
+$Probe = Join-Path $TargetDir "$Build\omoiiro-probe.exe"
+$PortArg = if ($BridgePort) { " --port $BridgePort" } else { "" }
 $Sample = Join-Path $OutDir "q01-sample.show.json"
 $Results = Join-Path $OutDir "q01-gui-result.jsonl"
 
@@ -40,6 +47,8 @@ using System; using System.Runtime.InteropServices;
 public static class Q01W {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr h, int a, out RECT r, int s);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, string l);
+  [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
 }
 "@
@@ -142,6 +151,23 @@ function Fill-SaveDialog($path) {
     $dlg = $AE::RootElement.FindFirst($TS::Descendants, $c)
   }
   if (-not $dlg) { throw "save dialog not found" }
+  # First the Win32 way, which needs no keyboard focus: the file name box
+  # (class Edit, id 1001) gets WM_SETTEXT, the Save button (class Button,
+  # id 1) BM_CLICK. Typed keys only as a fallback.
+  $byIdClass = { param($id, $cls) $dlg.FindFirst($TS::Descendants, (New-Object System.Windows.Automation.AndCondition(
+      (New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id)),
+      (New-Object System.Windows.Automation.PropertyCondition($AE::ClassNameProperty, $cls))))) }
+  for ($i = 0; $i -lt 10; $i++) {
+    $name = & $byIdClass "1001" "Edit"
+    $saveBtn = & $byIdClass "1" "Button"
+    if ($name -and $saveBtn -and $name.Current.NativeWindowHandle -and $saveBtn.Current.NativeWindowHandle) {
+      [Q01W]::SendMessage([IntPtr]$name.Current.NativeWindowHandle, 0x000C, [IntPtr]::Zero, $path) | Out-Null  # WM_SETTEXT
+      Start-Sleep -Milliseconds 200
+      [Q01W]::SendMessage([IntPtr]$saveBtn.Current.NativeWindowHandle, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null  # BM_CLICK
+      return
+    }
+    Start-Sleep -Milliseconds 300
+  }
   # The dialog opens with the keyboard focus in the file name box. The box is
   # not reliably reachable through UI Automation on this Windows build, so
   # bring the dialog to the front and type the full path, then Enter.
@@ -173,7 +199,8 @@ function Scenario-NewSave {
     $saved = $false
     for ($i = 0; $i -lt 50 -and -not $saved; $i++) { Start-Sleep -Milliseconds 200; $saved = (Test-Path $target) -and (Has-Text "保存済み") }
     $ok = $saved -and ((& $Probe render --show $target --at 0 --json | ConvertFrom-Json).leds_bottom_left.Count -eq 64)
-    Record "G1.2" "GUI：名前を付けて保存（Windows のダイアログ）" "ファイルができ、render で読める、保存済み表示" $ok $target
+    # Public repository: the result names the file relative to the repository.
+    Record "G1.2" "GUI：名前を付けて保存（Windows のダイアログ）" "ファイルができ、render で読める、保存済み表示" $ok ($target.Replace($Repo, "<repo>"))
   } finally { Stop-App }
 }
 
@@ -227,7 +254,7 @@ function Scenario-Follow {
   $bridge = $null
   try {
     Press "開始"; Start-Sleep -Milliseconds 400
-    $bridge = Start-Process -FilePath python -ArgumentList "`"$Repo\live-bridge\sim\fake_bridge.py`" --steady 25 --start-ms 4000" -PassThru -WindowStyle Hidden
+    $bridge = Start-Process -FilePath python -ArgumentList "`"$Repo\live-bridge\sim\fake_bridge.py`" --steady 25 --start-ms 4000$PortArg" -PassThru -WindowStyle Hidden
     Start-Sleep -Seconds 3
     $locked = Has-Text "^locked$"
     Press "タイムライン"; Press "ショーを読み込んで編集"; Start-Sleep -Milliseconds 400
@@ -318,7 +345,7 @@ function Scenario-Soak {
   try {
     Press "開始"; Start-Sleep -Milliseconds 400
     if (-not $NoFakeBridge) {
-      $bridge = Start-Process -FilePath python -ArgumentList "`"$Repo\live-bridge\sim\fake_bridge.py`" --steady $($SoakSeconds + 30) --start-ms 0" -PassThru -WindowStyle Hidden
+      $bridge = Start-Process -FilePath python -ArgumentList "`"$Repo\live-bridge\sim\fake_bridge.py`" --steady $($SoakSeconds + 30) --start-ms 0$PortArg" -PassThru -WindowStyle Hidden
     }
     $t0 = Get-Date
     $samples = @()
@@ -351,6 +378,14 @@ function Scenario-Soak {
 if (-not (Test-Path $Exe)) { throw "build the app first: $Exe" }
 if (-not $Show -and -not (Test-Path $Sample)) { throw "run 'omoiiro-probe q01' first: $Sample" }
 Backup-Settings
+if ($BridgePort) {
+  # Only for this run (Restore-Settings puts the original back).
+  $sf = Join-Path $SettingsDir "terminal-settings.json"
+  $st = if (Test-Path $sf) { Get-Content -Raw $sf | ConvertFrom-Json } else { [pscustomobject]@{} }
+  $st | Add-Member -Force -NotePropertyName bridge_bind -NotePropertyValue "127.0.0.1:$BridgePort"
+  New-Item -ItemType Directory -Force $SettingsDir | Out-Null
+  $st | ConvertTo-Json -Depth 10 | Set-Content -Encoding utf8 $sf
+}
 try {
   $list = if ($Scenario -eq "all") { "new-save", "reopen", "preview", "follow", "close" } else { @($Scenario) }
   foreach ($s in $list) {
