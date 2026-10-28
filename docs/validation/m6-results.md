@@ -27,9 +27,20 @@
 
 記録：`artifacts/m6/win-m6-c{1..7}-mon.jsonl`、`win-m6-c6-mon-try1.jsonl`（初回の操作ミス）、`win-m6-app-{01,02,03}.jsonl`、`m6-live.show.json`、`win-m6-prep-02.jsonl`、`win-m6-prep-live-midi-prefs.jpg`。
 
-## Windows：連続試験（NFR07）
+## Windows：連続試験（NFR07、2026-10-28、合格）
 
-2026-10-28 16:37:56 開始（2時間、18:38ごろ終了予定、実装担当）。構成：release `omoiiro.exe`、OmoiIroBridge、fakeなし、LiveはC3の区間（4小節、5〜9小節）をループ再生、LEDは仮想、操作経路は未使用、MTC出力あり。開始時（t=10 s）：locked / playing / follow、子孫プロセス込み 421.0 MB（7プロセス）、`omoiiro.exe` 41.0 MB。記録：`artifacts/m6/win-m6-soak-app.jsonl`（10秒と5分ごと）、`win-m6-soak-mon.jsonl`（MTC受信、`tools/m6/mtc_residual.py --bin-seconds 300`）。ループが手順書の8〜16小節より短い点は記録に残す。判定表は終了後に追記。
+条件：Windows、release `omoiiro.exe`（16:28版）、OmoiIroBridge、fakeなし。Liveは4小節（5〜9小節、テンポ自動化入り）のループ再生。LEDは仮想、操作経路は未使用、MTC出力あり。16:37:56〜18:37:57の7,200 s、途中操作なし。実施は実装担当。
+
+| 項目 | 基準 | 結果 | 判定 |
+| --- | --- | --- | --- |
+| メモリー（子孫込み7プロセス） | 30分時点から+10%以内かつ+50 MB以内、単調増加なし | 30分 506.9 MB → 120分 518.0 MB（+11.1 MB、+2.2%）。最大 524.2 MB（115分）。増減を繰り返し単調増加ではない。`omoiiro.exe` 単体 41.9→42.2 MB | 合格 |
+| 飛ばしたframe | 0.1%以下 | 215,988 frame中 0 | 合格 |
+| send_errors | 0 | LED送信 215,997 / 失敗 0、MTC送信 860,646 / 失敗 0 | 合格 |
+| fault | 0 | 時刻源は終了までlocked / follow、拍源locked、安全の警告 0、破棄 0 | 合格 |
+| resync | 0 | 受信側MTC：不連続 0、rate_changes 0、dropped 0。FFによる飛び981件はループ折返し（7200 ÷ 7.33 ≒ 982）。生成側のresync件数は画面に出ないため未取得 | 受信側で合格 |
+| 残差p95の推移 | 開始時と2時間後で変わらない | 0〜5分 1.23 ms → 115〜120分 1.27 ms（24区間の範囲 1.10〜1.39 ms、最大 11.12 ms）。蓄積なし | 合格 |
+
+残差はMTC受信時刻と実時間直線とのずれ（C4と同じ測り方）。記録：`artifacts/m6/win-m6-soak-app.jsonl`（5分ごと）、`win-m6-soak-mon.jsonl`（122 MB、gitignore）。未確認：Macでの連続試験（放置不可）、実機LPXへの出力（今回は仮想）。ループが手順書の8〜16小節より短い4小節だった点は記録に残す。
 
 ## Mac：ビルド、Live追従、Launchpad X（2026-10-28）
 
