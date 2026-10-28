@@ -1,0 +1,747 @@
+{
+  "$schema": "../schemas/show.schema.json",
+  "schema_version": "0.1.3",
+  "id": "omoi-iro-live-template",
+  "name": "OMOI-IRO 本番用の雛形（赤 #FF2A1A・白・橙、地 #2A0808）",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 128
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "ground",
+      "name": "地（暗い赤）",
+      "effect": {
+        "type": "builtin.solid",
+        "version": 1,
+        "params": {
+          "color": "#2A0808"
+        }
+      }
+    },
+    {
+      "id": "solid-red",
+      "name": "単色：赤",
+      "effect": {
+        "type": "builtin.solid",
+        "version": 1,
+        "params": {
+          "color": "#FF2A1A"
+        }
+      }
+    },
+    {
+      "id": "solid-orange",
+      "name": "単色：橙",
+      "effect": {
+        "type": "builtin.solid",
+        "version": 1,
+        "params": {
+          "color": "#FF8A00"
+        }
+      }
+    },
+    {
+      "id": "solid-white",
+      "name": "単色：白",
+      "effect": {
+        "type": "builtin.solid",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF"
+        }
+      }
+    },
+    {
+      "id": "chase-x",
+      "name": "流れ：横（赤）",
+      "effect": {
+        "type": "builtin.chase",
+        "version": 1,
+        "params": {
+          "color": "#FF2A1A",
+          "period_us": 2000000,
+          "width": 2,
+          "axis": "x"
+        }
+      }
+    },
+    {
+      "id": "chase-y",
+      "name": "流れ：縦（橙）",
+      "effect": {
+        "type": "builtin.chase",
+        "version": 1,
+        "params": {
+          "color": "#FF8A00",
+          "period_us": 2000000,
+          "width": 2,
+          "axis": "y"
+        }
+      }
+    },
+    {
+      "id": "chase-rev",
+      "name": "流れ：横・逆向き（白）",
+      "effect": {
+        "type": "builtin.chase",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF",
+          "period_us": 2000000,
+          "width": 1,
+          "axis": "x",
+          "reverse": true
+        }
+      }
+    },
+    {
+      "id": "pulse-red",
+      "name": "拍の明滅：赤",
+      "effect": {
+        "type": "builtin.pulse",
+        "version": 1,
+        "params": {
+          "color": "#FF2A1A",
+          "beats_per_cycle": 1,
+          "depth": 1,
+          "waveform": "sine"
+        }
+      }
+    },
+    {
+      "id": "strobe-white",
+      "name": "点滅：白（1拍、25%）",
+      "effect": {
+        "type": "builtin.strobe",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF",
+          "mode": "beat",
+          "rate_hz": 2,
+          "beats_per_cycle": 1,
+          "duty": 0.25,
+          "phase_offset": 0
+        }
+      }
+    },
+    {
+      "id": "noise-ember",
+      "name": "ノイズ：赤×橙",
+      "effect": {
+        "type": "builtin.noise",
+        "version": 1,
+        "params": {
+          "base_color": "#2A0808",
+          "highlight_color": "#FF8A00",
+          "density": 0.3,
+          "rate_hz": 6,
+          "seed": 1,
+          "smooth": true,
+          "depth": 0.5
+        }
+      }
+    },
+    {
+      "id": "ripple-drop",
+      "name": "波紋：水滴（タップ）",
+      "effect": {
+        "type": "builtin.ripple",
+        "version": 1,
+        "params": {
+          "color": "#FF2A1A",
+          "speed": 8,
+          "ring_width": 1,
+          "lifetime_ms": 900,
+          "fade": "linear",
+          "max_concurrent": 8,
+          "trigger": "any_pad",
+          "shape": "circle"
+        }
+      }
+    },
+    {
+      "id": "ripple-shock",
+      "name": "波紋：衝撃波",
+      "effect": {
+        "type": "builtin.ripple",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF",
+          "speed": 12,
+          "ring_width": 1.5,
+          "lifetime_ms": 700,
+          "fade": "linear",
+          "max_concurrent": 8,
+          "trigger": "any_pad",
+          "shape": "square"
+        }
+      }
+    },
+    {
+      "id": "ripple-bleed",
+      "name": "波紋：にじみ",
+      "effect": {
+        "type": "builtin.ripple",
+        "version": 1,
+        "params": {
+          "color": "#FF8A00",
+          "speed": 3,
+          "ring_width": 2,
+          "lifetime_ms": 2000,
+          "fade": "exp",
+          "max_concurrent": 8,
+          "trigger": "any_pad",
+          "shape": "circle"
+        }
+      }
+    },
+    {
+      "id": "rain-sparks",
+      "name": "雨：上向きの火の粉",
+      "effect": {
+        "type": "builtin.rain",
+        "version": 1,
+        "params": {
+          "color": "#FF2A1A",
+          "head_color": "#FF8A00",
+          "direction": "up",
+          "speed": 6,
+          "density": 0.35,
+          "tail": 3,
+          "seed": 7,
+          "flicker": 0
+        }
+      }
+    },
+    {
+      "id": "wave-red",
+      "name": "波形：赤",
+      "effect": {
+        "type": "builtin.wave",
+        "version": 1,
+        "params": {
+          "color": "#FF2A1A",
+          "axis": "x",
+          "wavelength": 8,
+          "amplitude": 2.5,
+          "center": 3.5,
+          "speed": 0.75,
+          "thickness": 1.25,
+          "beat_amplitude": false
+        }
+      }
+    },
+    {
+      "id": "orb-orange",
+      "name": "球：橙（周回）",
+      "effect": {
+        "type": "builtin.orb",
+        "version": 1,
+        "params": {
+          "color": "#FF8A00",
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "radius": 2.5,
+          "edge": 0.7,
+          "light_angle": 90,
+          "shading": 0.7,
+          "dither": 0,
+          "dither_rate_hz": 4,
+          "seed": 1,
+          "motion": "orbit",
+          "speed": 0.5,
+          "orbit_radius": 1.5,
+          "bounce_angle": 35
+        }
+      }
+    },
+    {
+      "id": "beat-halves",
+      "name": "領域：左右（拍）",
+      "effect": {
+        "type": "builtin.regions",
+        "version": 1,
+        "params": {
+          "pattern": "halves_lr",
+          "color": "#FF2A1A",
+          "color_b": "#2A0808",
+          "step_mode": "beat",
+          "step_beats": 1,
+          "step_ms": 500,
+          "order": "forward",
+          "soft": 0.5,
+          "duty": 1
+        }
+      }
+    },
+    {
+      "id": "regions-tb",
+      "name": "領域：上下（拍）",
+      "effect": {
+        "type": "builtin.regions",
+        "version": 1,
+        "params": {
+          "pattern": "halves_tb",
+          "color": "#FF2A1A",
+          "color_b": "#2A0808",
+          "step_mode": "beat",
+          "step_beats": 1,
+          "step_ms": 500,
+          "order": "forward",
+          "soft": 0.5,
+          "duty": 1
+        }
+      }
+    },
+    {
+      "id": "regions-checker",
+      "name": "領域：市松（拍）",
+      "effect": {
+        "type": "builtin.regions",
+        "version": 1,
+        "params": {
+          "pattern": "checker",
+          "color": "#FF8A00",
+          "color_b": "#2A0808",
+          "step_mode": "beat",
+          "step_beats": 1,
+          "step_ms": 500,
+          "order": "forward",
+          "soft": 0.5,
+          "duty": 1
+        }
+      }
+    },
+    {
+      "id": "regions-perimeter",
+      "name": "領域：外周（0.25拍）",
+      "effect": {
+        "type": "builtin.regions",
+        "version": 1,
+        "params": {
+          "pattern": "perimeter",
+          "color": "#FFFFFF",
+          "color_b": "#2A0808",
+          "step_mode": "beat",
+          "step_beats": 0.25,
+          "step_ms": 500,
+          "order": "forward",
+          "soft": 0.6,
+          "duty": 1
+        }
+      }
+    },
+    {
+      "id": "path-perimeter",
+      "name": "経路：外周を走る赤",
+      "effect": {
+        "type": "builtin.path",
+        "version": 1,
+        "params": {
+          "color": "#FF2A1A",
+          "path": "perimeter",
+          "speed": 0.25,
+          "size": 1,
+          "tail": 4,
+          "loop": true,
+          "phase": 0,
+          "mirror": "none"
+        }
+      }
+    },
+    {
+      "id": "shape-iris",
+      "name": "図形：アイリス（黒、開く）",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "circle",
+          "color": "#000000",
+          "fill": true,
+          "stroke": 1,
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "size": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 0,
+                "ease": "ease_in"
+              },
+              {
+                "t_us": 4000000,
+                "v": 6,
+                "ease": "linear"
+              }
+            ]
+          },
+          "angle": 0,
+          "edge": 0.5,
+          "invert": true
+        }
+      }
+    },
+    {
+      "id": "shape-wipe",
+      "name": "図形：ワイプ（黒、右へ開く）",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "wipe",
+          "color": "#000000",
+          "fill": true,
+          "stroke": 1,
+          "center_x": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": -4,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 3000000,
+                "v": 11,
+                "ease": "linear"
+              }
+            ]
+          },
+          "center_y": 3.5,
+          "size": 3,
+          "angle": 0,
+          "edge": 0
+        }
+      }
+    },
+    {
+      "id": "particles-sparks",
+      "name": "粒子：火花",
+      "effect": {
+        "type": "builtin.particles",
+        "version": 1,
+        "params": {
+          "mode": "burst",
+          "count": 24,
+          "color": "#FFE080",
+          "color_end": "#FF2A1A",
+          "speed_min": 3,
+          "speed_max": 9,
+          "angle": 90,
+          "spread": 360,
+          "gravity": -12,
+          "drag": 2,
+          "lifetime_ms": 900,
+          "size": 0.75,
+          "tail": 1,
+          "edge_mode": "vanish",
+          "seed": 9
+        }
+      }
+    },
+    {
+      "id": "particles-firework",
+      "name": "粒子：花火",
+      "effect": {
+        "type": "builtin.particles",
+        "version": 1,
+        "params": {
+          "mode": "rocket",
+          "count": 32,
+          "color": "#FF8A00",
+          "color_end": "#2A0808",
+          "speed_min": 2,
+          "speed_max": 6,
+          "angle": 90,
+          "spread": 360,
+          "gravity": -4,
+          "drag": 1.5,
+          "lifetime_ms": 1500,
+          "size": 0.75,
+          "tail": 0.5,
+          "edge_mode": "vanish",
+          "seed": 10,
+          "rise_speed": 12,
+          "burst_height": 5.5
+        }
+      }
+    },
+    {
+      "id": "text-name",
+      "name": "文字：OMOI-IRO（スクロール）",
+      "effect": {
+        "type": "builtin.text",
+        "version": 1,
+        "params": {
+          "text": "OMOI-IRO",
+          "font": "5x7",
+          "color": "#FF2A1A",
+          "mode": "scroll_left",
+          "speed": 8,
+          "gap": 1,
+          "loop": true
+        }
+      }
+    },
+    {
+      "id": "frames-star",
+      "name": "フレーム：星スタンプ",
+      "effect": {
+        "type": "builtin.frames",
+        "version": 1,
+        "params": {
+          "frames": [
+            "000000000000000000FFFFFF000000000000000000000000000000000000000000FFFFFF000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000FFFFFFFFFFFFFFFFFF000000000000000000000000FFFFFFFFFFFF000000FFFFFFFFFFFF000000000000FFFFFFFFFFFF000000000000000000FFFFFFFFFFFF000000000000000000000000000000000000000000000000000000"
+          ],
+          "fps": 1,
+          "loop": false,
+          "hold_last": false,
+          "hold_ms": 800,
+          "anchor": "pad",
+          "color": "#FF8A00"
+        }
+      }
+    },
+    {
+      "id": "meter-glow",
+      "name": "音量：全面（マスター）",
+      "effect": {
+        "type": "builtin.meter",
+        "version": 1,
+        "params": {
+          "source": "master",
+          "channel": "mix",
+          "mode": "glow",
+          "color_low": "#FFFFFF",
+          "color_high": "#FFFFFF",
+          "gain": 1.5,
+          "floor": 0.5,
+          "attack_ms": 10,
+          "release_ms": 250
+        }
+      }
+    },
+    {
+      "id": "meter-kick",
+      "name": "音量：中央の球（[LED] Kick）",
+      "effect": {
+        "type": "builtin.meter",
+        "version": 1,
+        "params": {
+          "source": "track",
+          "track_name": "Kick",
+          "channel": "mix",
+          "mode": "orb",
+          "color_low": "#FF2A1A",
+          "color_high": "#FFFFFF",
+          "gain": 2,
+          "floor": 0.7,
+          "attack_ms": 0,
+          "release_ms": 150
+        }
+      }
+    },
+    {
+      "id": "meter-bars",
+      "name": "音量：縦棒（マスター）",
+      "effect": {
+        "type": "builtin.meter",
+        "version": 1,
+        "params": {
+          "source": "master",
+          "channel": "mix",
+          "mode": "bar",
+          "color_low": "#FF2A1A",
+          "color_high": "#FFFFFF",
+          "gain": 1.2,
+          "floor": 0.3,
+          "attack_ms": 20,
+          "release_ms": 300,
+          "peak_hold_ms": 600
+        }
+      }
+    },
+    {
+      "id": "tap-glow",
+      "name": "余熱：白→橙→暗い赤",
+      "effect": {
+        "type": "builtin.tap_glow",
+        "version": 1,
+        "params": {
+          "color_start": "#FFFFFF",
+          "color_mid": "#FF8A00",
+          "color_end": "#2A0808",
+          "lifetime_ms": 1200,
+          "radius": 1,
+          "repeats": 1,
+          "repeat_interval_ms": 300,
+          "repeat_decay": 0.6
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "background",
+      "name": "背景：曲の区間ごとに置く",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": []
+      }
+    },
+    {
+      "id": "pattern",
+      "name": "模様：曲の区間ごとに置く",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": []
+      }
+    },
+    {
+      "id": "beat",
+      "name": "拍：左右に揺れる（常時）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 0.6,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "beat-halves"
+      }
+    },
+    {
+      "id": "level",
+      "name": "音量：全面が白く光る（常時）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 0.35,
+      "blend": "add",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "meter-glow"
+      }
+    },
+    {
+      "id": "tap",
+      "name": "タップ：押すと赤い波紋",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "tap-window",
+            "preset_id": "ripple-drop",
+            "start_us": 0,
+            "duration_us": 3600000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ],
+        "trigger": {
+          "on": "press"
+        }
+      }
+    },
+    {
+      "id": "afterglow",
+      "name": "余熱：押した所が冷めていく",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "afterglow-window",
+            "preset_id": "tap-glow",
+            "start_us": 0,
+            "duration_us": 3600000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ],
+        "trigger": {
+          "on": "press"
+        }
+      }
+    },
+    {
+      "id": "blinder",
+      "name": "ブラインダー：押している間だけ白",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 0.9,
+      "blend": "add",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "blinder-window",
+            "preset_id": "solid-white",
+            "start_us": 0,
+            "duration_us": 3600000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ],
+        "trigger": {
+          "on": "hold"
+        }
+      }
+    },
+    {
+      "id": "transition",
+      "name": "遷移：黒い図形を置く（アイリス・ワイプ）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": []
+      }
+    }
+  ]
+}

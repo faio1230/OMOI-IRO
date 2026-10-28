@@ -13,6 +13,9 @@ pub struct CheckShowsArgs {
     /// Folders (searched recursively) or single show files.
     #[arg(required = true)]
     pub paths: Vec<PathBuf>,
+    /// Rewrite the files that pass but are not in the canonical form (an atomic save).
+    #[arg(long)]
+    pub write: bool,
 }
 
 fn collect(p: &Path, out: &mut Vec<PathBuf>) -> std::io::Result<()> {
@@ -28,8 +31,9 @@ fn collect(p: &Path, out: &mut Vec<PathBuf>) -> std::io::Result<()> {
     Ok(())
 }
 
-/// One file: Ok(summary) or Err(reason).
-fn check(path: &Path) -> Result<String, String> {
+/// One file: Ok(summary) or Err(reason). With `write`, a passing file not
+/// in the canonical form is saved in it.
+fn check(path: &Path, write: bool) -> Result<String, String> {
     let original = std::fs::read_to_string(path).map_err(|e| format!("read: {e}"))?;
     let show = omoiiro_store::load_str(&original).map_err(|e| format!("load: {e}"))?;
     let saved = omoiiro_store::to_canonical_string(&show);
@@ -62,7 +66,13 @@ fn check(path: &Path) -> Result<String, String> {
             "not canonical; a save changes values (numbers written differently or defaults made explicit)"
         }
     };
-    Ok(format!("{} presets, {} layers, {} compounds, length {:.1} s, lit at 0 / middle / end {:?}, file {canonical}", show.presets.len(), show.layers.len(), show.compounds.len(), end as f64 / 1e6, lit))
+    let rewritten = if write && saved != original {
+        omoiiro_store::save_atomic(path, &show).map_err(|e| format!("write: {e}"))?;
+        " (rewritten in the canonical form)"
+    } else {
+        ""
+    };
+    Ok(format!("{} presets, {} layers, {} compounds, length {:.1} s, lit at 0 / middle / end {:?}, file {canonical}{rewritten}", show.presets.len(), show.layers.len(), show.compounds.len(), end as f64 / 1e6, lit))
 }
 
 pub fn run(args: CheckShowsArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -75,7 +85,7 @@ pub fn run(args: CheckShowsArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
     let mut failed = 0;
     for f in &files {
-        match check(f) {
+        match check(f, args.write) {
             Ok(s) => println!("[PASS] {}: {s}", f.display()),
             Err(e) => {
                 failed += 1;

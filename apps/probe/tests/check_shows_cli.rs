@@ -15,6 +15,22 @@ fn every_fixture_and_example_passes() {
 }
 
 #[test]
+fn write_puts_a_passing_file_in_the_canonical_form() {
+    let dir = std::env::temp_dir().join(format!("omoiiro-check-shows-write-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    // examples/demo is valid but not in the canonical layout.
+    let file = dir.join("demo.show.json");
+    std::fs::copy(concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/demo.show.json"), &file).unwrap();
+    let before = std::fs::read_to_string(&file).unwrap();
+    let (ok, text) = check(&["--write", file.to_str().unwrap()]);
+    assert!(ok && text.contains("rewritten in the canonical form"), "{text}");
+    assert_ne!(std::fs::read_to_string(&file).unwrap(), before);
+    let (ok, text) = check(&[file.to_str().unwrap()]);
+    std::fs::remove_dir_all(&dir).ok();
+    assert!(ok && text.contains("file canonical"), "{text}");
+}
+
+#[test]
 fn a_broken_show_fails_with_its_reason() {
     let dir = std::env::temp_dir().join(format!("omoiiro-check-shows-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
