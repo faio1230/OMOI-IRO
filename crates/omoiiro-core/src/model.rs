@@ -618,7 +618,7 @@ pub struct ShapeParams {
     pub center_x: Param<f64>,
     #[serde(serialize_with = "ser_param_num")]
     pub center_y: Param<f64>,
-    /// Radius or half side (line: half length), 0.5..=6 cells.
+    /// Radius or half side (line: half length), 0..=6 cells (0 = nothing, for closing transitions).
     #[serde(serialize_with = "ser_param_num")]
     pub size: Param<f64>,
     /// `rect` only: half height (absent = `size`).
@@ -630,6 +630,10 @@ pub struct ShapeParams {
     /// Soft edge 0..=2 cells.
     #[serde(serialize_with = "ser_param_num")]
     pub edge: Param<f64>,
+    /// Paint the outside instead (0.1.3 stage 4; absent = false). With a
+    /// black colour and blend over this hides the layers below (iris).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub invert: Option<Param<bool>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -639,6 +643,36 @@ pub enum ShapeKind {
     Circle,
     Rect,
     Diamond,
+    /// Half plane: the side of `center` that `angle` points to (angle 0 =
+    /// +x). `size` is not used.
+    Wipe,
+}
+
+/// Cut-out of a layer's own drawing (0.1.3 stage 4, scope self only): the
+/// layer alpha is multiplied by the mask alpha. Its time axis is the
+/// layer's: the clip's local time, or show time on a continuous layer.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LayerMask {
+    /// circle, rect, diamond or wipe (a line has no inside).
+    pub shape: Param<ShapeKind>,
+    #[serde(serialize_with = "ser_param_num")]
+    pub center_x: Param<f64>,
+    #[serde(serialize_with = "ser_param_num")]
+    pub center_y: Param<f64>,
+    /// Radius or half width 0..=8 cells (0 = nothing shows, or all with invert).
+    #[serde(serialize_with = "ser_param_num")]
+    pub size: Param<f64>,
+    /// `rect` only: half height (absent = `size`).
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub size_y: Option<Param<f64>>,
+    /// Degrees (absent = 0).
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub angle: Option<Param<f64>>,
+    #[serde(serialize_with = "ser_param_num")]
+    pub edge: Param<f64>,
+    /// Keep the outside instead.
+    pub invert: Param<bool>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -980,6 +1014,9 @@ pub struct Layer {
     pub opacity: f64,
     pub blend: Blend,
     pub content: Content,
+    /// 0.1.3 stage 4: optional cut-out of this layer's drawing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mask: Option<LayerMask>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

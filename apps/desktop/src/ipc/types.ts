@@ -283,7 +283,8 @@ export type EditCommand =
   | { op: "edit_clip_effect"; clip_id: string; effect: Effect }
   | { op: "set_sync"; beat_source: BeatSource | null; mtc_output_enabled: boolean | null }
   | { op: "add_triggered_layer"; name: string; on: TriggerOn; index: number | null }
-  | { op: "set_layer_trigger"; layer_id: string; trigger: TriggerSpec };
+  | { op: "set_layer_trigger"; layer_id: string; trigger: TriggerSpec }
+  | { op: "set_layer_mask"; layer_id: string; mask: LayerMask | null };
 
 export type Blend = "over" | "add" | "max";
 export type EffectType = "builtin.solid" | "builtin.chase" | "builtin.pulse" | "builtin.strobe" | "builtin.noise" | "builtin.ripple" | "builtin.rain" | "builtin.wave" | "builtin.orb" | "builtin.regions" | "builtin.tap_glow" | "builtin.cross" | "builtin.path" | "builtin.shape";
@@ -309,11 +310,11 @@ export type Effect =
   | { type: "builtin.tap_glow"; version: number; params: { color_start: K<string>; color_mid: K<string>; color_end: K<string>; lifetime_ms: K<number>; radius: K<number>; repeats: K<number>; repeat_interval_ms: K<number>; repeat_decay: K<number> } }
   | { type: "builtin.cross"; version: number; params: { color: K<string>; speed: K<number>; length: K<number>; lifetime_ms: K<number> } }
   | { type: "builtin.path"; version: number; params: { color: K<string>; path: PathKind; points?: [number, number][]; from_x?: K<number>; from_y?: K<number>; to_x?: K<number>; to_y?: K<number>; center_x?: K<number>; center_y?: K<number>; orbit_radius?: K<number>; speed: K<number>; size: K<number>; tail: K<number>; loop: boolean; phase: K<number>; mirror: Mirror } }
-  | { type: "builtin.shape"; version: number; params: { shape: ShapeKind; color: K<string>; fill: boolean; stroke: K<number>; center_x: K<number>; center_y: K<number>; size: K<number>; size_y?: K<number>; angle: K<number>; edge: K<number> } };
+  | { type: "builtin.shape"; version: number; params: { shape: ShapeKind; color: K<string>; fill: boolean; stroke: K<number>; center_x: K<number>; center_y: K<number>; size: K<number>; size_y?: K<number>; angle: K<number>; edge: K<number>; invert?: K<boolean> } };
 
 export type PathKind = "line" | "perimeter" | "orbit" | "figure8" | "points";
 export type Mirror = "none" | "x" | "y" | "xy";
-export type ShapeKind = "line" | "circle" | "rect" | "diamond";
+export type ShapeKind = "line" | "circle" | "rect" | "diamond" | "wipe";
 
 export type RegionPattern = "halves_lr" | "halves_tb" | "checker" | "quadrants" | "columns" | "rows" | "perimeter" | "fan" | "custom";
 
@@ -338,7 +339,12 @@ export interface LayerDto {
   clips: ClipDto[];
   /** Triggered layers: when they fire. */
   trigger: TriggerSpec | null;
+  /** 0.1.3: cut-out of the layer's own drawing. */
+  mask: LayerMask | null;
 }
+
+/** Layer mask (0.1.3): time axis = the layer's (clip local time, or show time on a continuous layer). */
+export interface LayerMask { shape: K<Exclude<ShapeKind, "line">>; center_x: K<number>; center_y: K<number>; size: K<number>; size_y?: K<number>; angle?: K<number>; edge: K<number>; invert: K<boolean> }
 
 export type TriggerOn = "press" | "release" | "hold" | "clip_start" | "interval";
 

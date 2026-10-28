@@ -59,6 +59,8 @@ pub struct LayerDto {
     pub clips: Vec<ClipDto>,
     /// Triggered layers: when they fire.
     pub trigger: Option<omoiiro_core::model::TriggerSpec>,
+    /// 0.1.3: cut-out of the layer's own drawing.
+    pub mask: Option<omoiiro_core::model::LayerMask>,
 }
 
 #[derive(Debug, Serialize)]
@@ -173,6 +175,7 @@ fn view(doc: &EditorDoc, runtime_revision: Option<u64>, outcome: Option<EditOutc
                     Content::Triggered { trigger, .. } => Some(trigger.clone()),
                     _ => None,
                 },
+                mask: l.mask.clone(),
             })
             .collect(),
         presets: s

@@ -1,0 +1,349 @@
+{
+  "$schema": "../../schemas/show.schema.json",
+  "schema_version": "0.1.3",
+  "id": "transitions-0-1-3",
+  "name": "0.1.3 の遷移とマスク（37 アイリス・38 シャッター・円の中の雨）",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "base",
+      "name": "下地（単色）",
+      "effect": {
+        "type": "builtin.solid",
+        "version": 1,
+        "params": {
+          "color": "#00DCC8"
+        }
+      }
+    },
+    {
+      "id": "rain",
+      "name": "雨",
+      "effect": {
+        "type": "builtin.rain",
+        "version": 1,
+        "params": {
+          "color": "#2060FF",
+          "head_color": "#FFFFFF",
+          "direction": "down",
+          "speed": 8,
+          "density": 0.6,
+          "tail": 3,
+          "seed": 3,
+          "flicker": 0
+        }
+      }
+    },
+    {
+      "id": "iris",
+      "name": "37 アイリス（黒の円・反転）",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "circle",
+          "color": "#000000",
+          "fill": true,
+          "stroke": 1,
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "size": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 0,
+                "ease": "ease_in"
+              },
+              {
+                "t_us": 4000000,
+                "v": 6,
+                "ease": "linear"
+              }
+            ]
+          },
+          "angle": 0,
+          "edge": 0.5,
+          "invert": true
+        }
+      }
+    },
+    {
+      "id": "shutter-left",
+      "name": "38 シャッター左（黒のワイプ）",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "wipe",
+          "color": "#000000",
+          "fill": true,
+          "stroke": 1,
+          "center_x": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 3.5,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 3000000,
+                "v": -4,
+                "ease": "linear"
+              }
+            ]
+          },
+          "center_y": 3.5,
+          "size": 3,
+          "angle": 180,
+          "edge": 0
+        }
+      }
+    },
+    {
+      "id": "shutter-right",
+      "name": "38 シャッター右（黒のワイプ）",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "wipe",
+          "color": "#000000",
+          "fill": true,
+          "stroke": 1,
+          "center_x": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 3.5,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 3000000,
+                "v": 11,
+                "ease": "linear"
+              }
+            ]
+          },
+          "center_y": 3.5,
+          "size": 3,
+          "angle": 0,
+          "edge": 0
+        }
+      }
+    },
+    {
+      "id": "shutter-rect",
+      "name": "38 シャッター（黒の長方形）",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "rect",
+          "color": "#000000",
+          "fill": true,
+          "stroke": 1,
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "size": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 4,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 3000000,
+                "v": 0,
+                "ease": "linear"
+              }
+            ]
+          },
+          "angle": 0,
+          "edge": 0,
+          "size_y": 4
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "base",
+      "name": "下地（単色）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "base-1",
+            "preset_id": "base",
+            "start_us": 8000000,
+            "duration_us": 24000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "rain-in-circle",
+      "name": "円の中の雨（マスク）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "rain-in-circle-1",
+            "preset_id": "rain",
+            "start_us": 0,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      },
+      "mask": {
+        "shape": "circle",
+        "center_x": 3.5,
+        "center_y": 3.5,
+        "size": {
+          "keyframes": [
+            {
+              "t_us": 0,
+              "v": 1,
+              "ease": "ease_out"
+            },
+            {
+              "t_us": 4000000,
+              "v": 3.5,
+              "ease": "linear"
+            }
+          ]
+        },
+        "edge": 0.75,
+        "invert": false
+      }
+    },
+    {
+      "id": "iris",
+      "name": "37 アイリス",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "iris-1",
+            "preset_id": "iris",
+            "start_us": 8000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "shutter-left",
+      "name": "38 シャッター左",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "shutter-left-1",
+            "preset_id": "shutter-left",
+            "start_us": 16000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "shutter-right",
+      "name": "38 シャッター右",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "shutter-right-1",
+            "preset_id": "shutter-right",
+            "start_us": 16000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "shutter-rect",
+      "name": "38 シャッター（長方形版）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "shutter-rect-1",
+            "preset_id": "shutter-rect",
+            "start_us": 24000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    }
+  ]
+}

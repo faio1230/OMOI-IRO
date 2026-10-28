@@ -13,7 +13,7 @@
 //!   never reused within a show.
 
 use crate::model::{
-    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Content, Effect, Layer, Loss, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
+    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Content, Effect, Layer, LayerMask, Loss, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
     StopBehavior, StrobeMode, StrobeParams, Sync, TriggerOn, TriggerSpec, Target, TimecodeSettings, TimecodeSource, Waveform, SCHEMA_VERSION,
 };
 use crate::surface::GRID64_PROFILE;
@@ -103,6 +103,8 @@ pub enum EditCommand {
     AddTriggeredLayer { name: String, on: TriggerOn, index: Option<usize> },
     /// Replace the trigger of a triggered layer.
     SetLayerTrigger { layer_id: String, trigger: TriggerSpec },
+    /// 0.1.3: set or clear a layer's mask (any layer kind).
+    SetLayerMask { layer_id: String, mask: Option<LayerMask> },
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -284,6 +286,7 @@ pub fn default_effect(effect_type: &str) -> Option<Effect> {
                 size_y: None,
                 angle: 0.0.into(),
                 edge: 0.5.into(),
+                invert: None,
             },
         },
         "builtin.tap_glow" => Effect::TapGlow {
@@ -375,6 +378,7 @@ impl EditCommand {
             EditCommand::SetSync { .. } => "同期の設定",
             EditCommand::AddTriggeredLayer { .. } => "発火レイヤーを追加",
             EditCommand::SetLayerTrigger { .. } => "発火の設定",
+            EditCommand::SetLayerMask { .. } => "マスクの設定",
         }
     }
 }
@@ -539,7 +543,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             let target_id = s.targets.first().map(|t| t.id.clone()).ok_or_else(|| EditError::Invalid("the show has no target".into()))?;
             let id = fresh_id("layer", s.layers.iter().map(|l| l.id.as_str()));
             let name = if name.trim().is_empty() { id.clone() } else { name.trim().to_string() };
-            let layer = Layer { id: id.clone(), name, target_id, enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Timeline { clips: Vec::new() } };
+            let layer = Layer { id: id.clone(), name, target_id, enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Timeline { clips: Vec::new() }, mask: None };
             let i = index.unwrap_or(s.layers.len()).min(s.layers.len());
             s.layers.insert(i, layer);
             out.layer_id = Some(id);
@@ -550,7 +554,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             let name = if name.trim().is_empty() { id.clone() } else { name.trim().to_string() };
             let interval_ms = (*on == TriggerOn::Interval).then_some(1000);
             let trigger = TriggerSpec { on: *on, interval_ms, origin_x: None, origin_y: None };
-            let layer = Layer { id: id.clone(), name, target_id, enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Triggered { clips: Vec::new(), trigger } };
+            let layer = Layer { id: id.clone(), name, target_id, enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Triggered { clips: Vec::new(), trigger }, mask: None };
             let i = index.unwrap_or(s.layers.len()).min(s.layers.len());
             s.layers.insert(i, layer);
             out.layer_id = Some(id);
@@ -561,6 +565,11 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
                 Content::Triggered { trigger: t, .. } => *t = trigger.clone(),
                 _ => return Err(EditError::Invalid(format!("layer {layer_id:?} is not a triggered layer"))),
             }
+            out.layer_id = Some(layer_id.clone());
+        }
+        EditCommand::SetLayerMask { layer_id, mask } => {
+            let l = s.layers.iter_mut().find(|l| &l.id == layer_id).ok_or_else(|| EditError::NotFound(format!("layer {layer_id:?}")))?;
+            l.mask = mask.clone();
             out.layer_id = Some(layer_id.clone());
         }
         EditCommand::DeleteLayer { layer_id } => {
@@ -596,7 +605,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             let target_id = s.targets.first().map(|t| t.id.clone()).ok_or_else(|| EditError::Invalid("the show has no target".into()))?;
             let id = fresh_id("layer", s.layers.iter().map(|l| l.id.as_str()));
             let name = if name.trim().is_empty() { id.clone() } else { name.trim().to_string() };
-            let layer = Layer { id: id.clone(), name, target_id, enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Continuous { preset_id: preset_id.clone() } };
+            let layer = Layer { id: id.clone(), name, target_id, enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Continuous { preset_id: preset_id.clone() }, mask: None };
             let i = index.unwrap_or(s.layers.len()).min(s.layers.len());
             s.layers.insert(i, layer);
             out.layer_id = Some(id);
@@ -1001,6 +1010,18 @@ mod tests {
         let bad = TriggerSpec { on: TriggerOn::Interval, interval_ms: None, origin_x: None, origin_y: None };
         assert!(matches!(apply(&s, &EditCommand::SetLayerTrigger { layer_id: layer, trigger: bad.clone() }, Snap::None), Err(EditError::Rejected(_))));
         assert!(matches!(apply(&s, &EditCommand::SetLayerTrigger { layer_id: "base".into(), trigger: bad }, Snap::None), Err(EditError::Invalid(_))));
+    }
+
+    #[test]
+    fn any_layer_takes_a_mask_and_drops_it() {
+        let mask = LayerMask { shape: ShapeKind::Circle.into(), center_x: 3.5.into(), center_y: 3.5.into(), size: 3.0.into(), size_y: None, angle: None, edge: 0.5.into(), invert: false.into() };
+        let (s, o) = apply(&demo(), &EditCommand::SetLayerMask { layer_id: "beat".into(), mask: Some(mask.clone()) }, Snap::None).unwrap();
+        assert_eq!(o.layer_id.as_deref(), Some("beat"));
+        assert_eq!(s.layers.iter().find(|l| l.id == "beat").unwrap().mask, Some(mask.clone()));
+        let bad = LayerMask { shape: ShapeKind::Line.into(), ..mask };
+        assert!(matches!(apply(&s, &EditCommand::SetLayerMask { layer_id: "beat".into(), mask: Some(bad) }, Snap::None), Err(EditError::Rejected(_))));
+        let (s, _) = apply(&s, &EditCommand::SetLayerMask { layer_id: "beat".into(), mask: None }, Snap::None).unwrap();
+        assert_eq!(s, demo());
     }
 
     #[test]

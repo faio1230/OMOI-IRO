@@ -100,6 +100,11 @@ impl Ctx {
 }
 
 /// Validate a show. An empty result means the show can be built into a renderer.
+/// Centre range of shapes and masks: a little off the grid so a wipe or a
+/// large shape can cover all of it or none of it.
+const CENTER_MIN: f64 = -4.0;
+const CENTER_MAX: f64 = 11.0;
+
 pub fn validate(show: &Show) -> Vec<Issue> {
     let mut c = Ctx { issues: Vec::new() };
 
@@ -427,13 +432,13 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 for v in params.color.values() {
                     c.color(v, format!("{e}/params/color"));
                 }
-                for (name, p, lo, hi) in [("stroke", &params.stroke, 0.5, 3.0), ("center_x", &params.center_x, 0.0, 7.0), ("center_y", &params.center_y, 0.0, 7.0), ("size", &params.size, 0.5, 6.0), ("angle", &params.angle, 0.0, 360.0), ("edge", &params.edge, 0.0, 2.0)] {
+                for (name, p, lo, hi) in [("stroke", &params.stroke, 0.5, 3.0), ("center_x", &params.center_x, CENTER_MIN, CENTER_MAX), ("center_y", &params.center_y, CENTER_MIN, CENTER_MAX), ("size", &params.size, 0.0, 6.0), ("angle", &params.angle, 0.0, 360.0), ("edge", &params.edge, 0.0, 2.0)] {
                     for v in p.values() {
                         c.range(*v, lo, hi, format!("{e}/params/{name}"));
                     }
                 }
                 if let Some(p) = &params.size_y {
-                    p.values().for_each(|v| c.range(*v, 0.5, 6.0, format!("{e}/params/size_y")));
+                    p.values().for_each(|v| c.range(*v, 0.0, 6.0, format!("{e}/params/size_y")));
                 }
             }
             Effect::TapGlow { params, .. } => {
@@ -541,6 +546,17 @@ pub fn validate(show: &Show) -> Vec<Issue> {
             c.push(format!("{p}/target_id"), format!("unknown target {:?}", l.target_id));
         }
         c.unit(l.opacity, format!("{p}/opacity"));
+        if let Some(m) = &l.mask {
+            let mp = format!("{p}/mask");
+            if m.shape.values().any(|k| *k == crate::model::ShapeKind::Line) {
+                c.push(format!("{mp}/shape"), "a mask is circle, rect, diamond or wipe");
+            }
+            for (name, v, lo, hi) in [("center_x", Some(&m.center_x), CENTER_MIN, CENTER_MAX), ("center_y", Some(&m.center_y), CENTER_MIN, CENTER_MAX), ("size", Some(&m.size), 0.0, 8.0), ("size_y", m.size_y.as_ref(), 0.0, 8.0), ("angle", m.angle.as_ref(), 0.0, 360.0), ("edge", Some(&m.edge), 0.0, 2.0)] {
+                for x in v.into_iter().flat_map(|v| v.values()) {
+                    c.range(*x, lo, hi, format!("{mp}/{name}"));
+                }
+            }
+        }
         match &l.content {
             Content::Continuous { preset_id } => {
                 if !preset_ids.contains_key(preset_id.as_str()) {
@@ -643,6 +659,7 @@ mod tests {
             opacity: 1.0,
             blend: crate::model::Blend::Over,
             content: Content::Triggered { clips: vec![clip(p)], trigger: TriggerSpec { on, interval_ms: None, origin_x: None, origin_y: None } },
+            mask: None,
         };
         let with = |l: Layer| {
             let mut x = s.clone();
@@ -790,6 +807,21 @@ mod tests {
             ok.presets.push(Preset { id: t.replace("builtin.", ""), name: t.into(), effect: crate::edit::default_effect(t).unwrap() });
         }
         assert!(pointers(&ok).is_empty(), "{:?}", pointers(&ok));
+    }
+
+    #[test]
+    fn layer_mask_rules() {
+        use crate::model::{LayerMask, ShapeKind};
+        let m = |shape: ShapeKind, size: f64, cx: f64| LayerMask { shape: shape.into(), center_x: cx.into(), center_y: 3.5.into(), size: size.into(), size_y: None, angle: Some(400.0.into()), edge: 0.5.into(), invert: false.into() };
+        let mut s = demo();
+        s.layers[0].mask = Some(m(ShapeKind::Line, 9.0, 12.0));
+        let p = pointers(&s);
+        for want in ["shape", "size", "center_x", "angle"] {
+            assert!(p.contains(&format!("/layers/0/mask/{want}")), "{want} in {p:?}");
+        }
+        // A wipe from off the grid is fine (size is not used).
+        s.layers[0].mask = Some(LayerMask { angle: None, ..m(ShapeKind::Wipe, 0.0, -2.0) });
+        assert!(pointers(&s).is_empty(), "{:?}", pointers(&s));
     }
 
     #[test]

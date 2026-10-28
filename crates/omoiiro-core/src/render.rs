@@ -61,7 +61,7 @@
 //! brightness scales the result.
 
 use crate::model::{
-    Axis, Blend, Content, Effect, Mirror, OrbMotion, PathKind, ShapeKind, TriggerOn, RainDirection, RegionPattern, RippleFade, RippleShape, RippleTrigger, Show, StepMode, StepOrder, StrobeMode, Waveform,
+    Axis, Blend, Content, Effect, LayerMask, Mirror, OrbMotion, PathKind, ShapeKind, TriggerOn, RainDirection, RegionPattern, RippleFade, RippleShape, RippleTrigger, Show, StepMode, StepOrder, StrobeMode, Waveform,
 };
 use crate::surface::{Frame, LayerFrame, Rgb, Rgba, GRID_H, GRID_LEDS, GRID_W};
 use crate::time::{BeatState, ShowTimeUs};
@@ -102,7 +102,7 @@ pub enum CompiledEffect {
     Cross { color: Rgb, speed: f64, length: f64, lifetime_us: i64 },
     Regions { pattern: RegionPattern, color: Rgb, color_b: Option<Rgb>, mode: StepMode, step_beats: f64, step_s: f64, order: StepOrder, soft: f64, duty: f64, custom: Option<CustomGroups> },
     Path(PathLook),
-    Shape { kind: ShapeKind, color: Rgb, fill: bool, stroke: f64, center: (f64, f64), size: (f64, f64), angle: f64, edge: f64 },
+    Shape { kind: ShapeKind, color: Rgb, fill: bool, stroke: f64, center: (f64, f64), size: (f64, f64), angle: f64, edge: f64, invert: bool },
 }
 
 /// The groups of a `custom` regions pattern as cell bit masks, with each group's phase delay.
@@ -356,6 +356,7 @@ impl CompiledEffect {
                     size: (size, params.size_y.as_ref().map(|p| p.at(t)).unwrap_or(size)),
                     angle: params.angle.at(t),
                     edge: params.edge.at(t),
+                    invert: params.invert.as_ref().is_some_and(|p| p.at(t)),
                 }
             }
             Effect::Noise { params, .. } => CompiledEffect::Noise {
@@ -488,11 +489,12 @@ impl CompiledEffect {
                 }
             }
             CompiledEffect::Path(look) => paint_path(&look, local_us, alpha, layer),
-            CompiledEffect::Shape { kind, color, fill, stroke, center, size, angle, edge } => {
+            CompiledEffect::Shape { kind, color, fill, stroke, center, size, angle, edge, invert } => {
                 for (i, px) in layer.px.iter_mut().enumerate() {
                     let sd = shape_sd(kind, (i % GRID_W) as f64 - center.0, (i / GRID_W) as f64 - center.1, size, angle);
-                    // A line has no inside: always its stroke.
-                    let a = if fill && kind != ShapeKind::Line { crate::shape::fill_alpha(sd, edge) } else { crate::shape::stroke_alpha(sd, stroke, edge) };
+                    // A line has no inside: always its stroke. A wipe has no outline: always filled.
+                    let a = if kind == ShapeKind::Wipe || (fill && kind != ShapeKind::Line) { crate::shape::fill_alpha(sd, edge) } else { crate::shape::stroke_alpha(sd, stroke, edge) };
+                    let a = if invert { 1.0 - a } else { a };
                     if a > 0.0 {
                         over(px, Rgba::from_color(color, (a * alpha) as f32));
                     }
@@ -833,6 +835,8 @@ pub fn shape_sd(kind: ShapeKind, dx: f64, dy: f64, size: (f64, f64), angle: f64)
         ShapeKind::Diamond => metric(Metric::Diamond, ux, uy) - size.0,
         ShapeKind::Rect => sd_rect(ux, uy, size.0, size.1),
         ShapeKind::Line => segment_distance(ux, uy, -size.0, 0.0, size.0, 0.0),
+        // The side `angle` points to is inside.
+        ShapeKind::Wipe => -ux,
     }
 }
 
@@ -1191,6 +1195,25 @@ struct CompiledLayer {
     opacity: f32,
     blend: Blend,
     content: LayerContent,
+    mask: Option<LayerMask>,
+}
+
+/// Multiply a layer by its mask sampled at `t` (the layer's own time axis).
+fn apply_mask(m: &LayerMask, t: u64, layer: &mut LayerFrame) {
+    let size = m.size.at(t);
+    let size = (size, m.size_y.as_ref().map_or(size, |p| p.at(t)));
+    let (kind, cx, cy, edge, invert) = (m.shape.at(t), m.center_x.at(t), m.center_y.at(t), m.edge.at(t), m.invert.at(t));
+    let angle = m.angle.as_ref().map_or(0.0, |p| p.at(t));
+    for (i, px) in layer.px.iter_mut().enumerate() {
+        let a = crate::shape::fill_alpha(shape_sd(kind, (i % GRID_W) as f64 - cx, (i / GRID_W) as f64 - cy, size, angle), edge);
+        let k = (if invert { 1.0 - a } else { a }) as f32;
+        if k < 1.0 {
+            px.r *= k;
+            px.g *= k;
+            px.b *= k;
+            px.a *= k;
+        }
+    }
 }
 
 /// Compiled show, ready to render any time.
@@ -1250,7 +1273,7 @@ impl Renderer {
                         }
                     }
                 };
-                CompiledLayer { enabled: l.enabled, opacity: l.opacity as f32, blend: l.blend, content }
+                CompiledLayer { enabled: l.enabled, opacity: l.opacity as f32, blend: l.blend, content, mask: l.mask.clone() }
             })
             .collect();
         Ok(Renderer {
@@ -1324,6 +1347,16 @@ impl Renderer {
                             sample(&self.effects, &self.keyed, ei, local as u64).paint(local as u64, beat, span.fade(t), &mut self.buf);
                         }
                     }
+                }
+            }
+            if let Some(m) = &layer.mask {
+                // Time axis: show time, or the local time of the (first) active clip.
+                let local = match layer.content {
+                    LayerContent::Continuous { .. } => Some(t as u64),
+                    _ => self.active.first().map(|s| s.local_us(t)),
+                };
+                if let Some(local) = local {
+                    apply_mask(m, local, &mut self.buf);
                 }
             }
             blend_layer(&mut frame, &self.buf, layer.blend, layer.opacity);
@@ -1828,6 +1861,7 @@ mod tests {
             opacity: 1.0,
             blend: Blend::Over,
             content: Content::Triggered { clips: vec![clip], trigger },
+            mask: None,
         }];
         s
     }
@@ -2070,6 +2104,66 @@ mod tests {
         assert_eq!(shape_sd(ShapeKind::Diamond, 1.0, 1.0, (2.0, 2.0), 0.0), crate::shape::metric(ripple_metric(RippleShape::Diamond), 1.0, 1.0) - 2.0);
     }
 
+    #[test]
+    fn wipe_and_invert_shapes() {
+        let shape = |kind: ShapeKind, angle: f64, invert: bool| {
+            compile_default("builtin.shape", |e| {
+                let Effect::Shape { params, .. } = e else { unreachable!() };
+                params.shape = kind.into();
+                params.edge = 0.0.into();
+                params.size = 2.0.into();
+                params.angle = angle.into();
+                params.invert = Some(invert.into());
+            })
+        };
+        // A wipe at angle 0 paints the +x side of its centre (3.5); at 180 the other side.
+        let right = alpha_grid(&shape(ShapeKind::Wipe, 0.0, false), 0, None);
+        assert_eq!((right[3], right[4], right[7 * 8 + 7]), (0.0, 1.0, 1.0));
+        let left = alpha_grid(&shape(ShapeKind::Wipe, 180.0, false), 0, None);
+        assert_eq!((left[3], left[4]), (1.0, 0.0));
+        // Inverted circle: dark inside, painted outside (an iris in black).
+        let iris = alpha_grid(&shape(ShapeKind::Circle, 0.0, true), 0, None);
+        assert_eq!((iris[3 * 8 + 3], iris[0], iris[7 * 8 + 7]), (0.0, 1.0, 1.0));
+    }
+
+    fn masked(mask: LayerMask, continuous: bool, clip_start_us: u64) -> Renderer {
+        let mut s = demo();
+        s.layers.truncate(1);
+        let l = &mut s.layers[0];
+        if continuous {
+            l.content = Content::Continuous { preset_id: "base-blue".into() };
+        } else if let Content::Timeline { clips } = &mut l.content {
+            clips[0].start_us = clip_start_us;
+        }
+        l.mask = Some(mask);
+        Renderer::new(&s).unwrap()
+    }
+
+    fn mask(shape: ShapeKind, size: crate::model::Param<f64>, invert: bool) -> LayerMask {
+        LayerMask { shape: shape.into(), center_x: 3.5.into(), center_y: 3.5.into(), size, size_y: None, angle: None, edge: 0.0.into(), invert: invert.into() }
+    }
+
+    #[test]
+    fn layer_mask_cuts_its_own_layer_on_the_layer_time() {
+        use crate::model::{Keyframe, Param};
+        let lit = |f: &Frame, i: usize| f.leds[i].b > 0.0;
+        // Continuous: show time. A circle of radius 2 keeps the middle only.
+        let mut r = masked(mask(ShapeKind::Circle, 2.0.into(), false), true, 0);
+        let f = r.render(5_000_000, None);
+        assert!(lit(&f, 3 * 8 + 3) && !lit(&f, 0) && !lit(&f, 7 * 8 + 7));
+        // Inverted wipe at angle 0: the -x half stays.
+        let mut r = masked(mask(ShapeKind::Wipe, 1.0.into(), true), true, 0);
+        let f = r.render(0, None);
+        assert!(lit(&f, 3) && !lit(&f, 4));
+        // Timeline: the clip's local time. Radius 0 -> 8 over 8 s from the clip start (10 s).
+        let grow = Param::Keyframes(vec![Keyframe { t_us: 0, v: 0.0, ease: Default::default() }, Keyframe { t_us: 8_000_000, v: 8.0, ease: Default::default() }]);
+        let mut r = masked(mask(ShapeKind::Circle, grow, false), false, 10_000_000);
+        let f = r.render(14_000_000, None); // radius 4
+        assert!(lit(&f, 3 * 8 + 3) && !lit(&f, 0), "corner (4.95 away) not yet");
+        let f = r.render(17_000_000, None); // radius 7
+        assert!(lit(&f, 0) && lit(&f, 7 * 8 + 7));
+        assert_eq!(r.render(5_000_000, None), Frame::default(), "before the clip nothing is drawn");
+    }
     #[test]
     fn renderer_passes_pad_input_only_to_ripple() {
         let mut s = demo();

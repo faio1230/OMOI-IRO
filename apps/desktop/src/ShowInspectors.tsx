@@ -3,7 +3,7 @@
 // hand-off as the timeline); ranges shown here follow the show schema.
 import { useEffect, useState, type ReactElement } from "react";
 import * as ipc from "./ipc/commands";
-import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, PathKind, Mirror, ShapeKind, TriggerOn, TriggerSpec, K, Keyframe, Ease } from "./ipc/types";
+import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, PathKind, Mirror, ShapeKind, LayerMask, TriggerOn, TriggerSpec, K, Keyframe, Ease } from "./ipc/types";
 
 const TYPE_JA: Record<EffectType, string> = {
   "builtin.solid": "単色（Solid）",
@@ -76,7 +76,7 @@ function Keyed<T>(props: { value: K<T>; onChange: (v: K<T>) => void; editor: (v:
 }
 
 /** Numeric input clamped to [min, max]; `scale` shows value / scale (e.g. µs as s); `integer` rounds; `fixed` has no time change (not an effect parameter). */
-function NumberField(props: { label: string; value: K<number>; min: number; max: number; step: number; hint?: string; integer?: boolean; scale?: number; fixed?: boolean; onChange: (v: K<number>) => void }) {
+function NumberField(props: { label: string; value: K<number>; min: number; max: number; step: number; hint?: string; integer?: boolean; scale?: number; fixed?: boolean; dim?: boolean; onChange: (v: K<number>) => void }) {
   const scale = props.scale ?? 1;
   const input = (v: number, set: (v: number) => void) => (
     <input type="number" min={props.min} max={props.max} step={props.step} value={v / scale} onChange={(e) => {
@@ -85,7 +85,7 @@ function NumberField(props: { label: string; value: K<number>; min: number; max:
     }} />
   );
   return (
-    <label className="field">
+    <label className={props.dim ? "field dim" : "field"}>
       <span>{props.label}</span>
       {props.fixed ? input(first(props.value), props.onChange) : <Keyed value={props.value} onChange={props.onChange} editor={input}>{input(first(props.value), props.onChange)}</Keyed>}
       {props.hint && <span className="hint">{props.hint}</span>}
@@ -325,30 +325,36 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
             <option value="rect">長方形</option>
             <option value="diamond">ひし形</option>
             <option value="line">線</option>
+            <option value="wipe">ワイプ（境界の片側を塗る）</option>
           </select>
         </label>
         <ColorField value={p.color} onChange={(color) => set({ color })} />
-        {p.shape !== "line" && (
+        {p.shape !== "line" && p.shape !== "wipe" && (
           <label className="field check">
             <input type="checkbox" checked={p.fill} onChange={(e) => set({ fill: e.target.checked })} />
             <span>塗りつぶす（切ると輪郭だけ）</span>
           </label>
         )}
-        {(!p.fill || p.shape === "line") && <NumberField label="線の太さ（セル）" value={p.stroke} min={0.5} max={3} step={0.25} hint="0.5〜3" onChange={(stroke) => set({ stroke })} />}
-        <NumberField label="中心 x" value={p.center_x} min={0} max={7} step={0.5} hint="0〜7（左が 0）" onChange={(center_x) => set({ center_x })} />
-        <NumberField label="中心 y" value={p.center_y} min={0} max={7} step={0.5} hint="0〜7（下が 0）" onChange={(center_y) => set({ center_y })} />
-        <NumberField label={p.shape === "circle" || p.shape === "diamond" ? "半径（セル）" : "横の半分の長さ（セル）"} value={p.size} min={0.5} max={6} step={0.25} hint="0.5〜6" onChange={(size) => set({ size })} />
+        {p.shape !== "wipe" && (!p.fill || p.shape === "line") && <NumberField label="線の太さ（セル）" value={p.stroke} min={0.5} max={3} step={0.25} hint="0.5〜3" onChange={(stroke) => set({ stroke })} />}
+        <NumberField label="中心 x" value={p.center_x} min={-4} max={11} step={0.5} hint="-4〜11（左端の LED が 0、盤の外にも置ける）" onChange={(center_x) => set({ center_x })} />
+        <NumberField label="中心 y" value={p.center_y} min={-4} max={11} step={0.5} hint="-4〜11（下端の LED が 0）" onChange={(center_y) => set({ center_y })} />
+        <NumberField label={p.shape === "circle" || p.shape === "diamond" ? "半径（セル）" : "横の半分の長さ（セル）"} value={p.size} min={0} max={6} step={0.25} hint={p.shape === "wipe" ? "ワイプでは使わない" : "0〜6（0 で何も出ない）"} dim={p.shape === "wipe"} onChange={(size) => set({ size })} />
         {p.shape === "rect" && (
           <>
             <label className="field check">
               <input type="checkbox" checked={p.size_y !== undefined} onChange={(e) => set({ size_y: e.target.checked ? first(p.size) : undefined })} />
               <span>縦の長さを別にする（切ると正方形）</span>
             </label>
-            {p.size_y !== undefined && <NumberField label="縦の半分の長さ（セル）" value={p.size_y} min={0.5} max={6} step={0.25} hint="0.5〜6" onChange={(size_y) => set({ size_y })} />}
+            {p.size_y !== undefined && <NumberField label="縦の半分の長さ（セル）" value={p.size_y} min={0} max={6} step={0.25} hint="0〜6" onChange={(size_y) => set({ size_y })} />}
           </>
         )}
-        <NumberField label="回転（度）" value={p.angle} min={0} max={360} step={15} hint="0〜360（反時計回り）" onChange={(angle) => set({ angle })} />
+        <NumberField label="回転（度）" value={p.angle} min={0} max={360} step={15} hint={p.shape === "wipe" ? "塗る側の向き（0 で右側、90 で上側）" : "0〜360（反時計回り）"} onChange={(angle) => set({ angle })} />
         <NumberField label="ふちのぼかし（セル）" value={p.edge} min={0} max={2} step={0.25} hint="0 でくっきり" onChange={(edge) => set({ edge })} />
+        <label className="field check">
+          <input type="checkbox" checked={first(p.invert ?? false)} onChange={(e) => set({ invert: e.target.checked ? true : undefined })} />
+          <span>反転（図形の外側を塗る）</span>
+        </label>
+        <p className="hint">下のレイヤーを隠す遷移（アイリス・シャッター）は、黒い図形を合成 over で上に重ねて作る。</p>
       </div>
     );
   }
@@ -635,6 +641,7 @@ export function LayerInspector({ view, layer, apply }: { view: EditorView; layer
           </select>
         </label>
         {layer.kind === "triggered" && layer.trigger && <TriggerFields layer={layer} trigger={layer.trigger} apply={apply} />}
+        <MaskFields layer={layer} apply={apply} />
         {layer.kind === "continuous" && (
           <label className="field">
             <span>プリセット</span>
@@ -645,6 +652,60 @@ export function LayerInspector({ view, layer, apply }: { view: EditorView; layer
         )}
       </div>
     </div>
+  );
+}
+
+const DEFAULT_MASK: LayerMask = { shape: "circle", center_x: 3.5, center_y: 3.5, size: 3, edge: 0.5, invert: false };
+
+/** Optional mask: cuts this layer's own drawing (not the layers below). */
+function MaskFields({ layer, apply }: { layer: LayerDto; apply: (c: EditCommand) => void }) {
+  const m = layer.mask;
+  const put = (mask: LayerMask | null) => apply({ op: "set_layer_mask", layer_id: layer.id, mask });
+  const toggle = (
+    <label className="field check wide">
+      <input type="checkbox" checked={m !== null} onChange={(e) => put(e.target.checked ? DEFAULT_MASK : null)} />
+      <span>マスク（このレイヤーの描画だけを図形で切り抜く）</span>
+    </label>
+  );
+  if (!m) return toggle;
+  const set = (patch: Partial<LayerMask>) => put({ ...m, ...patch });
+  const shape = first(m.shape);
+  const time = layer.kind === "continuous" ? "曲の時刻" : "クリップの中の時刻";
+  return (
+    <>
+      {toggle}
+      <label className="field">
+        <span>マスクの形</span>
+        <select value={shape} onChange={(e) => {
+          const s = e.target.value as LayerMask["shape"] & string;
+          set(s === "rect" ? { shape: s } : { shape: s, size_y: undefined });
+        }}>
+          <option value="circle">円</option>
+          <option value="rect">長方形</option>
+          <option value="diamond">ひし形</option>
+          <option value="wipe">ワイプ（境界の片側）</option>
+        </select>
+        <span className="hint">時間変化は{time}で進む</span>
+      </label>
+      <NumberField label="中心 x" value={m.center_x} min={-4} max={11} step={0.5} hint="-4〜11" onChange={(center_x) => set({ center_x })} />
+      <NumberField label="中心 y" value={m.center_y} min={-4} max={11} step={0.5} hint="-4〜11" onChange={(center_y) => set({ center_y })} />
+      <NumberField label={shape === "rect" ? "横の半分の長さ（セル）" : "半径（セル）"} value={m.size} min={0} max={8} step={0.25} hint={shape === "wipe" ? "ワイプでは使わない" : "0〜8"} dim={shape === "wipe"} onChange={(size) => set({ size })} />
+      {shape === "rect" && (
+        <>
+          <label className="field check">
+            <input type="checkbox" checked={m.size_y !== undefined} onChange={(e) => set({ size_y: e.target.checked ? first(m.size) : undefined })} />
+            <span>縦の長さを別にする</span>
+          </label>
+          {m.size_y !== undefined && <NumberField label="縦の半分の長さ（セル）" value={m.size_y} min={0} max={8} step={0.25} hint="0〜8" onChange={(size_y) => set({ size_y })} />}
+        </>
+      )}
+      <NumberField label="回転（度）" value={m.angle ?? 0} min={0} max={360} step={15} hint={shape === "wipe" ? "残す側の向き（0 で右側）" : "0〜360"} onChange={(angle) => set({ angle })} />
+      <NumberField label="ふちのぼかし（セル）" value={m.edge} min={0} max={2} step={0.25} hint="0 でくっきり" onChange={(edge) => set({ edge })} />
+      <label className="field check">
+        <input type="checkbox" checked={first(m.invert)} onChange={(e) => set({ invert: e.target.checked })} />
+        <span>反転（図形の外側を残す）</span>
+      </label>
+    </>
   );
 }
 

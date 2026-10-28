@@ -231,11 +231,38 @@ mod tests {
         v["presets"][1]["effect"]["params"]["speed"] = json!(4);
         let saved = to_canonical_string(&load_str(&v.to_string()).unwrap());
         assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), v);
+        // A layer mask and an inverted wipe round-trip; files without them are unchanged.
+        let mut v: Value = serde_json::from_str(text).unwrap();
+        v["layers"][0]["mask"] = json!({"shape": "circle", "center_x": 3.5, "center_y": 3.5, "size": {"keyframes": [{"t_us": 0, "v": 0, "ease": "linear"}, {"t_us": 2000000, "v": 6, "ease": "linear"}]}, "edge": 0.5, "invert": false});
+        v["presets"][3]["effect"]["params"]["shape"] = json!("wipe");
+        v["presets"][3]["effect"]["params"]["invert"] = json!(true);
+        v["presets"][3]["effect"]["params"]["center_x"] = json!(-2);
+        let saved = to_canonical_string(&load_str(&v.to_string()).unwrap());
+        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), v);
         // Custom groups: offset count must match the groups.
         let mut v: Value = serde_json::from_str(text).unwrap();
         v["presets"][4]["effect"]["params"]["offset"] = json!([0, 0.5]);
         assert!(load_str(&v.to_string()).is_err());
     }
+    #[test]
+    fn transitions_fixture_loads_and_round_trips() {
+        // 37 iris and 38 shutter as black shapes over a base, and a masked layer.
+        let text = include_str!("../../../fixtures/shows/transitions-0.1.3.show.json");
+        let show = load_str(text).unwrap();
+        let saved = to_canonical_string(&show);
+        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), serde_json::from_str::<Value>(text).unwrap());
+        let mut a = omoiiro_core::render::Renderer::new(&show).unwrap();
+        let mut b = omoiiro_core::render::Renderer::new(&load_str(&saved).unwrap()).unwrap();
+        for t in [2_000_000, 8_100_000, 10_000_000, 13_000_000, 17_000_000, 20_000_000, 25_500_000, 31_000_000] {
+            assert_eq!(a.render(t, None), b.render(t, None), "at {t}");
+        }
+        // Closed at the start of each transition, open at its end.
+        let lit = |f: &omoiiro_core::surface::Frame| f.leds.iter().filter(|c| c.g > 0.5).count();
+        assert_eq!((lit(&a.render(8_100_000, None)), lit(&a.render(13_000_000, None))), (0, 64), "iris");
+        assert_eq!((lit(&a.render(16_100_000, None)), lit(&a.render(20_000_000, None))), (0, 64), "wipes");
+        assert_eq!((lit(&a.render(24_100_000, None)), lit(&a.render(28_000_000, None))), (0, 64), "rect");
+    }
+
     #[test]
     fn triggered_layer_round_trips_and_needs_its_interval() {
         let mut v = demo_value();
