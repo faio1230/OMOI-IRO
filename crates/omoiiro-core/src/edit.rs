@@ -95,6 +95,10 @@ pub enum EditCommand {
     DeletePreset { preset_id: String },
     /// Insert a preset (import). An ID conflict is an error or a rename.
     InsertPreset { preset: Preset, on_conflict: OnConflict },
+    /// Library import (A20): the presets the compound uses (an identical
+    /// preset already in the show is reused), then the compound with its
+    /// preset, layer and clip IDs remapped. An identical compound is reused.
+    InsertCompound { compound: Compound, presets: Vec<Preset>, on_conflict: OnConflict },
     /// Use another preset for one clip.
     SetClipPreset { clip_id: String, preset_id: String },
     /// Edit the effect of one clip only. If the preset is shared with other
@@ -479,6 +483,7 @@ impl EditCommand {
             EditCommand::SetPreset { .. } => "プリセットを編集（共有）",
             EditCommand::DeletePreset { .. } => "プリセットを削除",
             EditCommand::InsertPreset { .. } => "プリセットを読み込み",
+            EditCommand::InsertCompound { .. } => "ライブラリーから読み込み",
             EditCommand::SetClipPreset { .. } => "クリップのプリセット",
             EditCommand::EditClipEffect { .. } => "クリップの効果を編集",
             EditCommand::SetSync { .. } => "同期の設定",
@@ -588,6 +593,37 @@ fn all_clip_ids(show: &Show) -> impl Iterator<Item = &str> {
         Some(clips) => clips.iter().map(|c| c.id.as_str()).collect::<Vec<_>>(),
         None => Vec::new(),
     })
+}
+
+/// `existing` is `id` or what `rename_on_conflict` made of it (`<id>-N`).
+fn same_or_renamed(existing: &str, id: &str) -> bool {
+    existing == id || existing.strip_prefix(id).and_then(|r| r.strip_prefix('-')).is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+}
+
+/// Library import (A20): the same preset (ID or its renamed form, name and
+/// effect; metadata is not compared), so importing it again adds nothing.
+pub fn same_preset(existing: &Preset, imported: &Preset) -> bool {
+    same_or_renamed(&existing.id, &imported.id) && existing.name == imported.name && existing.effect == imported.effect
+}
+
+/// The preset already in the show that `imported` would duplicate (the exact ID first).
+pub fn existing_preset<'a>(show: &'a Show, imported: &Preset) -> Option<&'a Preset> {
+    show.presets.iter().find(|x| x.id == imported.id && same_preset(x, imported)).or_else(|| show.presets.iter().find(|x| same_preset(x, imported)))
+}
+
+/// The same compound apart from its inner layer and clip IDs.
+fn same_compound(a: &Compound, b: &Compound) -> bool {
+    let strip = |c: &Compound| {
+        let mut layers = c.layers.clone();
+        for l in &mut layers {
+            l.id.clear();
+            for clip in l.content.clips_mut().into_iter().flatten() {
+                clip.id.clear();
+            }
+        }
+        layers
+    };
+    same_or_renamed(&a.id, &b.id) && a.name == b.name && a.duration_us == b.duration_us && strip(a) == strip(b)
 }
 
 /// First free `prefix-N` (N >= 1) not used by `used`.
@@ -804,6 +840,65 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             }
             out.preset_id = Some(p.id.clone());
             s.presets.push(p);
+        }
+        EditCommand::InsertCompound { compound, presets, on_conflict } => {
+            let conflict = |what: &str, id: &str| EditError::Invalid(format!("{what} ID {id:?} は既にある（名前を変えて読み込むか、既存を削除する）"));
+            let mut preset_ids: std::collections::HashMap<&str, String> = std::collections::HashMap::new();
+            for p in presets {
+                if preset_ids.contains_key(p.id.as_str()) {
+                    continue;
+                }
+                let id = match existing_preset(&s, p).map(|x| x.id.clone()) {
+                    Some(x) => x,
+                    None => {
+                        let mut q = p.clone();
+                        if s.presets.iter().any(|x| x.id == q.id) {
+                            match on_conflict {
+                                OnConflict::Error => return Err(conflict("プリセット", &q.id)),
+                                OnConflict::Rename => q.id = rename_on_conflict(&q.id, s.presets.iter().map(|x| x.id.as_str())),
+                            }
+                        }
+                        let id = q.id.clone();
+                        s.presets.push(q);
+                        id
+                    }
+                };
+                preset_ids.insert(&p.id, id);
+            }
+            let remap = |pid: &mut String| {
+                if let Some(id) = preset_ids.get(pid.as_str()) {
+                    *pid = id.clone();
+                }
+            };
+            let mut cp = compound.clone();
+            let mut used_layers: Vec<String> = all_layer_ids(&s).map(str::to_string).collect();
+            let mut used_clips: Vec<String> = all_clip_ids(&s).map(str::to_string).collect();
+            for l in &mut cp.layers {
+                l.id = rename_on_conflict(&l.id, used_layers.iter().map(String::as_str));
+                used_layers.push(l.id.clone());
+                match &mut l.content {
+                    Content::Continuous { preset_id } => remap(preset_id),
+                    content => {
+                        for c in content.clips_mut().into_iter().flatten() {
+                            c.id = rename_on_conflict(&c.id, used_clips.iter().map(String::as_str));
+                            used_clips.push(c.id.clone());
+                            remap(&mut c.preset_id);
+                        }
+                    }
+                }
+            }
+            if let Some(x) = s.compounds.iter().find(|x| same_compound(x, &cp)) {
+                out.compound_id = Some(x.id.clone());
+            } else {
+                if s.compounds.iter().any(|x| x.id == cp.id) {
+                    match on_conflict {
+                        OnConflict::Error => return Err(conflict("素材", &cp.id)),
+                        OnConflict::Rename => cp.id = rename_on_conflict(&cp.id, s.compounds.iter().map(|x| x.id.as_str())),
+                    }
+                }
+                out.compound_id = Some(cp.id.clone());
+                s.compounds.push(cp);
+            }
         }
         EditCommand::SetClipPreset { clip_id, preset_id } => {
             let (lid, ci) = find_clip(&s, clip_id)?;
@@ -1359,6 +1454,45 @@ mod tests {
         let bad = TriggerSpec { on: TriggerOn::Interval, interval_ms: None, origin_x: None, origin_y: None };
         assert!(matches!(apply(&s, &EditCommand::SetLayerTrigger { layer_id: layer, trigger: bad.clone() }, Snap::None), Err(EditError::Rejected(_))));
         assert!(matches!(apply(&s, &EditCommand::SetLayerTrigger { layer_id: "base".into(), trigger: bad }, Snap::None), Err(EditError::Invalid(_))));
+    }
+
+    #[test]
+    fn library_compounds_import_with_their_presets_once() {
+        // Library: a compound with a clip of sweep-cyan and a continuous base-blue layer.
+        let lib = demo();
+        let (lib, o) = apply(&lib, &EditCommand::AddCompound { name: "素材".into() }, Snap::None).unwrap();
+        let (cp, inner) = (o.compound_id.unwrap(), o.layer_id.unwrap());
+        let (lib, _) = apply(&lib, &EditCommand::AddClip { layer_id: inner, preset_id: "sweep-cyan".into(), start_us: 0, duration_us: 1_000_000 }, Snap::None).unwrap();
+        let (lib, _) = apply(&lib, &EditCommand::AddCompoundLayer { compound_id: cp.clone(), name: "".into(), preset_id: Some("base-blue".into()) }, Snap::None).unwrap();
+        let compound = lib.compounds.iter().find(|c| c.id == cp).unwrap().clone();
+        let presets: Vec<Preset> = lib.presets.iter().filter(|p| p.id == "sweep-cyan" || p.id == "base-blue").cloned().collect();
+        let cmd = EditCommand::InsertCompound { compound: compound.clone(), presets: presets.clone(), on_conflict: OnConflict::Rename };
+        assert_eq!(cmd.label(), "ライブラリーから読み込み");
+
+        // Into the library's own show: everything is already there, nothing is added.
+        let (same, o) = apply(&lib, &cmd, Snap::None).unwrap();
+        assert_eq!((same == lib, o.compound_id.as_deref()), (true, Some(cp.as_str())));
+
+        // Into a show whose base-blue is another color and which uses the layer / clip IDs.
+        let mut target = new_show("x");
+        let mut other = presets.iter().find(|p| p.id == "base-blue").unwrap().clone();
+        other.effect = Effect::Solid { version: 1, params: SolidParams { color: "#FF0000".to_string().into() } };
+        target.presets.push(other);
+        let (target, _) = apply(&target, &EditCommand::AddLayer { name: "".into(), index: None }, Snap::None).unwrap();
+        let taken = target.layers.last().unwrap().id.clone();
+        assert!(compound.layers.iter().any(|l| l.id == taken), "the test needs a layer ID conflict");
+        assert!(matches!(apply(&target, &EditCommand::InsertCompound { compound: compound.clone(), presets: presets.clone(), on_conflict: OnConflict::Error }, Snap::None), Err(EditError::Invalid(_))));
+        let (a, o) = apply(&target, &cmd, Snap::None).unwrap();
+        let got = a.compounds.iter().find(|c| Some(&c.id) == o.compound_id.as_ref()).unwrap();
+        assert!(a.presets.iter().any(|p| p.id == "sweep-cyan") && a.presets.iter().any(|p| p.id == "base-blue-2"));
+        assert_eq!(got.layers[1].content, Content::Continuous { preset_id: "base-blue-2".into() }, "renamed preset is used");
+        assert_ne!(got.layers[0].id, taken, "layer IDs stay unique show-wide");
+        // Again: no new preset or compound.
+        let (b, o2) = apply(&a, &cmd, Snap::None).unwrap();
+        assert_eq!((b.presets.len(), b.compounds.len(), o2.compound_id), (a.presets.len(), a.compounds.len(), o.compound_id));
+        // A single preset from the library matches its renamed copy.
+        assert!(existing_preset(&b, presets.iter().find(|p| p.id == "base-blue").unwrap()).is_some_and(|p| p.id == "base-blue-2"));
+        assert!(!same_or_renamed("base-blue-x", "base-blue") && same_or_renamed("base-blue-12", "base-blue"));
     }
 
     #[test]

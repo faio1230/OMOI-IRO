@@ -114,8 +114,12 @@ pub fn settings_save(state: State<'_, AppState>, settings: TerminalSettings) -> 
     if !report.ok {
         return Err(CommandError::new("settings", report.errors.join(" / ")));
     }
-    // The recent list is kept by the app, not edited by the form.
-    settings.recent_shows = state.settings.lock().unwrap().recent_shows.clone();
+    // The recent and library lists are kept by the app, not edited by the form.
+    {
+        let current = state.settings.lock().unwrap();
+        settings.recent_shows = current.recent_shows.clone();
+        settings.library_shows = current.library_shows.clone();
+    }
     let dir = state.settings_dir.lock().unwrap().clone().ok_or_else(|| CommandError::new("settings", "settings directory is not ready"))?;
     ts::save(&dir, &settings).map_err(|e| CommandError::new("save", e))?;
     *state.settings.lock().unwrap() = settings;

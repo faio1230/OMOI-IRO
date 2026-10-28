@@ -37,6 +37,11 @@ const COMMANDS: &[&str] = &[
     "editor_save",
     "editor_save_as",
     "editor_new",
+    "library_list",
+    "library_preview",
+    "library_import",
+    "library_add",
+    "library_remove",
     "close_decision",
 ];
 

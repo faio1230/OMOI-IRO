@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-library-preview"
+description = "Enables the library_preview command without any pre-configured scope."
+commands.allow = ["library_preview"]
+
+[[permission]]
+identifier = "deny-library-preview"
+description = "Denies the library_preview command without any pre-configured scope."
+commands.deny = ["library_preview"]

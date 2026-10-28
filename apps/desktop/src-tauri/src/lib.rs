@@ -16,6 +16,7 @@
 mod dto;
 mod editor;
 mod files;
+mod library;
 mod preview;
 mod settings;
 
@@ -259,6 +260,7 @@ pub fn run() {
         .manage(AppState::new(initial))
         .manage(Arc::new(preview::PreviewState::new()))
         .manage(editor::EditorState::default())
+        .manage(library::LibraryState::default())
         .plugin(tauri_plugin_dialog::init())
         .on_window_event(|window, event| {
             // Unsaved timeline edits: keep the window and ask in the UI (status poll).
@@ -312,6 +314,11 @@ pub fn run() {
             editor::editor_save,
             editor::editor_save_as,
             editor::editor_new,
+            library::library_list,
+            library::library_preview,
+            library::library_import,
+            library::library_add,
+            library::library_remove,
             close_decision
         ])
         .build(tauri::generate_context!())

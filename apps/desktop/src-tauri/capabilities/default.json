@@ -42,6 +42,11 @@
     "allow-editor-save",
     "allow-editor-save-as",
     "allow-editor-new",
+    "allow-library-list",
+    "allow-library-preview",
+    "allow-library-import",
+    "allow-library-add",
+    "allow-library-remove",
     "allow-close-decision",
     "dialog:allow-open",
     "dialog:allow-save"

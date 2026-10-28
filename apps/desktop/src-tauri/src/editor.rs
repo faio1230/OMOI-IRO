@@ -394,6 +394,16 @@ pub fn editor_view(ed: State<'_, EditorState>, app: State<'_, AppState>) -> Opti
     ed.doc.lock().unwrap().as_ref().map(|d| view(d, rev, None, l))
 }
 
+/// The view of the unchanged document with `outcome` (an import that reused
+/// what the show already has).
+pub fn current_view(ed: &EditorState, app: &AppState, outcome: Option<EditOutcome>) -> CmdResult<EditorView> {
+    let l = limits(app);
+    let path = ed.doc.lock().unwrap().as_ref().map(|d| d.path.clone()).ok_or_else(|| CommandError::new("no_document", "open a show in the timeline first"))?;
+    let rev = runtime_revision_for(app, &path);
+    let g = ed.doc.lock().unwrap();
+    Ok(view(g.as_ref().ok_or_else(|| CommandError::new("no_document", "open a show in the timeline first"))?, rev, outcome, l))
+}
+
 /// Revision the running runtime uses, when it follows this file (else None).
 fn runtime_revision_for(app: &AppState, path: &std::path::Path) -> Option<u64> {
     let runtime_path = app.show_path.lock().unwrap().clone();

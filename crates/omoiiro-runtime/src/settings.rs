@@ -37,6 +37,8 @@ use std::path::Path;
 pub const SETTINGS_FILE: &str = "terminal-settings.json";
 pub const SETTINGS_VERSION: u32 = 1;
 pub const MAX_RECENT: usize = 10;
+/// Library shows (A20).
+pub const MAX_LIBRARY: usize = 10;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -73,6 +75,10 @@ pub struct TerminalSettings {
     /// Device output permissions (M6). Missing in older files: all off.
     #[serde(default)]
     pub devices: DeviceSettings,
+    /// Shows whose presets and compounds are offered as library materials
+    /// (A20; read only, at most `MAX_LIBRARY`). Missing in older files: none.
+    #[serde(default)]
+    pub library_shows: Vec<String>,
 }
 
 /// What the app may send to a device directly.
@@ -99,6 +105,7 @@ impl Default for TerminalSettings {
             recent_shows: Vec::new(),
             safety: Default::default(),
             devices: Default::default(),
+            library_shows: Vec::new(),
         }
     }
 }
@@ -119,6 +126,14 @@ impl TerminalSettings {
         }
         self.bridge_bind = self.bridge_bind.trim().to_string();
         self.recent_shows.truncate(MAX_RECENT);
+        let mut library: Vec<String> = Vec::new();
+        for p in self.library_shows.drain(..).map(|p| p.trim().to_string()).filter(|p| !p.is_empty()) {
+            if !library.contains(&p) {
+                library.push(p);
+            }
+        }
+        library.truncate(MAX_LIBRARY);
+        self.library_shows = library;
         self
     }
 
@@ -534,7 +549,10 @@ mod tests {
         s.remember_show("a.show.json");
         s.remember_show("b.show.json");
         s.remember_show("a.show.json");
+        s.library_shows = (0..12).map(|i| format!(" l{} .show.json", i % 11)).collect();
         let s = s.normalized();
+        assert_eq!(s.library_shows.len(), MAX_LIBRARY, "trimmed, unique, at most 10");
+        assert_eq!((s.library_shows[0].as_str(), s.library_shows[9].as_str()), ("l0 .show.json", "l9 .show.json"));
         assert_eq!((s.ports.led_out.clone(), s.ports.clock_in.clone()), (None, None));
         assert_eq!(s.recent_shows, vec!["a.show.json", "b.show.json"]);
         save(&dir, &s).unwrap();
@@ -542,8 +560,10 @@ mod tests {
         // A version-1 file written before the safety section still loads.
         let mut old: serde_json::Value = serde_json::from_str(&s.to_json()).unwrap();
         old.as_object_mut().unwrap().remove("safety");
+        old.as_object_mut().unwrap().remove("library_shows");
         std::fs::write(dir.join(SETTINGS_FILE), old.to_string()).unwrap();
         assert_eq!(load(&dir).unwrap().safety, omoiiro_core::safety::SafetyLimits::default());
+        assert!(load(&dir).unwrap().library_shows.is_empty(), "files without the library still load");
         let mut bad = TerminalSettings::default();
         bad.safety.max_flash_hz = 100.0;
         assert!(!check_roles(&bad, &[], &[]).ok, "out-of-range safety values are refused");
