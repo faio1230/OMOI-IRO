@@ -42,6 +42,17 @@
 
 残差はMTC受信時刻と実時間直線とのずれ（C4と同じ測り方）。記録：`artifacts/m6/win-m6-soak-app.jsonl`（5分ごと）、`win-m6-soak-mon.jsonl`（122 MB、gitignore）。未確認：Macでの連続試験（放置不可）、実機LPXへの出力（今回は仮想）。ループが手順書の8〜16小節より短い4小節だった点は記録に残す。
 
+## Windows：演出拡張後の回帰と計測（2026-10-28 夜、実装担当）
+
+| 項目 | 結果 |
+| --- | --- |
+| Q01回帰（Schema 0.1.3、20種の演出入り release） | headless 23 / 23、GUI 6 / 6（G1.2 も無人で通過）。`apps/desktop/docs/q01-report-2.md` |
+| 全showの一括検査 `omoiiro-probe check-shows` | fixtures 14件 + examples 1件、すべて読込・正規形保存・再読込一致・3時点の描画に合格 |
+| 重いshowの10分soak（粒子2層、frames、text、recording駆動の熱・余熱・星座、meter glow、fake_bridge `--meter`、仮想LED） | 本体 43.4 → 44.3 MB（横ばい）、子孫込み 493.3 → 524.5 MB（+6.3%、516〜529で頭打ち）。合格。PadLogと履歴は増え続けない |
+| Live 12.4.7 の音量メーター（v3ブリッジ、実機） | 停止中 約10 Hz、再生中 24.6 Hz（間隔 p50 33.5 ms / p95 66.3 ms / 最大 82.8 ms）。曲中時刻のリスナーは同時に 60.0 Hz で影響なし。`[LED] Kick`（Core LibraryのEDM Kick）の値は平滑化済みで 0.75〜0.92。通し（Live → アプリ、fixture 59）：時刻源は終始locked、glowで64点灯、orb区間52点灯 |
+
+Liveのメーターは平滑化済みの値で、拍の立ち上がりは1〜2フレーム遅れる。キックに反応させるには `floor` で下を切って伸長する（0.1.3の後半でfloorの意味を「引いて伸長」に変更）。
+
 ## Mac：ビルド、Live追従、Launchpad X（2026-10-28）
 
 環境：MacBook Air（Apple Silicon、arm64）、macOS 14.8.2、Xcode、cargo 1.99.1、Node 22.23.4（`~/node` に公式tarballを展開、PATHのみ）、Live 12 Suite、User Library `~/Music/Ableton/User Library`。設計担当がWindowsからSSH（Tailscale）で操作。コードはtarで転送（`~/OMOI-IRO`）、フロントエンドのdistはWindowsで作って同梱。空き容量 9.4 GB → ビルド後 8.0 GB（テストはMacで回していない）。
