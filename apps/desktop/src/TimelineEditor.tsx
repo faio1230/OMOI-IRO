@@ -44,8 +44,8 @@ function RecordingLength({ clipId, recording, apply }: { clipId: string; recordi
   );
 }
 
-export default function TimelineEditor(props: { showPath: string; playheadUs: number | null; docKey: string }) {
-  const { showPath, playheadUs, docKey } = props;
+export default function TimelineEditor(props: { showPath: string; playheadUs: number | null; docKey: string; newRequested: boolean; onNewHandled: () => void }) {
+  const { showPath, playheadUs, docKey, newRequested, onNewHandled } = props;
   const [view, setView] = useState<EditorView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [snap, setSnap] = useState<Snap>("frame30");
@@ -128,6 +128,12 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
     });
   };
   const open = () => ask("open");
+  // "新規…" in the header: same flow as the toolbar button, once per request.
+  useEffect(() => {
+    if (!newRequested) return;
+    onNewHandled();
+    ask("new");
+  }, [newRequested]);
 
   const clips = useMemo(() => {
     const m = new Map<string, { clip: ClipDto; layer: LayerDto }>();

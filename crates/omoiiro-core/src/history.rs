@@ -221,8 +221,9 @@ pub fn paint_cycle(look: &CycleLook, input: &PadInput, alpha: f64, layer: &mut L
     }
     let (presses, now) = (&input.history, input.now_us);
     let mut count = input.state.counts;
-    for h in presses { count[cell(h)] -= 1; }
-    let base = input.state.total - presses.len() as u64;
+    // Saturating: a press in the history but not in the counts must not panic.
+    for h in presses { count[cell(h)] = count[cell(h)].saturating_sub(1); }
+    let base = input.state.total.saturating_sub(presses.len() as u64);
     for (n, h) in presses.iter().enumerate() {
         let k = if look.per_pad { count[cell(h)] } else { base + n as u64 };
         count[cell(h)] += 1;

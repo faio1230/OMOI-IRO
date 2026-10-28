@@ -163,6 +163,8 @@ function Diagnostics({ s }: { s: StatusDto }) {
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("perform");
+  // Header "新規…": handed to the timeline editor, which owns the unsaved-changes question.
+  const [newRequested, setNewRequested] = useState(false);
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [req, setReq] = useState<StartRequest>({ show_path: "" });
   const [status, setStatus] = useState<StatusDto | null>(null);
@@ -318,15 +320,20 @@ export default function App() {
           <button className={tab === "timeline" ? "on" : ""} onClick={() => setTab("timeline")}>素材・タイムライン</button>
           <button className={tab === "connections" ? "on" : ""} onClick={() => setTab("connections")}>接続設定</button>
         </nav>
-        {status?.document && (
-          <span className="doc">
+        <span className="doc">
+          {status?.document && (
             <span className={status.document.dirty ? "badge warn" : "badge"} title={status.document.path}>
               {status.document.dirty ? "● 未保存" : "保存済み"} · {status.document.path ? status.document.path.split(/[\\/]/).pop() : "新規ショー"}
             </span>
-            <button className="small" disabled={busy} onClick={saveDoc} title="Ctrl+S">保存</button>
-            <button className="small" disabled={busy} onClick={saveDocAs} title="Ctrl+Shift+S">名前を付けて保存…</button>
-          </span>
-        )}
+          )}
+          <button className="small" disabled={busy} onClick={() => { setTab("timeline"); setNewRequested(true); }} title="素材・タイムラインで新しいショーを作る">新規…</button>
+          {status?.document && (
+            <>
+              <button className="small" disabled={busy} onClick={saveDoc} title="Ctrl+S">保存</button>
+              <button className="small" disabled={busy} onClick={saveDocAs} title="Ctrl+Shift+S">名前を付けて保存…</button>
+            </>
+          )}
+        </span>
         <span className={running ? "pill on" : "pill"}>{running ? "RUNTIME 動作中" : "RUNTIME 停止"}</span>
       </header>
       {status?.close_requested && (
@@ -360,7 +367,7 @@ export default function App() {
       ) : tab === "timeline" ? (
         <div className="columns editor-columns">
           <div className="col">
-            <TimelineEditor showPath={req.show_path} playheadUs={running ? s?.show_time_us ?? null : null} docKey={`${s?.document?.path ?? ""}|${s?.document?.dirty ?? ""}`} />
+            <TimelineEditor showPath={req.show_path} playheadUs={running ? s?.show_time_us ?? null : null} docKey={`${s?.document?.path ?? ""}|${s?.document?.dirty ?? ""}`} newRequested={newRequested} onNewHandled={() => setNewRequested(false)} />
           </div>
           <div className="col">
             <LedPreview showPath={req.show_path} running={running} onError={setPreviewError} />
