@@ -1,0 +1,133 @@
+{
+  "$schema": "../schemas/show.schema.json",
+  "schema_version": "0.1.0",
+  "id": "demo-show",
+  "name": "共通タイムコード デモ",
+  "seed": 42,
+  "sync": {
+    "timecode": {
+      "source": "mtc",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "ableton_link",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 0.6
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "base-blue",
+      "name": "青のベース",
+      "effect": {
+        "type": "builtin.solid",
+        "version": 1,
+        "params": {
+          "color": "#163B75"
+        }
+      }
+    },
+    {
+      "id": "sweep-cyan",
+      "name": "シアンの横移動",
+      "effect": {
+        "type": "builtin.chase",
+        "version": 1,
+        "params": {
+          "color": "#00DCC8",
+          "period_us": 4000000,
+          "width": 2,
+          "axis": "x"
+        }
+      }
+    },
+    {
+      "id": "beat-white",
+      "name": "四分音符パルス",
+      "effect": {
+        "type": "builtin.pulse",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF",
+          "beats_per_cycle": 1,
+          "depth": 1,
+          "waveform": "sine"
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "base",
+      "name": "背景",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "intro-base",
+            "preset_id": "base-blue",
+            "start_us": 0,
+            "duration_us": 60000000,
+            "fade_in_us": 1000000,
+            "fade_out_us": 2000000
+          }
+        ]
+      }
+    },
+    {
+      "id": "motion",
+      "name": "動き",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 0.8,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "intro-sweep",
+            "preset_id": "sweep-cyan",
+            "start_us": 8000000,
+            "duration_us": 24000000,
+            "fade_in_us": 1000000,
+            "fade_out_us": 1000000
+          }
+        ]
+      }
+    },
+    {
+      "id": "beat",
+      "name": "拍のアクセント",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 0.25,
+      "blend": "add",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "beat-white"
+      }
+    }
+  ]
+}

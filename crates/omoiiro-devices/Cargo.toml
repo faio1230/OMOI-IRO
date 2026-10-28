@@ -1,0 +1,9 @@
+[package]
+name = "omoiiro-devices"
+description = "OMOI-IRO devices: Launchpad X codec (SysEx, mode, RGB, pad input), device adapters"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+omoiiro-core.workspace = true

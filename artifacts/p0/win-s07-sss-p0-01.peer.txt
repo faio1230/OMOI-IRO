@@ -1,0 +1,1 @@
+error: this binary was built without the `link` feature; rebuild with `cargo build --features link` (needs cmake and libclang, see README)

@@ -1,0 +1,62 @@
+MTC input   : loopMIDI Port (shared with Clock, recorded as `sync`)
+Clock input : loopMIDI Port (same port as MTC)
+record      : ..\..\artifacts\p0\win-loopback-02.jsonl
+observing (Ctrl+C to stop)...
+  t=  1.068923s mtc   full_frame 00:59:58:00 (30)
+[    1.070s] | MTC      30 acquiring raw=00:59:58:00 pos=00:59:58.000     age=-- qf=0 seq=0 drop=0 disc=0 ff=1 | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | q_drop=0
+  t=  1.068989s clock start
+  t=  1.243799s mtc   locked 00:59:58:02
+[    2.069s] | MTC      30 locked    raw=00:59:58:26 pos=00:59:58.949 adv age=0ms qf=115 seq=14 drop=0 disc=0 ff=1 | CLK 127.97bpm playing  phase=0.04 beats=2.04 pos-ok age=12ms ticks=49 | q_drop=0
+[    3.069s] | MTC      30 locked    raw=00:59:59:26 pos=00:59:59.950 adv age=0ms qf=235 seq=29 drop=0 disc=0 ff=1 | CLK 128.02bpm playing  phase=0.17 beats=4.17 pos-ok age=16ms ticks=100 | q_drop=0
+[    4.068s] | MTC      30 locked    raw=01:00:00:26 pos=01:00:00.949 adv age=7ms qf=354 seq=44 drop=0 disc=0 ff=1 | CLK 127.92bpm playing  phase=0.33 beats=6.33 pos-ok age=0ms ticks=152 | q_drop=0
+  t=  4.511319s mtc   discontinuity 01:00:00:28 -> 01:00:01:10 (delta +10 frames)
+  t=  4.577004s mtc   locked 01:00:01:12
+[    5.069s] | MTC      30 locked    raw=01:00:01:26 pos=01:00:01.950 adv age=0ms qf=439 seq=54 drop=0 disc=1 ff=1 | CLK 127.95bpm playing  phase=0.46 beats=8.46 pos-ok age=4ms ticks=203 | q_drop=0
+[    6.069s] | MTC      30 locked    raw=01:00:02:26 pos=01:00:02.949 adv age=0ms qf=559 seq=69 drop=0 disc=1 ff=1 | CLK 128.04bpm playing  phase=0.58 beats=10.58 pos-ok age=8ms ticks=254 | q_drop=0
+[    7.069s] | MTC      30 locked    raw=01:00:03:26 pos=01:00:03.949 adv age=0ms qf=679 seq=84 drop=0 disc=1 ff=1 | CLK 127.85bpm playing  phase=0.71 beats=12.71 pos-ok age=12ms ticks=305 | q_drop=0
+  t=  7.110719s clock stop
+[    8.076s] | MTC      30 lost      raw=01:00:03:28 pos=01:00:04.241     age=965ms qf=684 seq=85 drop=0 disc=1 ff=1 | CLK 127.87bpm stopped  phase=0.79 beats=12.79 pos-ok age=965ms ticks=307 | q_drop=0
+stopped at t=9.004s; queue dropped=0; records=1002
+{
+  "clock": {
+    "age_us": 1893364,
+    "beats": 12.791666666666666,
+    "bpm": 127.87451247842118,
+    "position_valid": true,
+    "quarter_phase": 0.7916666666666666,
+    "stats": {
+      "continues": 0,
+      "song_positions": 0,
+      "starts": 1,
+      "stops": 1,
+      "ticks": 307,
+      "ticks_while_stopped": 0
+    },
+    "transport": "stopped"
+  },
+  "mtc": {
+    "advancing": false,
+    "age_us": 1893447,
+    "blackout": true,
+    "fault": null,
+    "health": "lost",
+    "label": "01:00:03:28",
+    "position_hms": "01:00:04.241",
+    "position_us": 3604241670,
+    "rate": "30",
+    "stats": {
+      "discontinuities": 1,
+      "dropped": 0,
+      "full_frames": 1,
+      "invalid_labels": 0,
+      "locks": 2,
+      "quarter_frames": 684,
+      "rate_changes": 0,
+      "reverse_sequences": 0,
+      "sequences": 85,
+      "stray_pieces": 4
+    }
+  },
+  "queue_dropped": 0,
+  "records_before_end": 1001
+}

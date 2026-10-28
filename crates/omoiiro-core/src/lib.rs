@@ -1,0 +1,25 @@
+//! OMOI-IRO core (docs/03-modules.md, docs/04-show-data.md).
+//!
+//! * `model`: the show data model (serde DTO, Schema field order, unknown
+//!   fields rejected).
+//! * `time`: `ShowTimeUs` (song start = 0), frame rates as rationals,
+//!   timecode labels with drop-frame rules, `BeatState`.
+//! * `surface`: bottom-left-origin LED IDs, colors, frames.
+//! * `timeline`: active clip search, local time, fades.
+//! * `render`: effects (solid, chase, pulse), compositing, the headless
+//!   `Renderer`.
+//! * `validation`: semantic validation with JSON Pointers.
+//! * `safety`: brightness ceiling, flashing-rate analysis and warnings.
+//! * `edit`: edit commands (validated), snapping, Undo / Redo over snapshots.
+//!
+//! No midir, Tauri, OS clock, files or threads here. Rendering does no JSON
+//! parsing or allocation and is deterministic.
+
+pub mod edit;
+pub mod model;
+pub mod render;
+pub mod safety;
+pub mod surface;
+pub mod time;
+pub mod timeline;
+pub mod validation;

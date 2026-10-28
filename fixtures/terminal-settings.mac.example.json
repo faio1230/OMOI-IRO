@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "backend": "midir",
+  "bridge_bind": "127.0.0.1:9007",
+  "ports": {
+    "control_in": null,
+    "control_out": "IACドライバ OMOI-IRO Control",
+    "clock_in": "IACドライバ OMOI-IRO Clock",
+    "led_out": null,
+    "timecode_out": null
+  },
+  "link": false,
+  "recent_shows": [],
+  "safety": {
+    "max_brightness": 1.0,
+    "max_flash_hz": 3.0,
+    "limit_flash": false
+  },
+  "devices": {
+    "allow_launchpad_led": true
+  }
+}

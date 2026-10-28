@@ -1,0 +1,20 @@
+# build outputs
+/target/
+/target-alt/
+**/node_modules/
+/apps/desktop/dist/
+/dist-win/
+/dist-mac/
+*.log
+
+# large, still-growing measurement streams (summaries live in docs/validation)
+/artifacts/m6/win-m6-soak-mon.jsonl
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# screenshots and photos stay local (they can show local paths and device names)
+/apps/desktop/screenshots/
+/artifacts/**/*.png
+/artifacts/**/*.jpg

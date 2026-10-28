@@ -1,0 +1,97 @@
+MTC input   : DJSC Timecode
+Clock input : DJSC Clock
+record      : <repo>\artifacts\p0\win-s03-c1-arr.jsonl
+observing (Ctrl+C to stop)...
+[    1.089s] | MTC      -- unlocked  raw=--:--:--:-- pos=--     age=-- qf=0 seq=0 drop=0 disc=0 ff=0 | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | q_drop=0
+[    2.079s] | MTC      -- unlocked  raw=--:--:--:-- pos=--     age=-- qf=0 seq=0 drop=0 disc=0 ff=0 | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | q_drop=0
+  t=  2.274012s clock song_position 0 (16ths)
+  t=  2.274029s clock start
+  t=  2.324239s mtc   full_frame 01:00:00:00 (30)
+  t=  2.930428s mtc   locked 01:00:00:18
+[    3.085s] | MTC      30 locked    raw=01:00:00:22 pos=01:00:00.809 adv age=0ms qf=34 seq=4 drop=0 disc=0 ff=1 | CLK 119.96bpm playing  phase=0.62 beats=1.62 pos-ok age=10ms ticks=39 | q_drop=0
+[    4.082s] | MTC      30 locked    raw=01:00:01:22 pos=01:00:01.805 adv age=0ms qf=154 seq=19 drop=0 disc=0 ff=1 | CLK 119.98bpm playing  phase=0.62 beats=3.62 pos-ok age=4ms ticks=87 | q_drop=0
+[    5.077s] | MTC      30 locked    raw=01:00:02:22 pos=01:00:02.801 adv age=0ms qf=273 seq=34 drop=0 disc=0 ff=1 | CLK 119.49bpm playing  phase=0.58 beats=5.58 pos-ok age=22ms ticks=134 | q_drop=0
+[    6.080s] | MTC      30 locked    raw=01:00:03:22 pos=01:00:03.811 adv age=0ms qf=395 seq=49 drop=0 disc=0 ff=1 | CLK 119.78bpm playing  phase=0.62 beats=7.62 pos-ok age=6ms ticks=183 | q_drop=0
+[    7.077s] | MTC      30 locked    raw=01:00:04:22 pos=01:00:04.801 adv age=0ms qf=513 seq=64 drop=0 disc=0 ff=1 | CLK 120.05bpm playing  phase=0.62 beats=9.62 pos-ok age=2ms ticks=231 | q_drop=0
+[    8.077s] | MTC      30 locked    raw=01:00:05:22 pos=01:00:05.801 adv age=0ms qf=633 seq=79 drop=0 disc=0 ff=1 | CLK 118.79bpm playing  phase=0.58 beats=11.58 pos-ok age=24ms ticks=278 | q_drop=0
+[    9.079s] | MTC      30 locked    raw=01:00:06:22 pos=01:00:06.802 adv age=1ms qf=753 seq=94 drop=0 disc=0 ff=1 | CLK 119.56bpm playing  phase=0.62 beats=13.62 pos-ok age=0ms ticks=327 | q_drop=0
+[   10.081s] | MTC      30 locked    raw=01:00:07:22 pos=01:00:07.813 adv age=0ms qf=875 seq=109 drop=0 disc=0 ff=1 | CLK 119.76bpm playing  phase=0.62 beats=15.62 pos-ok age=7ms ticks=375 | q_drop=0
+[   11.078s] | MTC      30 locked    raw=01:00:08:22 pos=01:00:08.801 adv age=0ms qf=993 seq=124 drop=0 disc=0 ff=1 | CLK 119.97bpm playing  phase=0.62 beats=17.62 pos-ok age=3ms ticks=423 | q_drop=0
+[   12.078s] | MTC      30 locked    raw=01:00:09:22 pos=01:00:09.801 adv age=2ms qf=1113 seq=139 drop=0 disc=0 ff=1 | CLK 119.78bpm playing  phase=0.62 beats=19.62 pos-ok age=0ms ticks=471 | q_drop=0
+  t= 12.336120s clock stop
+[   13.097s] | MTC      30 lost      raw=01:00:10:02 pos=01:00:10.369     age=702ms qf=1152 seq=144 drop=0 disc=0 ff=1 | CLK 120.11bpm stopped  phase=0.12 beats=20.12 pos-ok age=761ms ticks=483 | q_drop=0
+[   14.087s] | MTC      30 lost      raw=01:00:10:02 pos=01:00:10.369     age=1691ms qf=1152 seq=144 drop=0 disc=0 ff=1 | CLK 120.11bpm stopped  phase=0.12 beats=20.12 pos-ok age=1750ms ticks=483 | q_drop=0
+[   15.081s] | MTC      30 lost      raw=01:00:10:02 pos=01:00:10.369     age=2685ms qf=1152 seq=144 drop=0 disc=0 ff=1 | CLK 120.11bpm stopped  phase=0.12 beats=20.12 pos-ok age=2744ms ticks=483 | q_drop=0
+[   16.093s] | MTC      30 lost      raw=01:00:10:02 pos=01:00:10.369     age=3698ms qf=1152 seq=144 drop=0 disc=0 ff=1 | CLK 120.11bpm stopped  phase=0.12 beats=20.12 pos-ok age=3757ms ticks=483 | q_drop=0
+[   17.083s] | MTC      30 lost      raw=01:00:10:02 pos=01:00:10.369     age=4687ms qf=1152 seq=144 drop=0 disc=0 ff=1 | CLK 120.11bpm stopped  phase=0.12 beats=20.12 pos-ok age=4746ms ticks=483 | q_drop=0
+  t= 17.394007s clock song_position 0 (16ths)
+  t= 17.394055s clock start
+  t= 17.443222s mtc   full_frame 01:00:00:00 (30)
+  t= 18.045833s mtc   locked 01:00:00:18
+[   18.084s] | MTC      30 locked    raw=01:00:00:18 pos=01:00:00.689 adv age=0ms qf=1172 seq=146 drop=0 disc=0 ff=2 | CLK 119.63bpm playing  phase=0.38 beats=1.38 pos-ok age=15ms ticks=516 | q_drop=0
+[   19.084s] | MTC      30 locked    raw=01:00:01:18 pos=01:00:01.697 adv age=0ms qf=1293 seq=161 drop=0 disc=0 ff=2 | CLK 120.99bpm playing  phase=0.38 beats=3.38 pos-ok age=19ms ticks=564 | q_drop=0
+[   20.084s] | MTC      30 locked    raw=01:00:02:18 pos=01:00:02.697 adv age=0ms qf=1413 seq=176 drop=0 disc=0 ff=2 | CLK 119.90bpm playing  phase=0.38 beats=5.38 pos-ok age=18ms ticks=612 | q_drop=0
+[   21.084s] | MTC      30 locked    raw=01:00:03:18 pos=01:00:03.697 adv age=0ms qf=1533 seq=191 drop=0 disc=0 ff=2 | CLK 119.57bpm playing  phase=0.38 beats=7.38 pos-ok age=17ms ticks=660 | q_drop=0
+[   22.084s] | MTC      30 locked    raw=01:00:04:18 pos=01:00:04.697 adv age=0ms qf=1653 seq=206 drop=0 disc=0 ff=2 | CLK 119.73bpm playing  phase=0.38 beats=9.38 pos-ok age=15ms ticks=708 | q_drop=0
+[   23.084s] | MTC      30 locked    raw=01:00:05:18 pos=01:00:05.694 adv age=0ms qf=1773 seq=221 drop=0 disc=0 ff=2 | CLK 119.67bpm playing  phase=0.38 beats=11.38 pos-ok age=19ms ticks=756 | q_drop=0
+[   24.083s] | MTC      30 locked    raw=01:00:06:18 pos=01:00:06.697 adv age=6ms qf=1892 seq=236 drop=0 disc=0 ff=2 | CLK 121.38bpm playing  phase=0.42 beats=13.42 pos-ok age=0ms ticks=805 | q_drop=0
+[   25.084s] | MTC      30 locked    raw=01:00:07:18 pos=01:00:07.699 adv age=8ms qf=2012 seq=251 drop=0 disc=0 ff=2 | CLK 119.80bpm playing  phase=0.42 beats=15.42 pos-ok age=0ms ticks=853 | q_drop=0
+  t= 25.454066s clock stop
+[   26.097s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=658ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=638ms ticks=871 | q_drop=0
+[   27.090s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=1651ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=1631ms ticks=871 | q_drop=0
+[   28.081s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=2642ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=2622ms ticks=871 | q_drop=0
+[   29.097s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=3658ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=3638ms ticks=871 | q_drop=0
+[   30.091s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=4653ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=4633ms ticks=871 | q_drop=0
+[   31.092s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=5653ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=5633ms ticks=871 | q_drop=0
+[   32.087s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=6648ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=6628ms ticks=871 | q_drop=0
+[   33.079s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=7640ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=7620ms ticks=871 | q_drop=0
+[   34.079s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=8640ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=8620ms ticks=871 | q_drop=0
+[   35.096s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=9657ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=9637ms ticks=871 | q_drop=0
+[   36.093s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=10654ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=10634ms ticks=871 | q_drop=0
+[   37.091s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=11653ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=11633ms ticks=871 | q_drop=0
+[   38.085s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=12647ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=12627ms ticks=871 | q_drop=0
+[   39.097s] | MTC      30 lost      raw=01:00:08:00 pos=01:00:08.302     age=13658ms qf=2056 seq=257 drop=0 disc=0 ff=2 | CLK 119.86bpm stopped  phase=0.12 beats=16.12 pos-ok age=13638ms ticks=871 | q_drop=0
+stopped at t=40.009s; queue dropped=0; records=2947
+{
+  "clock": {
+    "age_us": 14550297,
+    "beats": 16.125,
+    "bpm": 119.86048239848816,
+    "position_valid": true,
+    "quarter_phase": 0.125,
+    "stats": {
+      "continues": 0,
+      "song_positions": 2,
+      "starts": 2,
+      "stops": 2,
+      "ticks": 871,
+      "ticks_while_stopped": 1
+    },
+    "transport": "stopped"
+  },
+  "mtc": {
+    "advancing": false,
+    "age_us": 14570238,
+    "blackout": true,
+    "fault": null,
+    "health": "lost",
+    "label": "01:00:08:00",
+    "position_hms": "01:00:08.302",
+    "position_us": 3608302638,
+    "rate": "30",
+    "stats": {
+      "discontinuities": 0,
+      "dropped": 0,
+      "full_frames": 2,
+      "invalid_labels": 0,
+      "locks": 2,
+      "quarter_frames": 2056,
+      "rate_changes": 0,
+      "reverse_sequences": 0,
+      "sequences": 257,
+      "stray_pieces": 0
+    }
+  },
+  "queue_dropped": 0,
+  "records_before_end": 2946
+}

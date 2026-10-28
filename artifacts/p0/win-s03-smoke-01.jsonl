@@ -1,0 +1,1302 @@
+{"run_id":"win-s03-smoke-01","seq":0,"t_mono_us":79374,"source":"meta","kind":"start","payload":{"backend":"midir/WinMM","clock_in":"DJSC Clock","mtc_in":"DJSC Timecode","mtc_params":{"blackout_us":1000000,"holdover_us":250000,"piece_timeout_us":100000,"stale_us":50000},"queue_capacity":8192,"unix_s":1793124435}}
+{"run_id":"win-s03-smoke-01","seq":1,"t_mono_us":2234833,"source":"clock","kind":"midi","payload":{"backend_ts_us":2155000,"bytes":"F2 00 00"}}
+{"run_id":"win-s03-smoke-01","seq":2,"t_mono_us":2234833,"source":"clock","kind":"event","payload":{"event":"song_position 0 (16ths)"}}
+{"run_id":"win-s03-smoke-01","seq":3,"t_mono_us":2234849,"source":"clock","kind":"midi","payload":{"backend_ts_us":2155000,"bytes":"FA"}}
+{"run_id":"win-s03-smoke-01","seq":4,"t_mono_us":2234849,"source":"clock","kind":"event","payload":{"event":"start"}}
+{"run_id":"win-s03-smoke-01","seq":5,"t_mono_us":2243952,"source":"clock","kind":"midi","payload":{"backend_ts_us":2165000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":6,"t_mono_us":2266176,"source":"clock","kind":"midi","payload":{"backend_ts_us":2187000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":7,"t_mono_us":2279003,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2206000,"bytes":"F0 7F 7F 01 01 60 00 00 00 F7"}}
+{"run_id":"win-s03-smoke-01","seq":8,"t_mono_us":2279003,"source":"mtc","kind":"event","payload":{"event":"full_frame 00:00:00:00 (30)"}}
+{"run_id":"win-s03-smoke-01","seq":9,"t_mono_us":2284482,"source":"clock","kind":"midi","payload":{"backend_ts_us":2205000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":10,"t_mono_us":2309314,"source":"clock","kind":"midi","payload":{"backend_ts_us":2230000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":11,"t_mono_us":2327117,"source":"clock","kind":"midi","payload":{"backend_ts_us":2248000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":12,"t_mono_us":2350002,"source":"clock","kind":"midi","payload":{"backend_ts_us":2271000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":13,"t_mono_us":2366802,"source":"clock","kind":"midi","payload":{"backend_ts_us":2287000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":14,"t_mono_us":2395354,"source":"clock","kind":"midi","payload":{"backend_ts_us":2316000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":15,"t_mono_us":2408230,"source":"clock","kind":"midi","payload":{"backend_ts_us":2329000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":16,"t_mono_us":2435756,"source":"clock","kind":"midi","payload":{"backend_ts_us":2356000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":17,"t_mono_us":2448782,"source":"clock","kind":"midi","payload":{"backend_ts_us":2369000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":18,"t_mono_us":2476600,"source":"clock","kind":"midi","payload":{"backend_ts_us":2397000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":19,"t_mono_us":2494424,"source":"clock","kind":"midi","payload":{"backend_ts_us":2415000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":20,"t_mono_us":2518080,"source":"clock","kind":"midi","payload":{"backend_ts_us":2439000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":21,"t_mono_us":2536529,"source":"clock","kind":"midi","payload":{"backend_ts_us":2457000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":22,"t_mono_us":2558272,"source":"clock","kind":"midi","payload":{"backend_ts_us":2479000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":23,"t_mono_us":2575703,"source":"clock","kind":"midi","payload":{"backend_ts_us":2496000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":24,"t_mono_us":2594754,"source":"clock","kind":"midi","payload":{"backend_ts_us":2515000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":25,"t_mono_us":2618690,"source":"clock","kind":"midi","payload":{"backend_ts_us":2539000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":26,"t_mono_us":2635641,"source":"clock","kind":"midi","payload":{"backend_ts_us":2556000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":27,"t_mono_us":2659000,"source":"clock","kind":"midi","payload":{"backend_ts_us":2580000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":28,"t_mono_us":2685918,"source":"clock","kind":"midi","payload":{"backend_ts_us":2606000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":29,"t_mono_us":2699611,"source":"clock","kind":"midi","payload":{"backend_ts_us":2620000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":30,"t_mono_us":2726190,"source":"clock","kind":"midi","payload":{"backend_ts_us":2647000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":31,"t_mono_us":2744986,"source":"clock","kind":"midi","payload":{"backend_ts_us":2666000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":32,"t_mono_us":2767845,"source":"clock","kind":"midi","payload":{"backend_ts_us":2688000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":33,"t_mono_us":2769511,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2696000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":34,"t_mono_us":2775980,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2703000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":35,"t_mono_us":2783700,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2710000,"bytes":"F1 20"}}
+{"run_id":"win-s03-smoke-01","seq":36,"t_mono_us":2785122,"source":"clock","kind":"midi","payload":{"backend_ts_us":2706000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":37,"t_mono_us":2792468,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2719000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":38,"t_mono_us":2799405,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2726000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":39,"t_mono_us":2807128,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2734000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":40,"t_mono_us":2808650,"source":"clock","kind":"midi","payload":{"backend_ts_us":2729000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":41,"t_mono_us":2814946,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2742000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":42,"t_mono_us":2821883,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2749000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":43,"t_mono_us":2826427,"source":"clock","kind":"midi","payload":{"backend_ts_us":2747000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":44,"t_mono_us":2836607,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2763000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":45,"t_mono_us":2844934,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2772000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":46,"t_mono_us":2845011,"source":"clock","kind":"midi","payload":{"backend_ts_us":2765000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":47,"t_mono_us":2851844,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2779000,"bytes":"F1 20"}}
+{"run_id":"win-s03-smoke-01","seq":48,"t_mono_us":2858968,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2786000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":49,"t_mono_us":2867617,"source":"clock","kind":"midi","payload":{"backend_ts_us":2788000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":50,"t_mono_us":2867634,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2794000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":51,"t_mono_us":2874094,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2801000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":52,"t_mono_us":2881422,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2808000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":53,"t_mono_us":2884962,"source":"clock","kind":"midi","payload":{"backend_ts_us":2806000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":54,"t_mono_us":2890559,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2817000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":55,"t_mono_us":2890559,"source":"mtc","kind":"event","payload":{"event":"locked 00:00:00:18"}}
+{"run_id":"win-s03-smoke-01","seq":56,"t_mono_us":2901473,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2828000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":57,"t_mono_us":2908587,"source":"clock","kind":"midi","payload":{"backend_ts_us":2829000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":58,"t_mono_us":2908622,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2835000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":59,"t_mono_us":2916769,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2844000,"bytes":"F1 20"}}
+{"run_id":"win-s03-smoke-01","seq":60,"t_mono_us":2924041,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2851000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":61,"t_mono_us":2931614,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2858000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":62,"t_mono_us":2937188,"source":"clock","kind":"midi","payload":{"backend_ts_us":2858000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":63,"t_mono_us":2939754,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2866000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":64,"t_mono_us":2946938,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2874000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":65,"t_mono_us":2954134,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2881000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":66,"t_mono_us":2955088,"source":"clock","kind":"midi","payload":{"backend_ts_us":2876000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":67,"t_mono_us":2969049,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2896000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":68,"t_mono_us":2976549,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2903000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":69,"t_mono_us":2977489,"source":"clock","kind":"midi","payload":{"backend_ts_us":2898000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":70,"t_mono_us":2984770,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2911000,"bytes":"F1 20"}}
+{"run_id":"win-s03-smoke-01","seq":71,"t_mono_us":2992166,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2919000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":72,"t_mono_us":2994374,"source":"clock","kind":"midi","payload":{"backend_ts_us":2915000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":73,"t_mono_us":2999047,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2926000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":74,"t_mono_us":3006646,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2933000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":75,"t_mono_us":3014861,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2942000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":76,"t_mono_us":3019427,"source":"clock","kind":"midi","payload":{"backend_ts_us":2940000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":77,"t_mono_us":3021496,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2948000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":78,"t_mono_us":3036359,"source":"clock","kind":"midi","payload":{"backend_ts_us":2957000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":79,"t_mono_us":3037436,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2964000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":80,"t_mono_us":3044533,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2971000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":81,"t_mono_us":3051678,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2978000,"bytes":"F1 20"}}
+{"run_id":"win-s03-smoke-01","seq":82,"t_mono_us":3060392,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2987000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":83,"t_mono_us":3060398,"source":"clock","kind":"midi","payload":{"backend_ts_us":2981000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":84,"t_mono_us":3066576,"source":"mtc","kind":"midi","payload":{"backend_ts_us":2993000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":85,"t_mono_us":3074374,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3001000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":86,"t_mono_us":3078367,"source":"clock","kind":"midi","payload":{"backend_ts_us":2999000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":87,"t_mono_us":3083044,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3010000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":88,"t_mono_us":3089624,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3016000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":89,"t_mono_us":3095175,"source":"clock","kind":"midi","payload":{"backend_ts_us":3016000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":90,"t_mono_us":3101910,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3029000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":91,"t_mono_us":3108946,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3036000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":92,"t_mono_us":3116579,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3043000,"bytes":"F1 20"}}
+{"run_id":"win-s03-smoke-01","seq":93,"t_mono_us":3117555,"source":"clock","kind":"midi","payload":{"backend_ts_us":3038000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":94,"t_mono_us":3124853,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3052000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":95,"t_mono_us":3130475,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3057000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":96,"t_mono_us":3135985,"source":"clock","kind":"midi","payload":{"backend_ts_us":3057000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":97,"t_mono_us":3138562,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3065000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":98,"t_mono_us":3146767,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3074000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":99,"t_mono_us":3153970,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3081000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":100,"t_mono_us":3159507,"source":"clock","kind":"midi","payload":{"backend_ts_us":3080000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":101,"t_mono_us":3169323,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3096000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":102,"t_mono_us":3176378,"source":"clock","kind":"midi","payload":{"backend_ts_us":3097000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":103,"t_mono_us":3176391,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3103000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":104,"t_mono_us":3183614,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3110000,"bytes":"F1 20"}}
+{"run_id":"win-s03-smoke-01","seq":105,"t_mono_us":3191715,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3118000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":106,"t_mono_us":3198815,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3126000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":107,"t_mono_us":3204417,"source":"clock","kind":"midi","payload":{"backend_ts_us":3125000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":108,"t_mono_us":3206120,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3133000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":109,"t_mono_us":3214388,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3141000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":110,"t_mono_us":3221780,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3149000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":111,"t_mono_us":3227848,"source":"clock","kind":"midi","payload":{"backend_ts_us":3148000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":112,"t_mono_us":3236684,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3163000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":113,"t_mono_us":3245429,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3172000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":114,"t_mono_us":3245454,"source":"clock","kind":"midi","payload":{"backend_ts_us":3166000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":115,"t_mono_us":3252499,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3179000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":116,"t_mono_us":3260192,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3187000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":117,"t_mono_us":3267315,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3194000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":118,"t_mono_us":3268760,"source":"clock","kind":"midi","payload":{"backend_ts_us":3189000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":119,"t_mono_us":3274414,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3201000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":120,"t_mono_us":3281551,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3208000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":121,"t_mono_us":3287117,"source":"clock","kind":"midi","payload":{"backend_ts_us":3208000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":122,"t_mono_us":3290163,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3217000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":123,"t_mono_us":3305077,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3232000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":124,"t_mono_us":3305095,"source":"clock","kind":"midi","payload":{"backend_ts_us":3226000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":125,"t_mono_us":3312164,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3239000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":126,"t_mono_us":3320945,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3248000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":127,"t_mono_us":3328525,"source":"clock","kind":"midi","payload":{"backend_ts_us":3249000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":128,"t_mono_us":3328548,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3255000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":129,"t_mono_us":3334663,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3261000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":130,"t_mono_us":3342382,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3269000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":131,"t_mono_us":3345372,"source":"clock","kind":"midi","payload":{"backend_ts_us":3266000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":132,"t_mono_us":3349431,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3276000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":133,"t_mono_us":3357642,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3284000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":134,"t_mono_us":3368912,"source":"clock","kind":"midi","payload":{"backend_ts_us":3289000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":135,"t_mono_us":3370518,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3297000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":136,"t_mono_us":3375953,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3303000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":137,"t_mono_us":3384634,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3311000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":138,"t_mono_us":3387117,"source":"clock","kind":"midi","payload":{"backend_ts_us":3308000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":139,"t_mono_us":3392785,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3320000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":140,"t_mono_us":3399910,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3327000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":141,"t_mono_us":3407087,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3334000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":142,"t_mono_us":3409606,"source":"clock","kind":"midi","payload":{"backend_ts_us":3330000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":143,"t_mono_us":3413651,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3340000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":144,"t_mono_us":3421300,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3348000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":145,"t_mono_us":3428431,"source":"clock","kind":"midi","payload":{"backend_ts_us":3349000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":146,"t_mono_us":3437112,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3364000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":147,"t_mono_us":3445180,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3372000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":148,"t_mono_us":3451775,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3379000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":149,"t_mono_us":3455275,"source":"clock","kind":"midi","payload":{"backend_ts_us":3376000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":150,"t_mono_us":3459400,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3386000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":151,"t_mono_us":3466482,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3393000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":152,"t_mono_us":3474719,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3401000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":153,"t_mono_us":3479281,"source":"clock","kind":"midi","payload":{"backend_ts_us":3400000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":154,"t_mono_us":3481881,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3409000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":155,"t_mono_us":3490115,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3417000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":156,"t_mono_us":3495573,"source":"clock","kind":"midi","payload":{"backend_ts_us":3416000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":157,"t_mono_us":3504888,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3432000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":158,"t_mono_us":3512595,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3439000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":159,"t_mono_us":3518555,"source":"clock","kind":"midi","payload":{"backend_ts_us":3439000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":160,"t_mono_us":3520100,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3447000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":161,"t_mono_us":3528325,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3455000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":162,"t_mono_us":3534553,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3461000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":163,"t_mono_us":3538503,"source":"clock","kind":"midi","payload":{"backend_ts_us":3459000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":164,"t_mono_us":3542638,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3469000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":165,"t_mono_us":3550255,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3477000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":166,"t_mono_us":3553409,"source":"clock","kind":"midi","payload":{"backend_ts_us":3474000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":167,"t_mono_us":3557430,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3484000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":168,"t_mono_us":3569184,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3496000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":169,"t_mono_us":3576211,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3503000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":170,"t_mono_us":3578179,"source":"clock","kind":"midi","payload":{"backend_ts_us":3499000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":171,"t_mono_us":3584241,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3511000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":172,"t_mono_us":3591329,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3518000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":173,"t_mono_us":3595878,"source":"clock","kind":"midi","payload":{"backend_ts_us":3516000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":174,"t_mono_us":3598397,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3525000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":175,"t_mono_us":3607034,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3534000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":176,"t_mono_us":3614719,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3541000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":177,"t_mono_us":3618761,"source":"clock","kind":"midi","payload":{"backend_ts_us":3539000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":178,"t_mono_us":3621789,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3549000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":179,"t_mono_us":3636610,"source":"clock","kind":"midi","payload":{"backend_ts_us":3557000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":180,"t_mono_us":3636624,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3563000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":181,"t_mono_us":3644718,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3571000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":182,"t_mono_us":3652787,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3580000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":183,"t_mono_us":3659911,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3587000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":184,"t_mono_us":3663498,"source":"clock","kind":"midi","payload":{"backend_ts_us":3584000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":185,"t_mono_us":3666501,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3593000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":186,"t_mono_us":3674183,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3601000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":187,"t_mono_us":3677166,"source":"clock","kind":"midi","payload":{"backend_ts_us":3598000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":188,"t_mono_us":3681722,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3608000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":189,"t_mono_us":3689305,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3616000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":190,"t_mono_us":3704637,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3631000,"bytes":"F1 0E"}}
+{"run_id":"win-s03-smoke-01","seq":191,"t_mono_us":3706572,"source":"clock","kind":"midi","payload":{"backend_ts_us":3627000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":192,"t_mono_us":3713199,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3640000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":193,"t_mono_us":3719016,"source":"clock","kind":"midi","payload":{"backend_ts_us":3639000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":194,"t_mono_us":3720244,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3647000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":195,"t_mono_us":3727852,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3655000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":196,"t_mono_us":3734543,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3661000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":197,"t_mono_us":3742628,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3669000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":198,"t_mono_us":3747597,"source":"clock","kind":"midi","payload":{"backend_ts_us":3668000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":199,"t_mono_us":3750086,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3677000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":200,"t_mono_us":3757706,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3684000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":201,"t_mono_us":3769350,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3696000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":202,"t_mono_us":3769800,"source":"clock","kind":"midi","payload":{"backend_ts_us":3690000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":203,"t_mono_us":3776383,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3703000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":204,"t_mono_us":3783515,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3710000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":205,"t_mono_us":3788549,"source":"clock","kind":"midi","payload":{"backend_ts_us":3709000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":206,"t_mono_us":3791053,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3718000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":207,"t_mono_us":3799678,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3726000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":208,"t_mono_us":3804761,"source":"clock","kind":"midi","payload":{"backend_ts_us":3725000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":209,"t_mono_us":3806249,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3733000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":210,"t_mono_us":3814378,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3741000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":211,"t_mono_us":3821426,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3748000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":212,"t_mono_us":3828485,"source":"clock","kind":"midi","payload":{"backend_ts_us":3749000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":213,"t_mono_us":3836619,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3763000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":214,"t_mono_us":3844202,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3771000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":215,"t_mono_us":3845701,"source":"clock","kind":"midi","payload":{"backend_ts_us":3766000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":216,"t_mono_us":3852747,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3780000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":217,"t_mono_us":3860372,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3787000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":218,"t_mono_us":3867384,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3794000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":219,"t_mono_us":3868439,"source":"clock","kind":"midi","payload":{"backend_ts_us":3789000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":220,"t_mono_us":3875514,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3802000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":221,"t_mono_us":3882722,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3809000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":222,"t_mono_us":3886669,"source":"clock","kind":"midi","payload":{"backend_ts_us":3807000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":223,"t_mono_us":3889230,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3816000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":224,"t_mono_us":3905189,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3832000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":225,"t_mono_us":3912533,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3839000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":226,"t_mono_us":3915636,"source":"clock","kind":"midi","payload":{"backend_ts_us":3836000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":227,"t_mono_us":3919639,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3846000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":228,"t_mono_us":3928298,"source":"clock","kind":"midi","payload":{"backend_ts_us":3849000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":229,"t_mono_us":3928310,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3855000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":230,"t_mono_us":3935376,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3862000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":231,"t_mono_us":3942940,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3870000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":232,"t_mono_us":3950039,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3877000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":233,"t_mono_us":3955609,"source":"clock","kind":"midi","payload":{"backend_ts_us":3876000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":234,"t_mono_us":3958217,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3885000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":235,"t_mono_us":3968849,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3896000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":236,"t_mono_us":3969327,"source":"clock","kind":"midi","payload":{"backend_ts_us":3890000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":237,"t_mono_us":3976372,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3903000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":238,"t_mono_us":3983983,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3911000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":239,"t_mono_us":3991691,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3918000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":240,"t_mono_us":3996191,"source":"clock","kind":"midi","payload":{"backend_ts_us":3917000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":241,"t_mono_us":3999259,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3926000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":242,"t_mono_us":4006916,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3934000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":243,"t_mono_us":4014052,"source":"clock","kind":"midi","payload":{"backend_ts_us":3935000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":244,"t_mono_us":4014093,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3941000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":245,"t_mono_us":4021605,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3948000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":246,"t_mono_us":4036801,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3964000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":247,"t_mono_us":4038350,"source":"clock","kind":"midi","payload":{"backend_ts_us":3959000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":248,"t_mono_us":4045363,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3972000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":249,"t_mono_us":4051413,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3978000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":250,"t_mono_us":4056485,"source":"clock","kind":"midi","payload":{"backend_ts_us":3977000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":251,"t_mono_us":4060561,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3987000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":252,"t_mono_us":4067595,"source":"mtc","kind":"midi","payload":{"backend_ts_us":3994000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":253,"t_mono_us":4074788,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4002000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":254,"t_mono_us":4078803,"source":"clock","kind":"midi","payload":{"backend_ts_us":3999000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":255,"t_mono_us":4082905,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4010000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":256,"t_mono_us":4089895,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4017000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":257,"t_mono_us":4097129,"source":"clock","kind":"midi","payload":{"backend_ts_us":4018000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":258,"t_mono_us":4105197,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4032000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":259,"t_mono_us":4113210,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4040000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":260,"t_mono_us":4120269,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4047000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":261,"t_mono_us":4124807,"source":"clock","kind":"midi","payload":{"backend_ts_us":4045000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":262,"t_mono_us":4128402,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4055000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":263,"t_mono_us":4134515,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4061000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":264,"t_mono_us":4138653,"source":"clock","kind":"midi","payload":{"backend_ts_us":4059000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":265,"t_mono_us":4142638,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4069000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":266,"t_mono_us":4150202,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4077000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":267,"t_mono_us":4157821,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4085000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":268,"t_mono_us":4165879,"source":"clock","kind":"midi","payload":{"backend_ts_us":4086000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":269,"t_mono_us":4169507,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4096000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":270,"t_mono_us":4176079,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4103000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":271,"t_mono_us":4178586,"source":"clock","kind":"midi","payload":{"backend_ts_us":4099000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":272,"t_mono_us":4184286,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4111000,"bytes":"F1 21"}}
+{"run_id":"win-s03-smoke-01","seq":273,"t_mono_us":4191306,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4118000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":274,"t_mono_us":4199479,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4126000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":275,"t_mono_us":4206577,"source":"clock","kind":"midi","payload":{"backend_ts_us":4127000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":276,"t_mono_us":4206579,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4133000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":277,"t_mono_us":4214842,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4142000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":278,"t_mono_us":4219286,"source":"clock","kind":"midi","payload":{"backend_ts_us":4140000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":279,"t_mono_us":4221332,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4148000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":280,"t_mono_us":4236826,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4164000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":281,"t_mono_us":4244873,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4172000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":282,"t_mono_us":4246915,"source":"clock","kind":"midi","payload":{"backend_ts_us":4167000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":283,"t_mono_us":4252000,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4179000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":284,"t_mono_us":4259663,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4186000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":285,"t_mono_us":4264281,"source":"clock","kind":"midi","payload":{"backend_ts_us":4185000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":286,"t_mono_us":4267302,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4194000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":287,"t_mono_us":4274913,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4202000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":288,"t_mono_us":4281744,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4208000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":289,"t_mono_us":4288164,"source":"clock","kind":"midi","payload":{"backend_ts_us":4209000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":290,"t_mono_us":4289700,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4216000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":291,"t_mono_us":4302466,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4229000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":292,"t_mono_us":4306477,"source":"clock","kind":"midi","payload":{"backend_ts_us":4227000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":293,"t_mono_us":4309509,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4236000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":294,"t_mono_us":4315669,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4242000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":295,"t_mono_us":4323828,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4251000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":296,"t_mono_us":4328322,"source":"clock","kind":"midi","payload":{"backend_ts_us":4249000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":297,"t_mono_us":4331446,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4258000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":298,"t_mono_us":4339552,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4266000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":299,"t_mono_us":4346775,"source":"clock","kind":"midi","payload":{"backend_ts_us":4267000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":300,"t_mono_us":4346786,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4274000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":301,"t_mono_us":4353454,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4280000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":302,"t_mono_us":4364844,"source":"clock","kind":"midi","payload":{"backend_ts_us":4285000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":303,"t_mono_us":4368902,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4296000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":304,"t_mono_us":4376112,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4303000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":305,"t_mono_us":4384837,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4312000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":306,"t_mono_us":4387733,"source":"clock","kind":"midi","payload":{"backend_ts_us":4308000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":307,"t_mono_us":4392314,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4319000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":308,"t_mono_us":4398471,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4325000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":309,"t_mono_us":4406173,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4333000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":310,"t_mono_us":4413767,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4341000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":311,"t_mono_us":4415332,"source":"clock","kind":"midi","payload":{"backend_ts_us":4336000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":312,"t_mono_us":4422522,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4349000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":313,"t_mono_us":4428572,"source":"clock","kind":"midi","payload":{"backend_ts_us":4349000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":314,"t_mono_us":4436717,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4363000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":315,"t_mono_us":4445338,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4372000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":316,"t_mono_us":4452912,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4380000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":317,"t_mono_us":4456561,"source":"clock","kind":"midi","payload":{"backend_ts_us":4377000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":318,"t_mono_us":4460732,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4387000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":319,"t_mono_us":4467765,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4395000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":320,"t_mono_us":4473574,"source":"clock","kind":"midi","payload":{"backend_ts_us":4394000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":321,"t_mono_us":4474964,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4402000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":322,"t_mono_us":4482320,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4409000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":323,"t_mono_us":4490438,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4417000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":324,"t_mono_us":4497717,"source":"clock","kind":"midi","payload":{"backend_ts_us":4418000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":325,"t_mono_us":4505462,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4432000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":326,"t_mono_us":4512977,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4440000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":327,"t_mono_us":4515104,"source":"clock","kind":"midi","payload":{"backend_ts_us":4436000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":328,"t_mono_us":4520555,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4447000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":329,"t_mono_us":4527728,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4454000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":330,"t_mono_us":4535273,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4462000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":331,"t_mono_us":4539457,"source":"clock","kind":"midi","payload":{"backend_ts_us":4460000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":332,"t_mono_us":4542498,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4469000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":333,"t_mono_us":4549664,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4476000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":334,"t_mono_us":4555777,"source":"clock","kind":"midi","payload":{"backend_ts_us":4476000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":335,"t_mono_us":4557251,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4484000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":336,"t_mono_us":4572584,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4499000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":337,"t_mono_us":4580198,"source":"clock","kind":"midi","payload":{"backend_ts_us":4501000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":338,"t_mono_us":4580205,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4507000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":339,"t_mono_us":4589309,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4516000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":340,"t_mono_us":4596363,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4523000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":341,"t_mono_us":4597867,"source":"clock","kind":"midi","payload":{"backend_ts_us":4518000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":342,"t_mono_us":4603488,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4530000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":343,"t_mono_us":4610702,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4537000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":344,"t_mono_us":4615235,"source":"clock","kind":"midi","payload":{"backend_ts_us":4536000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":345,"t_mono_us":4618286,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4545000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":346,"t_mono_us":4625928,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4553000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":347,"t_mono_us":4637137,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4564000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":348,"t_mono_us":4638133,"source":"clock","kind":"midi","payload":{"backend_ts_us":4559000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":349,"t_mono_us":4644681,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4571000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":350,"t_mono_us":4652819,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4580000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":351,"t_mono_us":4659868,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4587000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":352,"t_mono_us":4665928,"source":"clock","kind":"midi","payload":{"backend_ts_us":4586000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":353,"t_mono_us":4666920,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4594000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":354,"t_mono_us":4674591,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4601000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":355,"t_mono_us":4678591,"source":"clock","kind":"midi","payload":{"backend_ts_us":4599000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":356,"t_mono_us":4681597,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4608000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":357,"t_mono_us":4689774,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4617000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":358,"t_mono_us":4704477,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4631000,"bytes":"F1 0E"}}
+{"run_id":"win-s03-smoke-01","seq":359,"t_mono_us":4706463,"source":"clock","kind":"midi","payload":{"backend_ts_us":4627000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":360,"t_mono_us":4713173,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4640000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":361,"t_mono_us":4720577,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4647000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":362,"t_mono_us":4723136,"source":"clock","kind":"midi","payload":{"backend_ts_us":4644000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":363,"t_mono_us":4728231,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4655000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":364,"t_mono_us":4735282,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4662000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":365,"t_mono_us":4742477,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4669000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":366,"t_mono_us":4748086,"source":"clock","kind":"midi","payload":{"backend_ts_us":4669000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":367,"t_mono_us":4749551,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4676000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":368,"t_mono_us":4757669,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4684000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":369,"t_mono_us":4765208,"source":"clock","kind":"midi","payload":{"backend_ts_us":4686000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":370,"t_mono_us":4769335,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4696000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":371,"t_mono_us":4776663,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4703000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":372,"t_mono_us":4784246,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4711000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":373,"t_mono_us":4788480,"source":"clock","kind":"midi","payload":{"backend_ts_us":4709000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":374,"t_mono_us":4791541,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4718000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":375,"t_mono_us":4798620,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4725000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":376,"t_mono_us":4806737,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4733000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":377,"t_mono_us":4806747,"source":"clock","kind":"midi","payload":{"backend_ts_us":4727000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":378,"t_mono_us":4813995,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4741000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":379,"t_mono_us":4821023,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4748000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":380,"t_mono_us":4823710,"source":"clock","kind":"midi","payload":{"backend_ts_us":4744000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":381,"t_mono_us":4837054,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4764000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":382,"t_mono_us":4844780,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4772000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":383,"t_mono_us":4847820,"source":"clock","kind":"midi","payload":{"backend_ts_us":4768000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":384,"t_mono_us":4852374,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4779000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":385,"t_mono_us":4859547,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4786000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":386,"t_mono_us":4865558,"source":"clock","kind":"midi","payload":{"backend_ts_us":4786000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":387,"t_mono_us":4866580,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4793000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":388,"t_mono_us":4874414,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4801000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":389,"t_mono_us":4882854,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4810000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":390,"t_mono_us":4888455,"source":"clock","kind":"midi","payload":{"backend_ts_us":4809000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":391,"t_mono_us":4889446,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4816000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":392,"t_mono_us":4904729,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4831000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":393,"t_mono_us":4906141,"source":"clock","kind":"midi","payload":{"backend_ts_us":4827000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":394,"t_mono_us":4912784,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4840000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":395,"t_mono_us":4919852,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4847000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":396,"t_mono_us":4927512,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4854000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":397,"t_mono_us":4930569,"source":"clock","kind":"midi","payload":{"backend_ts_us":4851000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":398,"t_mono_us":4935106,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4862000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":399,"t_mono_us":4942309,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4869000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":400,"t_mono_us":4950067,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4877000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":401,"t_mono_us":4956951,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4884000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":402,"t_mono_us":4958452,"source":"clock","kind":"midi","payload":{"backend_ts_us":4879000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":403,"t_mono_us":4968813,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4896000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":404,"t_mono_us":4974812,"source":"clock","kind":"midi","payload":{"backend_ts_us":4895000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":405,"t_mono_us":4976346,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4903000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":406,"t_mono_us":4984689,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4911000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":407,"t_mono_us":4991674,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4918000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":408,"t_mono_us":4999346,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4926000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":409,"t_mono_us":4999362,"source":"clock","kind":"midi","payload":{"backend_ts_us":4920000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":410,"t_mono_us":5006977,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4934000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":411,"t_mono_us":5014760,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4942000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":412,"t_mono_us":5016187,"source":"clock","kind":"midi","payload":{"backend_ts_us":4937000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":413,"t_mono_us":5021824,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4949000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":414,"t_mono_us":5036631,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4963000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":415,"t_mono_us":5040091,"source":"clock","kind":"midi","payload":{"backend_ts_us":4961000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":416,"t_mono_us":5044243,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4971000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":417,"t_mono_us":5052249,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4979000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":418,"t_mono_us":5056896,"source":"clock","kind":"midi","payload":{"backend_ts_us":4977000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":419,"t_mono_us":5059369,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4986000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":420,"t_mono_us":5066503,"source":"mtc","kind":"midi","payload":{"backend_ts_us":4993000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":421,"t_mono_us":5073421,"source":"clock","kind":"midi","payload":{"backend_ts_us":4994000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":422,"t_mono_us":5074949,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5002000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":423,"t_mono_us":5082767,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5010000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":424,"t_mono_us":5089259,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5016000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":425,"t_mono_us":5099175,"source":"clock","kind":"midi","payload":{"backend_ts_us":5020000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":426,"t_mono_us":5106390,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5033000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":427,"t_mono_us":5112694,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5039000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":428,"t_mono_us":5114730,"source":"clock","kind":"midi","payload":{"backend_ts_us":5035000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":429,"t_mono_us":5119546,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5046000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":430,"t_mono_us":5127788,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5055000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":431,"t_mono_us":5135803,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5063000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":432,"t_mono_us":5138448,"source":"clock","kind":"midi","payload":{"backend_ts_us":5059000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":433,"t_mono_us":5143659,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5070000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":434,"t_mono_us":5151000,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5078000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":435,"t_mono_us":5157239,"source":"clock","kind":"midi","payload":{"backend_ts_us":5078000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":436,"t_mono_us":5157259,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5084000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":437,"t_mono_us":5169306,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5096000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":438,"t_mono_us":5176408,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5103000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":439,"t_mono_us":5183722,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5110000,"bytes":"F1 22"}}
+{"run_id":"win-s03-smoke-01","seq":440,"t_mono_us":5183730,"source":"clock","kind":"midi","payload":{"backend_ts_us":5104000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":441,"t_mono_us":5192804,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5120000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":442,"t_mono_us":5197297,"source":"clock","kind":"midi","payload":{"backend_ts_us":5118000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":443,"t_mono_us":5198810,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5126000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":444,"t_mono_us":5206631,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5133000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":445,"t_mono_us":5214101,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5141000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":446,"t_mono_us":5221527,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5148000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":447,"t_mono_us":5226123,"source":"clock","kind":"midi","payload":{"backend_ts_us":5147000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":448,"t_mono_us":5237936,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5165000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":449,"t_mono_us":5245029,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5172000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":450,"t_mono_us":5249279,"source":"clock","kind":"midi","payload":{"backend_ts_us":5170000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":451,"t_mono_us":5251667,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5178000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":452,"t_mono_us":5260392,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5187000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":453,"t_mono_us":5265946,"source":"clock","kind":"midi","payload":{"backend_ts_us":5187000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":454,"t_mono_us":5267452,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5194000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":455,"t_mono_us":5275642,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5202000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":456,"t_mono_us":5282780,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5210000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":457,"t_mono_us":5289979,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5217000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":458,"t_mono_us":5290015,"source":"clock","kind":"midi","payload":{"backend_ts_us":5211000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":459,"t_mono_us":5305860,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5233000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":460,"t_mono_us":5307279,"source":"clock","kind":"midi","payload":{"backend_ts_us":5228000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":461,"t_mono_us":5312394,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5239000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":462,"t_mono_us":5320117,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5247000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":463,"t_mono_us":5324731,"source":"clock","kind":"midi","payload":{"backend_ts_us":5245000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":464,"t_mono_us":5327203,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5254000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":465,"t_mono_us":5336408,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5263000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":466,"t_mono_us":5342085,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5269000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":467,"t_mono_us":5347670,"source":"clock","kind":"midi","payload":{"backend_ts_us":5268000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":468,"t_mono_us":5350727,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5277000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":469,"t_mono_us":5357972,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5285000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":470,"t_mono_us":5365536,"source":"clock","kind":"midi","payload":{"backend_ts_us":5286000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":471,"t_mono_us":5369742,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5296000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":472,"t_mono_us":5376249,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5303000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":473,"t_mono_us":5384413,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5311000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":474,"t_mono_us":5389511,"source":"clock","kind":"midi","payload":{"backend_ts_us":5310000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":475,"t_mono_us":5392068,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5319000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":476,"t_mono_us":5399250,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5326000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":477,"t_mono_us":5406421,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5333000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":478,"t_mono_us":5406430,"source":"clock","kind":"midi","payload":{"backend_ts_us":5327000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":479,"t_mono_us":5413541,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5340000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":480,"t_mono_us":5421745,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5348000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":481,"t_mono_us":5434535,"source":"clock","kind":"midi","payload":{"backend_ts_us":5355000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":482,"t_mono_us":5437032,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5364000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":483,"t_mono_us":5444237,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5371000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":484,"t_mono_us":5447134,"source":"clock","kind":"midi","payload":{"backend_ts_us":5368000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":485,"t_mono_us":5451683,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5378000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":486,"t_mono_us":5459381,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5386000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":487,"t_mono_us":5467086,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5394000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":488,"t_mono_us":5475246,"source":"clock","kind":"midi","payload":{"backend_ts_us":5396000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":489,"t_mono_us":5475266,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5402000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":490,"t_mono_us":5482272,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5409000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":491,"t_mono_us":5489483,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5416000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":492,"t_mono_us":5499174,"source":"clock","kind":"midi","payload":{"backend_ts_us":5420000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":493,"t_mono_us":5504879,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5432000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":494,"t_mono_us":5511922,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5439000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":495,"t_mono_us":5517007,"source":"clock","kind":"midi","payload":{"backend_ts_us":5438000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":496,"t_mono_us":5520083,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5447000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":497,"t_mono_us":5528781,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5456000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":498,"t_mono_us":5534418,"source":"clock","kind":"midi","payload":{"backend_ts_us":5455000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":499,"t_mono_us":5535439,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5462000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":500,"t_mono_us":5542078,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5469000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":501,"t_mono_us":5549634,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5476000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":502,"t_mono_us":5556746,"source":"clock","kind":"midi","payload":{"backend_ts_us":5477000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":503,"t_mono_us":5558264,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5485000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":504,"t_mono_us":5568430,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5495000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":505,"t_mono_us":5576015,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5503000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":506,"t_mono_us":5576485,"source":"clock","kind":"midi","payload":{"backend_ts_us":5497000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":507,"t_mono_us":5584115,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5511000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":508,"t_mono_us":5592242,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5519000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":509,"t_mono_us":5599585,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5526000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":510,"t_mono_us":5599617,"source":"clock","kind":"midi","payload":{"backend_ts_us":5520000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":511,"t_mono_us":5606786,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5534000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":512,"t_mono_us":5613513,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5540000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":513,"t_mono_us":5616334,"source":"clock","kind":"midi","payload":{"backend_ts_us":5537000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":514,"t_mono_us":5621996,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5549000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":515,"t_mono_us":5637357,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5564000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":516,"t_mono_us":5640313,"source":"clock","kind":"midi","payload":{"backend_ts_us":5561000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":517,"t_mono_us":5645097,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5572000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":518,"t_mono_us":5651468,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5578000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":519,"t_mono_us":5657086,"source":"clock","kind":"midi","payload":{"backend_ts_us":5578000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":520,"t_mono_us":5659273,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5586000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":521,"t_mono_us":5667047,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5594000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":522,"t_mono_us":5674479,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5601000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":523,"t_mono_us":5681463,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5608000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":524,"t_mono_us":5685458,"source":"clock","kind":"midi","payload":{"backend_ts_us":5606000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":525,"t_mono_us":5690574,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5617000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":526,"t_mono_us":5699589,"source":"clock","kind":"midi","payload":{"backend_ts_us":5620000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":527,"t_mono_us":5701417,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5628000,"bytes":"F1 0E"}}
+{"run_id":"win-s03-smoke-01","seq":528,"t_mono_us":5709214,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5636000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":529,"t_mono_us":5716543,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5643000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":530,"t_mono_us":5723724,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5650000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":531,"t_mono_us":5725274,"source":"clock","kind":"midi","payload":{"backend_ts_us":5646000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":532,"t_mono_us":5731417,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5658000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":533,"t_mono_us":5738281,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5665000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":534,"t_mono_us":5739485,"source":"clock","kind":"midi","payload":{"backend_ts_us":5660000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":535,"t_mono_us":5745762,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5673000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":536,"t_mono_us":5754278,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5681000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":537,"t_mono_us":5760629,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5687000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":538,"t_mono_us":5766704,"source":"clock","kind":"midi","payload":{"backend_ts_us":5687000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":539,"t_mono_us":5769274,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5696000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":540,"t_mono_us":5775399,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5702000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":541,"t_mono_us":5783265,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5710000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":542,"t_mono_us":5785406,"source":"clock","kind":"midi","payload":{"backend_ts_us":5706000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":543,"t_mono_us":5790997,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5718000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":544,"t_mono_us":5799020,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5726000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":545,"t_mono_us":5805665,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5732000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":546,"t_mono_us":5807598,"source":"clock","kind":"midi","payload":{"backend_ts_us":5728000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":547,"t_mono_us":5814194,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5741000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":548,"t_mono_us":5825908,"source":"clock","kind":"midi","payload":{"backend_ts_us":5746000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":549,"t_mono_us":5825988,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5753000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":550,"t_mono_us":5832634,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5759000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":551,"t_mono_us":5840798,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5768000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":552,"t_mono_us":5847893,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5775000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":553,"t_mono_us":5849448,"source":"clock","kind":"midi","payload":{"backend_ts_us":5770000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":554,"t_mono_us":5855026,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5782000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":555,"t_mono_us":5862609,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5789000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":556,"t_mono_us":5866680,"source":"clock","kind":"midi","payload":{"backend_ts_us":5787000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":557,"t_mono_us":5869736,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5797000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":558,"t_mono_us":5877427,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5804000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":559,"t_mono_us":5893329,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5820000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":560,"t_mono_us":5895308,"source":"clock","kind":"midi","payload":{"backend_ts_us":5816000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":561,"t_mono_us":5900894,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5828000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":562,"t_mono_us":5907944,"source":"clock","kind":"midi","payload":{"backend_ts_us":5829000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":563,"t_mono_us":5907972,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5835000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":564,"t_mono_us":5915265,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5842000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":565,"t_mono_us":5923487,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5850000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":566,"t_mono_us":5930142,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5857000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":567,"t_mono_us":5935290,"source":"clock","kind":"midi","payload":{"backend_ts_us":5856000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":568,"t_mono_us":5937839,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5865000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":569,"t_mono_us":5945405,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5872000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":570,"t_mono_us":5948410,"source":"clock","kind":"midi","payload":{"backend_ts_us":5869000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":571,"t_mono_us":5960729,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5887000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":572,"t_mono_us":5969199,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5896000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":573,"t_mono_us":5976315,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5903000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":574,"t_mono_us":5976813,"source":"clock","kind":"midi","payload":{"backend_ts_us":5897000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":575,"t_mono_us":5984044,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5911000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":576,"t_mono_us":5989607,"source":"clock","kind":"midi","payload":{"backend_ts_us":5910000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":577,"t_mono_us":5991103,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5918000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":578,"t_mono_us":5998197,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5925000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":579,"t_mono_us":6006022,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5933000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":580,"t_mono_us":6013052,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5940000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":581,"t_mono_us":6018613,"source":"clock","kind":"midi","payload":{"backend_ts_us":5939000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":582,"t_mono_us":6029910,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5957000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":583,"t_mono_us":6035328,"source":"clock","kind":"midi","payload":{"backend_ts_us":5956000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":584,"t_mono_us":6036327,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5963000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":585,"t_mono_us":6043584,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5970000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":586,"t_mono_us":6052088,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5979000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":587,"t_mono_us":6057723,"source":"clock","kind":"midi","payload":{"backend_ts_us":5978000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":588,"t_mono_us":6059203,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5986000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":589,"t_mono_us":6067327,"source":"mtc","kind":"midi","payload":{"backend_ts_us":5994000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":590,"t_mono_us":6074053,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6001000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":591,"t_mono_us":6076977,"source":"clock","kind":"midi","payload":{"backend_ts_us":5998000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":592,"t_mono_us":6081691,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6008000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":593,"t_mono_us":6092855,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6020000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":594,"t_mono_us":6100499,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6027000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":595,"t_mono_us":6100556,"source":"clock","kind":"midi","payload":{"backend_ts_us":6021000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":596,"t_mono_us":6107426,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6034000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":597,"t_mono_us":6115522,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6042000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":598,"t_mono_us":6117565,"source":"clock","kind":"midi","payload":{"backend_ts_us":6038000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":599,"t_mono_us":6123679,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6050000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":600,"t_mono_us":6131207,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6058000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":601,"t_mono_us":6139364,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6066000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":602,"t_mono_us":6144889,"source":"clock","kind":"midi","payload":{"backend_ts_us":6065000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":603,"t_mono_us":6146637,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6073000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":604,"t_mono_us":6158627,"source":"clock","kind":"midi","payload":{"backend_ts_us":6079000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":605,"t_mono_us":6161210,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6088000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":606,"t_mono_us":6168265,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6095000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":607,"t_mono_us":6175407,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6102000,"bytes":"F1 23"}}
+{"run_id":"win-s03-smoke-01","seq":608,"t_mono_us":6183084,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6110000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":609,"t_mono_us":6186103,"source":"clock","kind":"midi","payload":{"backend_ts_us":6107000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":610,"t_mono_us":6191710,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6118000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":611,"t_mono_us":6199258,"source":"clock","kind":"midi","payload":{"backend_ts_us":6120000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":612,"t_mono_us":6199288,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6126000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":613,"t_mono_us":6206402,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6133000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":614,"t_mono_us":6213176,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6140000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":615,"t_mono_us":6226734,"source":"clock","kind":"midi","payload":{"backend_ts_us":6147000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":616,"t_mono_us":6230163,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6157000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":617,"t_mono_us":6236336,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6163000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":618,"t_mono_us":6243462,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6170000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":619,"t_mono_us":6243897,"source":"clock","kind":"midi","payload":{"backend_ts_us":6164000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":620,"t_mono_us":6250982,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6178000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":621,"t_mono_us":6258590,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6185000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":622,"t_mono_us":6266231,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6193000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":623,"t_mono_us":6267688,"source":"clock","kind":"midi","payload":{"backend_ts_us":6188000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":624,"t_mono_us":6274768,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6202000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":625,"t_mono_us":6281069,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6208000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":626,"t_mono_us":6285943,"source":"clock","kind":"midi","payload":{"backend_ts_us":6207000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":627,"t_mono_us":6306289,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6233000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":628,"t_mono_us":6308690,"source":"clock","kind":"midi","payload":{"backend_ts_us":6229000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":629,"t_mono_us":6313624,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6240000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":630,"t_mono_us":6321411,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6248000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":631,"t_mono_us":6326944,"source":"clock","kind":"midi","payload":{"backend_ts_us":6248000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":632,"t_mono_us":6328526,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6255000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":633,"t_mono_us":6334684,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6261000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":634,"t_mono_us":6343794,"source":"clock","kind":"midi","payload":{"backend_ts_us":6264000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":635,"t_mono_us":6344015,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6271000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":636,"t_mono_us":6350806,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6278000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":637,"t_mono_us":6357241,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6284000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":638,"t_mono_us":6367132,"source":"clock","kind":"midi","payload":{"backend_ts_us":6288000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":639,"t_mono_us":6373725,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6300000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":640,"t_mono_us":6380663,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6307000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":641,"t_mono_us":6386311,"source":"clock","kind":"midi","payload":{"backend_ts_us":6307000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":642,"t_mono_us":6388909,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6316000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":643,"t_mono_us":6396082,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6323000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":644,"t_mono_us":6403612,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6330000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":645,"t_mono_us":6409653,"source":"clock","kind":"midi","payload":{"backend_ts_us":6330000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":646,"t_mono_us":6411256,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6338000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":647,"t_mono_us":6417608,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6344000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":648,"t_mono_us":6426067,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6353000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":649,"t_mono_us":6435765,"source":"clock","kind":"midi","payload":{"backend_ts_us":6356000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":650,"t_mono_us":6437417,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6364000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":651,"t_mono_us":6444443,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6371000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":652,"t_mono_us":6449691,"source":"clock","kind":"midi","payload":{"backend_ts_us":6370000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":653,"t_mono_us":6451548,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6378000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":654,"t_mono_us":6459142,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6386000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":655,"t_mono_us":6466778,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6394000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":656,"t_mono_us":6474484,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6401000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":657,"t_mono_us":6476480,"source":"clock","kind":"midi","payload":{"backend_ts_us":6397000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":658,"t_mono_us":6482071,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6409000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":659,"t_mono_us":6489707,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6416000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":660,"t_mono_us":6494307,"source":"clock","kind":"midi","payload":{"backend_ts_us":6415000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":661,"t_mono_us":6505556,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6432000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":662,"t_mono_us":6512104,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6439000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":663,"t_mono_us":6518228,"source":"clock","kind":"midi","payload":{"backend_ts_us":6439000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":664,"t_mono_us":6520787,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6448000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":665,"t_mono_us":6527955,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6455000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":666,"t_mono_us":6535158,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6462000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":667,"t_mono_us":6535492,"source":"clock","kind":"midi","payload":{"backend_ts_us":6456000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":668,"t_mono_us":6542664,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6469000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":669,"t_mono_us":6549929,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6477000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":670,"t_mono_us":6557060,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6484000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":671,"t_mono_us":6558958,"source":"clock","kind":"midi","payload":{"backend_ts_us":6480000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":672,"t_mono_us":6573282,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6500000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":673,"t_mono_us":6577162,"source":"clock","kind":"midi","payload":{"backend_ts_us":6498000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":674,"t_mono_us":6580978,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6508000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":675,"t_mono_us":6588886,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6516000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":676,"t_mono_us":6595397,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6522000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":677,"t_mono_us":6595413,"source":"clock","kind":"midi","payload":{"backend_ts_us":6516000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":678,"t_mono_us":6602585,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6529000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":679,"t_mono_us":6610418,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6537000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":680,"t_mono_us":6617282,"source":"clock","kind":"midi","payload":{"backend_ts_us":6538000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":681,"t_mono_us":6618487,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6545000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":682,"t_mono_us":6626062,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6553000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":683,"t_mono_us":6635754,"source":"clock","kind":"midi","payload":{"backend_ts_us":6556000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":684,"t_mono_us":6637300,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6564000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":685,"t_mono_us":6644996,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6572000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":686,"t_mono_us":6651592,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6578000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":687,"t_mono_us":6659232,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6586000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":688,"t_mono_us":6659244,"source":"clock","kind":"midi","payload":{"backend_ts_us":6580000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":689,"t_mono_us":6667818,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6595000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":690,"t_mono_us":6674447,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6601000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":691,"t_mono_us":6681548,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6608000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":692,"t_mono_us":6687128,"source":"clock","kind":"midi","payload":{"backend_ts_us":6608000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":693,"t_mono_us":6690216,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6617000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":694,"t_mono_us":6704581,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6631000,"bytes":"F1 0E"}}
+{"run_id":"win-s03-smoke-01","seq":695,"t_mono_us":6704581,"source":"clock","kind":"midi","payload":{"backend_ts_us":6625000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":696,"t_mono_us":6712726,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6639000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":697,"t_mono_us":6719703,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6646000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":698,"t_mono_us":6728393,"source":"clock","kind":"midi","payload":{"backend_ts_us":6649000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":699,"t_mono_us":6728420,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6655000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":700,"t_mono_us":6734430,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6661000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":701,"t_mono_us":6742248,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6669000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":702,"t_mono_us":6744943,"source":"clock","kind":"midi","payload":{"backend_ts_us":6666000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":703,"t_mono_us":6750191,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6677000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":704,"t_mono_us":6757359,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6684000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":705,"t_mono_us":6768522,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6695000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":706,"t_mono_us":6768971,"source":"clock","kind":"midi","payload":{"backend_ts_us":6690000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":707,"t_mono_us":6776629,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6703000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":708,"t_mono_us":6785325,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6712000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":709,"t_mono_us":6785397,"source":"clock","kind":"midi","payload":{"backend_ts_us":6706000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":710,"t_mono_us":6791293,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6718000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":711,"t_mono_us":6798903,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6726000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":712,"t_mono_us":6806543,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6733000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":713,"t_mono_us":6809647,"source":"clock","kind":"midi","payload":{"backend_ts_us":6730000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":714,"t_mono_us":6814151,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6741000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":715,"t_mono_us":6821336,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6748000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":716,"t_mono_us":6826871,"source":"clock","kind":"midi","payload":{"backend_ts_us":6747000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":717,"t_mono_us":6837072,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6764000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":718,"t_mono_us":6844269,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6771000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":719,"t_mono_us":6844325,"source":"clock","kind":"midi","payload":{"backend_ts_us":6765000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":720,"t_mono_us":6852337,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6779000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":721,"t_mono_us":6860023,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6787000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":722,"t_mono_us":6867579,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6794000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":723,"t_mono_us":6869074,"source":"clock","kind":"midi","payload":{"backend_ts_us":6790000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":724,"t_mono_us":6875670,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6802000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":725,"t_mono_us":6881802,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6808000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":726,"t_mono_us":6885933,"source":"clock","kind":"midi","payload":{"backend_ts_us":6807000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":727,"t_mono_us":6889091,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6816000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":728,"t_mono_us":6901617,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6828000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":729,"t_mono_us":6908647,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6835000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":730,"t_mono_us":6909123,"source":"clock","kind":"midi","payload":{"backend_ts_us":6830000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":731,"t_mono_us":6916600,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6843000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":732,"t_mono_us":6923494,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6850000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":733,"t_mono_us":6927059,"source":"clock","kind":"midi","payload":{"backend_ts_us":6848000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":734,"t_mono_us":6931248,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6858000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":735,"t_mono_us":6939064,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6866000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":736,"t_mono_us":6946442,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6873000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":737,"t_mono_us":6953729,"source":"clock","kind":"midi","payload":{"backend_ts_us":6874000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":738,"t_mono_us":6953790,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6881000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":739,"t_mono_us":6968941,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6896000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":740,"t_mono_us":6976790,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6904000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":741,"t_mono_us":6977270,"source":"clock","kind":"midi","payload":{"backend_ts_us":6898000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":742,"t_mono_us":6983795,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6911000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":743,"t_mono_us":6991631,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6918000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":744,"t_mono_us":6996014,"source":"clock","kind":"midi","payload":{"backend_ts_us":6917000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":745,"t_mono_us":6999023,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6926000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":746,"t_mono_us":7006419,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6933000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":747,"t_mono_us":7013655,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6940000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":748,"t_mono_us":7019072,"source":"clock","kind":"midi","payload":{"backend_ts_us":6940000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":749,"t_mono_us":7022187,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6949000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":750,"t_mono_us":7036955,"source":"clock","kind":"midi","payload":{"backend_ts_us":6958000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":751,"t_mono_us":7036985,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6964000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":752,"t_mono_us":7044075,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6971000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":753,"t_mono_us":7051716,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6978000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":754,"t_mono_us":7053224,"source":"clock","kind":"midi","payload":{"backend_ts_us":6974000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":755,"t_mono_us":7060439,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6987000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":756,"t_mono_us":7066463,"source":"mtc","kind":"midi","payload":{"backend_ts_us":6993000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":757,"t_mono_us":7074608,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7001000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":758,"t_mono_us":7077623,"source":"clock","kind":"midi","payload":{"backend_ts_us":6998000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":759,"t_mono_us":7082198,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7009000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":760,"t_mono_us":7089419,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7016000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":761,"t_mono_us":7095535,"source":"clock","kind":"midi","payload":{"backend_ts_us":7016000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":762,"t_mono_us":7104651,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7031000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":763,"t_mono_us":7112795,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7040000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":764,"t_mono_us":7118414,"source":"clock","kind":"midi","payload":{"backend_ts_us":7039000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":765,"t_mono_us":7119954,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7047000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":766,"t_mono_us":7128162,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7055000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":767,"t_mono_us":7135380,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7062000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":768,"t_mono_us":7135401,"source":"clock","kind":"midi","payload":{"backend_ts_us":7056000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":769,"t_mono_us":7142486,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7069000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":770,"t_mono_us":7150264,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7077000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":771,"t_mono_us":7157305,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7084000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":772,"t_mono_us":7159811,"source":"clock","kind":"midi","payload":{"backend_ts_us":7080000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":773,"t_mono_us":7168519,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7095000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":774,"t_mono_us":7176389,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7103000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":775,"t_mono_us":7178609,"source":"clock","kind":"midi","payload":{"backend_ts_us":7099000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":776,"t_mono_us":7185029,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7112000,"bytes":"F1 24"}}
+{"run_id":"win-s03-smoke-01","seq":777,"t_mono_us":7191494,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7118000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":778,"t_mono_us":7199222,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7126000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":779,"t_mono_us":7204976,"source":"clock","kind":"midi","payload":{"backend_ts_us":7126000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":780,"t_mono_us":7206597,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7133000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":781,"t_mono_us":7213619,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7140000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":782,"t_mono_us":7222197,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7149000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":783,"t_mono_us":7227874,"source":"clock","kind":"midi","payload":{"backend_ts_us":7148000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":784,"t_mono_us":7236770,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7164000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":785,"t_mono_us":7244301,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7171000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":786,"t_mono_us":7245809,"source":"clock","kind":"midi","payload":{"backend_ts_us":7166000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":787,"t_mono_us":7251885,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7179000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":788,"t_mono_us":7260096,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7187000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":789,"t_mono_us":7266659,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7193000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":790,"t_mono_us":7269606,"source":"clock","kind":"midi","payload":{"backend_ts_us":7190000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":791,"t_mono_us":7274254,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7201000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":792,"t_mono_us":7282318,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7209000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":793,"t_mono_us":7287806,"source":"clock","kind":"midi","payload":{"backend_ts_us":7208000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":794,"t_mono_us":7289329,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7216000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":795,"t_mono_us":7304718,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7231000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":796,"t_mono_us":7304753,"source":"clock","kind":"midi","payload":{"backend_ts_us":7225000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":797,"t_mono_us":7312148,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7239000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":798,"t_mono_us":7319694,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7246000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":799,"t_mono_us":7328320,"source":"clock","kind":"midi","payload":{"backend_ts_us":7249000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":800,"t_mono_us":7328344,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7255000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":801,"t_mono_us":7335493,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7262000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":802,"t_mono_us":7343825,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7270000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":803,"t_mono_us":7346526,"source":"clock","kind":"midi","payload":{"backend_ts_us":7267000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":804,"t_mono_us":7349543,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7276000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":805,"t_mono_us":7357686,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7284000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":806,"t_mono_us":7368287,"source":"clock","kind":"midi","payload":{"backend_ts_us":7289000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":807,"t_mono_us":7373987,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7301000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":808,"t_mono_us":7380388,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7307000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":809,"t_mono_us":7387267,"source":"clock","kind":"midi","payload":{"backend_ts_us":7308000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":810,"t_mono_us":7387965,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7315000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":811,"t_mono_us":7395551,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7322000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":812,"t_mono_us":7403166,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7330000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":813,"t_mono_us":7410806,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7338000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":814,"t_mono_us":7413857,"source":"clock","kind":"midi","payload":{"backend_ts_us":7334000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":815,"t_mono_us":7417380,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7344000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":816,"t_mono_us":7425013,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7352000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":817,"t_mono_us":7428493,"source":"clock","kind":"midi","payload":{"backend_ts_us":7349000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":818,"t_mono_us":7441744,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7369000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":819,"t_mono_us":7448326,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7375000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":820,"t_mono_us":7455501,"source":"clock","kind":"midi","payload":{"backend_ts_us":7376000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":821,"t_mono_us":7455526,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7382000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":822,"t_mono_us":7464089,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7391000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":823,"t_mono_us":7468086,"source":"clock","kind":"midi","payload":{"backend_ts_us":7389000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":824,"t_mono_us":7470626,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7397000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":825,"t_mono_us":7478351,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7405000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":826,"t_mono_us":7486491,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7413000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":827,"t_mono_us":7493149,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7420000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":828,"t_mono_us":7496730,"source":"clock","kind":"midi","payload":{"backend_ts_us":7417000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":829,"t_mono_us":7505602,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7432000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":830,"t_mono_us":7512220,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7439000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":831,"t_mono_us":7519776,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7447000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":832,"t_mono_us":7519813,"source":"clock","kind":"midi","payload":{"backend_ts_us":7440000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":833,"t_mono_us":7527355,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7454000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":834,"t_mono_us":7535629,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7462000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":835,"t_mono_us":7537117,"source":"clock","kind":"midi","payload":{"backend_ts_us":7458000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":836,"t_mono_us":7543338,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7470000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":837,"t_mono_us":7550703,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7477000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":838,"t_mono_us":7555286,"source":"clock","kind":"midi","payload":{"backend_ts_us":7476000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":839,"t_mono_us":7558395,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7485000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":840,"t_mono_us":7573966,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7501000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":841,"t_mono_us":7579634,"source":"clock","kind":"midi","payload":{"backend_ts_us":7500000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":842,"t_mono_us":7581227,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7508000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":843,"t_mono_us":7589007,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7516000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":844,"t_mono_us":7596534,"source":"clock","kind":"midi","payload":{"backend_ts_us":7517000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":845,"t_mono_us":7596553,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7523000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":846,"t_mono_us":7603697,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7530000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":847,"t_mono_us":7610829,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7538000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":848,"t_mono_us":7617599,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7544000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":849,"t_mono_us":7619139,"source":"clock","kind":"midi","payload":{"backend_ts_us":7540000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":850,"t_mono_us":7626128,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7553000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":851,"t_mono_us":7637333,"source":"clock","kind":"midi","payload":{"backend_ts_us":7558000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":852,"t_mono_us":7637354,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7564000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":853,"t_mono_us":7644540,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7571000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":854,"t_mono_us":7651676,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7578000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":855,"t_mono_us":7659962,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7587000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":856,"t_mono_us":7664823,"source":"clock","kind":"midi","payload":{"backend_ts_us":7585000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":857,"t_mono_us":7666865,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7594000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":858,"t_mono_us":7674797,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7601000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":859,"t_mono_us":7678129,"source":"clock","kind":"midi","payload":{"backend_ts_us":7599000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":860,"t_mono_us":7682290,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7609000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":861,"t_mono_us":7689532,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7616000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":862,"t_mono_us":7705665,"source":"clock","kind":"midi","payload":{"backend_ts_us":7626000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":863,"t_mono_us":7705690,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7632000,"bytes":"F1 0E"}}
+{"run_id":"win-s03-smoke-01","seq":864,"t_mono_us":7712526,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7639000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":865,"t_mono_us":7718702,"source":"clock","kind":"midi","payload":{"backend_ts_us":7639000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":866,"t_mono_us":7720362,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7647000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":867,"t_mono_us":7728224,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7655000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":868,"t_mono_us":7734782,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7662000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":869,"t_mono_us":7742106,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7669000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":870,"t_mono_us":7746653,"source":"clock","kind":"midi","payload":{"backend_ts_us":7667000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":871,"t_mono_us":7749690,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7676000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":872,"t_mono_us":7757895,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7685000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":873,"t_mono_us":7764922,"source":"clock","kind":"midi","payload":{"backend_ts_us":7685000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":874,"t_mono_us":7769579,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7696000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":875,"t_mono_us":7777764,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7705000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":876,"t_mono_us":7783856,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7711000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":877,"t_mono_us":7788372,"source":"clock","kind":"midi","payload":{"backend_ts_us":7709000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":878,"t_mono_us":7791377,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7718000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":879,"t_mono_us":7798524,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7725000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":880,"t_mono_us":7805715,"source":"clock","kind":"midi","payload":{"backend_ts_us":7726000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":881,"t_mono_us":7807202,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7734000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":882,"t_mono_us":7814425,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7741000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":883,"t_mono_us":7822070,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7749000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":884,"t_mono_us":7828180,"source":"clock","kind":"midi","payload":{"backend_ts_us":7749000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":885,"t_mono_us":7837681,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7764000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":886,"t_mono_us":7845336,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7772000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":887,"t_mono_us":7847031,"source":"clock","kind":"midi","payload":{"backend_ts_us":7768000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":888,"t_mono_us":7852422,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7779000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":889,"t_mono_us":7859550,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7786000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":890,"t_mono_us":7867900,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7795000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":891,"t_mono_us":7870213,"source":"clock","kind":"midi","payload":{"backend_ts_us":7791000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":892,"t_mono_us":7874794,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7802000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":893,"t_mono_us":7881715,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7808000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":894,"t_mono_us":7886989,"source":"clock","kind":"midi","payload":{"backend_ts_us":7808000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":895,"t_mono_us":7890103,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7817000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":896,"t_mono_us":7905468,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7832000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":897,"t_mono_us":7913022,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7840000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":898,"t_mono_us":7915527,"source":"clock","kind":"midi","payload":{"backend_ts_us":7836000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":899,"t_mono_us":7919596,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7846000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":900,"t_mono_us":7928279,"source":"clock","kind":"midi","payload":{"backend_ts_us":7849000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":901,"t_mono_us":7928294,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7855000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":902,"t_mono_us":7936208,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7863000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":903,"t_mono_us":7943015,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7870000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":904,"t_mono_us":7950571,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7877000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":905,"t_mono_us":7957122,"source":"clock","kind":"midi","payload":{"backend_ts_us":7878000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":906,"t_mono_us":7957146,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7884000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":907,"t_mono_us":7968695,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7895000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":908,"t_mono_us":7970151,"source":"clock","kind":"midi","payload":{"backend_ts_us":7891000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":909,"t_mono_us":7976691,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7903000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":910,"t_mono_us":7984847,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7912000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":911,"t_mono_us":7991467,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7918000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":912,"t_mono_us":7997599,"source":"clock","kind":"midi","payload":{"backend_ts_us":7918000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":913,"t_mono_us":7999106,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7926000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":914,"t_mono_us":8007796,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7934000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":915,"t_mono_us":8013408,"source":"clock","kind":"midi","payload":{"backend_ts_us":7934000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":916,"t_mono_us":8014757,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7942000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":917,"t_mono_us":8021878,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7949000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":918,"t_mono_us":8036557,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7963000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":919,"t_mono_us":8038520,"source":"clock","kind":"midi","payload":{"backend_ts_us":7959000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":920,"t_mono_us":8044414,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7971000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":921,"t_mono_us":8051788,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7979000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":922,"t_mono_us":8055269,"source":"clock","kind":"midi","payload":{"backend_ts_us":7976000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":923,"t_mono_us":8059296,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7986000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":924,"t_mono_us":8066374,"source":"mtc","kind":"midi","payload":{"backend_ts_us":7993000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":925,"t_mono_us":8074725,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8001000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":926,"t_mono_us":8080206,"source":"clock","kind":"midi","payload":{"backend_ts_us":8001000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":927,"t_mono_us":8081654,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8008000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":928,"t_mono_us":8089299,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8016000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":929,"t_mono_us":8096444,"source":"clock","kind":"midi","payload":{"backend_ts_us":8017000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":930,"t_mono_us":8105598,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8032000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":931,"t_mono_us":8113824,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8040000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":932,"t_mono_us":8115131,"source":"clock","kind":"midi","payload":{"backend_ts_us":8036000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":933,"t_mono_us":8120677,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8047000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":934,"t_mono_us":8127754,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8055000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":935,"t_mono_us":8135923,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8063000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":936,"t_mono_us":8137478,"source":"clock","kind":"midi","payload":{"backend_ts_us":8058000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":937,"t_mono_us":8141986,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8069000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":938,"t_mono_us":8149644,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8076000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":939,"t_mono_us":8158192,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8085000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":940,"t_mono_us":8166276,"source":"clock","kind":"midi","payload":{"backend_ts_us":8087000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":941,"t_mono_us":8169354,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8096000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":942,"t_mono_us":8176414,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8103000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":943,"t_mono_us":8178492,"source":"clock","kind":"midi","payload":{"backend_ts_us":8099000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":944,"t_mono_us":8184013,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8111000,"bytes":"F1 25"}}
+{"run_id":"win-s03-smoke-01","seq":945,"t_mono_us":8191525,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8118000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":946,"t_mono_us":8198683,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8125000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":947,"t_mono_us":8206325,"source":"clock","kind":"midi","payload":{"backend_ts_us":8127000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":948,"t_mono_us":8206339,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8133000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":949,"t_mono_us":8214179,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8141000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":950,"t_mono_us":8221260,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8148000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":951,"t_mono_us":8224192,"source":"clock","kind":"midi","payload":{"backend_ts_us":8145000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":952,"t_mono_us":8236934,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8164000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":953,"t_mono_us":8244953,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8172000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":954,"t_mono_us":8248470,"source":"clock","kind":"midi","payload":{"backend_ts_us":8169000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":955,"t_mono_us":8251446,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8178000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":956,"t_mono_us":8259579,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8186000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":957,"t_mono_us":8265250,"source":"clock","kind":"midi","payload":{"backend_ts_us":8186000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":958,"t_mono_us":8266652,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8193000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":959,"t_mono_us":8274290,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8201000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":960,"t_mono_us":8283521,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8210000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":961,"t_mono_us":8289445,"source":"clock","kind":"midi","payload":{"backend_ts_us":8210000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":962,"t_mono_us":8289461,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8216000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":963,"t_mono_us":8305211,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8232000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":964,"t_mono_us":8306164,"source":"clock","kind":"midi","payload":{"backend_ts_us":8227000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":965,"t_mono_us":8313334,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8240000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":966,"t_mono_us":8321361,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8248000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":967,"t_mono_us":8328484,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8255000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":968,"t_mono_us":8329989,"source":"clock","kind":"midi","payload":{"backend_ts_us":8251000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":969,"t_mono_us":8335661,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8262000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":970,"t_mono_us":8342844,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8270000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":971,"t_mono_us":8347340,"source":"clock","kind":"midi","payload":{"backend_ts_us":8268000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":972,"t_mono_us":8350390,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8277000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":973,"t_mono_us":8357549,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8284000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":974,"t_mono_us":8365181,"source":"clock","kind":"midi","payload":{"backend_ts_us":8286000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":975,"t_mono_us":8372903,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8300000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":976,"t_mono_us":8381413,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8308000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":977,"t_mono_us":8387986,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8315000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":978,"t_mono_us":8388473,"source":"clock","kind":"midi","payload":{"backend_ts_us":8309000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":979,"t_mono_us":8395055,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8322000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":980,"t_mono_us":8403758,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8331000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":981,"t_mono_us":8410872,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8338000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":982,"t_mono_us":8415338,"source":"clock","kind":"midi","payload":{"backend_ts_us":8336000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":983,"t_mono_us":8418376,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8345000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":984,"t_mono_us":8426029,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8353000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":985,"t_mono_us":8429084,"source":"clock","kind":"midi","payload":{"backend_ts_us":8350000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":986,"t_mono_us":8437195,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8364000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":987,"t_mono_us":8444254,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8371000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":988,"t_mono_us":8451787,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8379000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":989,"t_mono_us":8456880,"source":"clock","kind":"midi","payload":{"backend_ts_us":8377000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":990,"t_mono_us":8459383,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8386000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":991,"t_mono_us":8466916,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8394000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":992,"t_mono_us":8474508,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8401000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":993,"t_mono_us":8474984,"source":"clock","kind":"midi","payload":{"backend_ts_us":8396000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":994,"t_mono_us":8482218,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8409000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":995,"t_mono_us":8490245,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8417000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":996,"t_mono_us":8497495,"source":"clock","kind":"midi","payload":{"backend_ts_us":8418000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":997,"t_mono_us":8504862,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8432000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":998,"t_mono_us":8513004,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8440000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":999,"t_mono_us":8515616,"source":"clock","kind":"midi","payload":{"backend_ts_us":8436000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1000,"t_mono_us":8519544,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8446000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":1001,"t_mono_us":8527214,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8454000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1002,"t_mono_us":8535281,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8462000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1003,"t_mono_us":8538916,"source":"clock","kind":"midi","payload":{"backend_ts_us":8459000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1004,"t_mono_us":8543519,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8470000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1005,"t_mono_us":8550526,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8477000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1006,"t_mono_us":8557722,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8484000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1007,"t_mono_us":8557812,"source":"clock","kind":"midi","payload":{"backend_ts_us":8478000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1008,"t_mono_us":8573407,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8500000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":1009,"t_mono_us":8574318,"source":"clock","kind":"midi","payload":{"backend_ts_us":8495000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1010,"t_mono_us":8579954,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8507000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":1011,"t_mono_us":8587942,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8515000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":1012,"t_mono_us":8596027,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8523000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1013,"t_mono_us":8596508,"source":"clock","kind":"midi","payload":{"backend_ts_us":8517000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1014,"t_mono_us":8602585,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8529000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1015,"t_mono_us":8611159,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8538000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1016,"t_mono_us":8614374,"source":"clock","kind":"midi","payload":{"backend_ts_us":8535000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1017,"t_mono_us":8618361,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8545000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1018,"t_mono_us":8625459,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8552000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1019,"t_mono_us":8638676,"source":"clock","kind":"midi","payload":{"backend_ts_us":8559000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1020,"t_mono_us":8641668,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8568000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":1021,"t_mono_us":8648202,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8575000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":1022,"t_mono_us":8656393,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8583000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":1023,"t_mono_us":8656413,"source":"clock","kind":"midi","payload":{"backend_ts_us":8577000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1024,"t_mono_us":8663043,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8590000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1025,"t_mono_us":8670561,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8597000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1026,"t_mono_us":8678167,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8605000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1027,"t_mono_us":8679685,"source":"clock","kind":"midi","payload":{"backend_ts_us":8600000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1028,"t_mono_us":8685876,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8613000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1029,"t_mono_us":8693472,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8620000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1030,"t_mono_us":8704746,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8631000,"bytes":"F1 0E"}}
+{"run_id":"win-s03-smoke-01","seq":1031,"t_mono_us":8707633,"source":"clock","kind":"midi","payload":{"backend_ts_us":8628000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1032,"t_mono_us":8713285,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8640000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":1033,"t_mono_us":8720872,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8648000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":1034,"t_mono_us":8724952,"source":"clock","kind":"midi","payload":{"backend_ts_us":8646000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1035,"t_mono_us":8728054,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8655000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1036,"t_mono_us":8735145,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8662000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1037,"t_mono_us":8742487,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8669000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1038,"t_mono_us":8749214,"source":"clock","kind":"midi","payload":{"backend_ts_us":8670000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1039,"t_mono_us":8750737,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8678000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1040,"t_mono_us":8757438,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8684000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1041,"t_mono_us":8766169,"source":"clock","kind":"midi","payload":{"backend_ts_us":8687000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1042,"t_mono_us":8770444,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8697000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":1043,"t_mono_us":8776733,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8703000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1044,"t_mono_us":8784241,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8711000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":1045,"t_mono_us":8789717,"source":"clock","kind":"midi","payload":{"backend_ts_us":8710000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1046,"t_mono_us":8791193,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8718000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1047,"t_mono_us":8798866,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8726000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1048,"t_mono_us":8806179,"source":"clock","kind":"midi","payload":{"backend_ts_us":8727000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1049,"t_mono_us":8806222,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8733000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1050,"t_mono_us":8814044,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8741000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1051,"t_mono_us":8821204,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8748000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1052,"t_mono_us":8823865,"source":"clock","kind":"midi","payload":{"backend_ts_us":8744000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1053,"t_mono_us":8837507,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8764000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":1054,"t_mono_us":8844593,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8771000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1055,"t_mono_us":8847385,"source":"clock","kind":"midi","payload":{"backend_ts_us":8768000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1056,"t_mono_us":8851928,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8779000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":1057,"t_mono_us":8859584,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8786000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1058,"t_mono_us":8865179,"source":"clock","kind":"midi","payload":{"backend_ts_us":8786000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1059,"t_mono_us":8866655,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8793000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1060,"t_mono_us":8874720,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8801000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1061,"t_mono_us":8882479,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8809000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1062,"t_mono_us":8888678,"source":"clock","kind":"midi","payload":{"backend_ts_us":8809000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1063,"t_mono_us":8890186,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8817000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1064,"t_mono_us":8905508,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8832000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":1065,"t_mono_us":8906977,"source":"clock","kind":"midi","payload":{"backend_ts_us":8828000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1066,"t_mono_us":8912620,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8839000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1067,"t_mono_us":8920330,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8847000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":1068,"t_mono_us":8927471,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8854000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1069,"t_mono_us":8934686,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8861000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1070,"t_mono_us":8934703,"source":"clock","kind":"midi","payload":{"backend_ts_us":8855000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1071,"t_mono_us":8942864,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8870000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1072,"t_mono_us":8948484,"source":"clock","kind":"midi","payload":{"backend_ts_us":8869000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1073,"t_mono_us":8950006,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8877000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1074,"t_mono_us":8957704,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8884000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1075,"t_mono_us":8968962,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8896000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":1076,"t_mono_us":8976027,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8903000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1077,"t_mono_us":8976454,"source":"clock","kind":"midi","payload":{"backend_ts_us":8897000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1078,"t_mono_us":8984731,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8911000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":1079,"t_mono_us":8991326,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8918000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1080,"t_mono_us":8998446,"source":"clock","kind":"midi","payload":{"backend_ts_us":8919000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1081,"t_mono_us":8998451,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8925000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1082,"t_mono_us":9006233,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8933000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1083,"t_mono_us":9014843,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8942000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1084,"t_mono_us":9017306,"source":"clock","kind":"midi","payload":{"backend_ts_us":8938000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1085,"t_mono_us":9021488,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8948000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1086,"t_mono_us":9036788,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8964000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":1087,"t_mono_us":9039764,"source":"clock","kind":"midi","payload":{"backend_ts_us":8960000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1088,"t_mono_us":9045381,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8972000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1089,"t_mono_us":9052444,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8979000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":1090,"t_mono_us":9057593,"source":"clock","kind":"midi","payload":{"backend_ts_us":8978000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1091,"t_mono_us":9059127,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8986000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1092,"t_mono_us":9067676,"source":"mtc","kind":"midi","payload":{"backend_ts_us":8994000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1093,"t_mono_us":9074289,"source":"clock","kind":"midi","payload":{"backend_ts_us":8995000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1094,"t_mono_us":9074307,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9001000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1095,"t_mono_us":9081429,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9008000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1096,"t_mono_us":9090166,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9017000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1097,"t_mono_us":9098778,"source":"clock","kind":"midi","payload":{"backend_ts_us":9019000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1098,"t_mono_us":9106156,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9033000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":1099,"t_mono_us":9112960,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9040000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1100,"t_mono_us":9115548,"source":"clock","kind":"midi","payload":{"backend_ts_us":9036000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1101,"t_mono_us":9120414,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9047000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":1102,"t_mono_us":9128568,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9055000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1103,"t_mono_us":9134631,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9061000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1104,"t_mono_us":9140496,"source":"clock","kind":"midi","payload":{"backend_ts_us":9061000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1105,"t_mono_us":9142232,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9069000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1106,"t_mono_us":9149519,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9076000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1107,"t_mono_us":9156368,"source":"clock","kind":"midi","payload":{"backend_ts_us":9077000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1108,"t_mono_us":9157379,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9084000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1109,"t_mono_us":9172726,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9099000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":1110,"t_mono_us":9180284,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9107000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1111,"t_mono_us":9184004,"source":"clock","kind":"midi","payload":{"backend_ts_us":9105000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1112,"t_mono_us":9188969,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9116000,"bytes":"F1 26"}}
+{"run_id":"win-s03-smoke-01","seq":1113,"t_mono_us":9196017,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9123000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1114,"t_mono_us":9198047,"source":"clock","kind":"midi","payload":{"backend_ts_us":9119000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1115,"t_mono_us":9202611,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9129000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1116,"t_mono_us":9210206,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9137000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1117,"t_mono_us":9217798,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9145000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1118,"t_mono_us":9225517,"source":"clock","kind":"midi","payload":{"backend_ts_us":9146000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1119,"t_mono_us":9225540,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9152000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1120,"t_mono_us":9236796,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9164000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":1121,"t_mono_us":9245353,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9172000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":1122,"t_mono_us":9249411,"source":"clock","kind":"midi","payload":{"backend_ts_us":9170000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1123,"t_mono_us":9251469,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9178000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1124,"t_mono_us":9259145,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9186000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1125,"t_mono_us":9266459,"source":"clock","kind":"midi","payload":{"backend_ts_us":9187000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1126,"t_mono_us":9267795,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9195000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1127,"t_mono_us":9275080,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9202000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1128,"t_mono_us":9282870,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9210000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1129,"t_mono_us":9284501,"source":"clock","kind":"midi","payload":{"backend_ts_us":9205000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1130,"t_mono_us":9289258,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9216000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1131,"t_mono_us":9305179,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9232000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":1132,"t_mono_us":9307598,"source":"clock","kind":"midi","payload":{"backend_ts_us":9228000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1133,"t_mono_us":9313255,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9240000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":1134,"t_mono_us":9320803,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9248000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1135,"t_mono_us":9326455,"source":"clock","kind":"midi","payload":{"backend_ts_us":9247000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1136,"t_mono_us":9327950,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9255000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1137,"t_mono_us":9334715,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9261000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1138,"t_mono_us":9342945,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9270000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1139,"t_mono_us":9348476,"source":"clock","kind":"midi","payload":{"backend_ts_us":9269000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1140,"t_mono_us":9350072,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9277000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1141,"t_mono_us":9357127,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9284000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1142,"t_mono_us":9367266,"source":"clock","kind":"midi","payload":{"backend_ts_us":9288000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1143,"t_mono_us":9368821,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9296000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":1144,"t_mono_us":9376423,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9303000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":1145,"t_mono_us":9384051,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9311000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1146,"t_mono_us":9389590,"source":"clock","kind":"midi","payload":{"backend_ts_us":9310000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1147,"t_mono_us":9391609,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9318000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1148,"t_mono_us":9398759,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9326000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1149,"t_mono_us":9406334,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9333000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1150,"t_mono_us":9407828,"source":"clock","kind":"midi","payload":{"backend_ts_us":9328000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1151,"t_mono_us":9413976,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9341000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1152,"t_mono_us":9421567,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9348000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1153,"t_mono_us":9435263,"source":"clock","kind":"midi","payload":{"backend_ts_us":9356000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1154,"t_mono_us":9437794,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9365000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":1155,"t_mono_us":9445315,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9372000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":1156,"t_mono_us":9449392,"source":"clock","kind":"midi","payload":{"backend_ts_us":9370000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1157,"t_mono_us":9452375,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9379000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1158,"t_mono_us":9460518,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9387000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1159,"t_mono_us":9467549,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9394000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1160,"t_mono_us":9474844,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9402000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1161,"t_mono_us":9476485,"source":"clock","kind":"midi","payload":{"backend_ts_us":9397000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1162,"t_mono_us":9482517,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9409000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1163,"t_mono_us":9489636,"source":"clock","kind":"midi","payload":{"backend_ts_us":9410000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1164,"t_mono_us":9489644,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9416000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1165,"t_mono_us":9506424,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9433000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":1166,"t_mono_us":9513484,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9440000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":1167,"t_mono_us":9517482,"source":"clock","kind":"midi","payload":{"backend_ts_us":9438000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1168,"t_mono_us":9519480,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9446000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1169,"t_mono_us":9528585,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9455000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1170,"t_mono_us":9534349,"source":"clock","kind":"midi","payload":{"backend_ts_us":9455000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1171,"t_mono_us":9535801,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9463000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1172,"t_mono_us":9542282,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9469000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1173,"t_mono_us":9551157,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9478000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1174,"t_mono_us":9557958,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9485000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1175,"t_mono_us":9558981,"source":"clock","kind":"midi","payload":{"backend_ts_us":9480000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1176,"t_mono_us":9569131,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9496000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":1177,"t_mono_us":9575696,"source":"clock","kind":"midi","payload":{"backend_ts_us":9496000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1178,"t_mono_us":9576203,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9503000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":1179,"t_mono_us":9584651,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9511000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1180,"t_mono_us":9591420,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9518000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1181,"t_mono_us":9599049,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9526000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1182,"t_mono_us":9599078,"source":"clock","kind":"midi","payload":{"backend_ts_us":9520000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1183,"t_mono_us":9606112,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9533000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1184,"t_mono_us":9613817,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9541000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1185,"t_mono_us":9616244,"source":"clock","kind":"midi","payload":{"backend_ts_us":9537000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1186,"t_mono_us":9621896,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9549000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1187,"t_mono_us":9636693,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9563000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":1188,"t_mono_us":9644257,"source":"clock","kind":"midi","payload":{"backend_ts_us":9565000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1189,"t_mono_us":9644392,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9571000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":1190,"t_mono_us":9652825,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9580000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1191,"t_mono_us":9658390,"source":"clock","kind":"midi","payload":{"backend_ts_us":9579000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1192,"t_mono_us":9659407,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9586000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1193,"t_mono_us":9666486,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9593000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1194,"t_mono_us":9674153,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9601000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1195,"t_mono_us":9682748,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9610000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1196,"t_mono_us":9684339,"source":"clock","kind":"midi","payload":{"backend_ts_us":9605000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1197,"t_mono_us":9689918,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9617000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1198,"t_mono_us":9699025,"source":"clock","kind":"midi","payload":{"backend_ts_us":9620000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1199,"t_mono_us":9705215,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9632000,"bytes":"F1 0E"}}
+{"run_id":"win-s03-smoke-01","seq":1200,"t_mono_us":9713262,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9640000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":1201,"t_mono_us":9721314,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9648000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1202,"t_mono_us":9726874,"source":"clock","kind":"midi","payload":{"backend_ts_us":9647000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1203,"t_mono_us":9728387,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9655000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1204,"t_mono_us":9735000,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9662000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1205,"t_mono_us":9739679,"source":"clock","kind":"midi","payload":{"backend_ts_us":9660000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1206,"t_mono_us":9742379,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9669000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1207,"t_mono_us":9750423,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9677000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1208,"t_mono_us":9758063,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9685000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1209,"t_mono_us":9761109,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9688000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":1210,"t_mono_us":9767168,"source":"clock","kind":"midi","payload":{"backend_ts_us":9688000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1211,"t_mono_us":9768694,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9695000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1212,"t_mono_us":9775390,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9702000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1213,"t_mono_us":9784343,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9711000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1214,"t_mono_us":9785817,"source":"clock","kind":"midi","payload":{"backend_ts_us":9706000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1215,"t_mono_us":9791402,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9718000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1216,"t_mono_us":9799523,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9726000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1217,"t_mono_us":9806756,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9734000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1218,"t_mono_us":9808585,"source":"clock","kind":"midi","payload":{"backend_ts_us":9729000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1219,"t_mono_us":9813026,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9740000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1220,"t_mono_us":9825756,"source":"clock","kind":"midi","payload":{"backend_ts_us":9746000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1221,"t_mono_us":9828567,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9755000,"bytes":"F1 02"}}
+{"run_id":"win-s03-smoke-01","seq":1222,"t_mono_us":9836181,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9763000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1223,"t_mono_us":9843971,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9771000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1224,"t_mono_us":9849719,"source":"clock","kind":"midi","payload":{"backend_ts_us":9770000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1225,"t_mono_us":9851238,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9778000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1226,"t_mono_us":9860316,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9787000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1227,"t_mono_us":9865948,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9793000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1228,"t_mono_us":9867406,"source":"clock","kind":"midi","payload":{"backend_ts_us":9788000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1229,"t_mono_us":9874685,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9801000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1230,"t_mono_us":9882573,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9809000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1231,"t_mono_us":9894033,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9821000,"bytes":"F1 04"}}
+{"run_id":"win-s03-smoke-01","seq":1232,"t_mono_us":9895390,"source":"clock","kind":"midi","payload":{"backend_ts_us":9816000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1233,"t_mono_us":9900813,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9828000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1234,"t_mono_us":9907912,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9835000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1235,"t_mono_us":9908927,"source":"clock","kind":"midi","payload":{"backend_ts_us":9829000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1236,"t_mono_us":9916268,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9843000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1237,"t_mono_us":9922664,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9849000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1238,"t_mono_us":9930190,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9857000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1239,"t_mono_us":9935739,"source":"clock","kind":"midi","payload":{"backend_ts_us":9856000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1240,"t_mono_us":9938313,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9865000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1241,"t_mono_us":9945402,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9872000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1242,"t_mono_us":9950473,"source":"clock","kind":"midi","payload":{"backend_ts_us":9871000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1243,"t_mono_us":9961733,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9888000,"bytes":"F1 06"}}
+{"run_id":"win-s03-smoke-01","seq":1244,"t_mono_us":9968761,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9896000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1245,"t_mono_us":9975408,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9902000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1246,"t_mono_us":9976881,"source":"clock","kind":"midi","payload":{"backend_ts_us":9897000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1247,"t_mono_us":9984665,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9911000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1248,"t_mono_us":9991107,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9918000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1249,"t_mono_us":9993225,"source":"clock","kind":"midi","payload":{"backend_ts_us":9914000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1250,"t_mono_us":9998240,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9925000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1251,"t_mono_us":10006456,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9933000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1252,"t_mono_us":10014701,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9941000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1253,"t_mono_us":10017731,"source":"clock","kind":"midi","payload":{"backend_ts_us":9938000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1254,"t_mono_us":10029437,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9956000,"bytes":"F1 08"}}
+{"run_id":"win-s03-smoke-01","seq":1255,"t_mono_us":10036443,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9963000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1256,"t_mono_us":10036455,"source":"clock","kind":"midi","payload":{"backend_ts_us":9957000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1257,"t_mono_us":10044140,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9971000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1258,"t_mono_us":10052665,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9979000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1259,"t_mono_us":10058301,"source":"clock","kind":"midi","payload":{"backend_ts_us":9979000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1260,"t_mono_us":10059814,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9987000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1261,"t_mono_us":10066406,"source":"mtc","kind":"midi","payload":{"backend_ts_us":9993000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1262,"t_mono_us":10074622,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10001000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1263,"t_mono_us":10076059,"source":"clock","kind":"midi","payload":{"backend_ts_us":9997000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1264,"t_mono_us":10081677,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10008000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1265,"t_mono_us":10092881,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10020000,"bytes":"F1 0A"}}
+{"run_id":"win-s03-smoke-01","seq":1266,"t_mono_us":10094417,"source":"clock","kind":"midi","payload":{"backend_ts_us":10015000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1267,"t_mono_us":10100401,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10027000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1268,"t_mono_us":10107549,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10034000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1269,"t_mono_us":10115119,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10042000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1270,"t_mono_us":10116708,"source":"clock","kind":"midi","payload":{"backend_ts_us":10037000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1271,"t_mono_us":10122734,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10049000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1272,"t_mono_us":10130339,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10057000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1273,"t_mono_us":10134346,"source":"clock","kind":"midi","payload":{"backend_ts_us":10055000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1274,"t_mono_us":10138509,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10065000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1275,"t_mono_us":10145088,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10072000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1276,"t_mono_us":10158249,"source":"clock","kind":"midi","payload":{"backend_ts_us":10079000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1277,"t_mono_us":10161358,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10088000,"bytes":"F1 0C"}}
+{"run_id":"win-s03-smoke-01","seq":1278,"t_mono_us":10169472,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10096000,"bytes":"F1 11"}}
+{"run_id":"win-s03-smoke-01","seq":1279,"t_mono_us":10175604,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10102000,"bytes":"F1 27"}}
+{"run_id":"win-s03-smoke-01","seq":1280,"t_mono_us":10183190,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10110000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1281,"t_mono_us":10185736,"source":"clock","kind":"midi","payload":{"backend_ts_us":10106000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1282,"t_mono_us":10190887,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10118000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1283,"t_mono_us":10198431,"source":"clock","kind":"midi","payload":{"backend_ts_us":10119000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1284,"t_mono_us":10198445,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10125000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1285,"t_mono_us":10205699,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10132000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1286,"t_mono_us":10213904,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10141000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1287,"t_mono_us":10226490,"source":"clock","kind":"midi","payload":{"backend_ts_us":10147000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1288,"t_mono_us":10228716,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10155000,"bytes":"F1 00"}}
+{"run_id":"win-s03-smoke-01","seq":1289,"t_mono_us":10236710,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10163000,"bytes":"F1 10"}}
+{"run_id":"win-s03-smoke-01","seq":1290,"t_mono_us":10244383,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10171000,"bytes":"F1 28"}}
+{"run_id":"win-s03-smoke-01","seq":1291,"t_mono_us":10244415,"source":"clock","kind":"midi","payload":{"backend_ts_us":10165000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1292,"t_mono_us":10252070,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10179000,"bytes":"F1 30"}}
+{"run_id":"win-s03-smoke-01","seq":1293,"t_mono_us":10259651,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10186000,"bytes":"F1 40"}}
+{"run_id":"win-s03-smoke-01","seq":1294,"t_mono_us":10266841,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10194000,"bytes":"F1 50"}}
+{"run_id":"win-s03-smoke-01","seq":1295,"t_mono_us":10268295,"source":"clock","kind":"midi","payload":{"backend_ts_us":10189000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1296,"t_mono_us":10274037,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10201000,"bytes":"F1 60"}}
+{"run_id":"win-s03-smoke-01","seq":1297,"t_mono_us":10281561,"source":"mtc","kind":"midi","payload":{"backend_ts_us":10208000,"bytes":"F1 76"}}
+{"run_id":"win-s03-smoke-01","seq":1298,"t_mono_us":10285559,"source":"clock","kind":"midi","payload":{"backend_ts_us":10206000,"bytes":"F8"}}
+{"run_id":"win-s03-smoke-01","seq":1299,"t_mono_us":10287042,"source":"clock","kind":"midi","payload":{"backend_ts_us":10208000,"bytes":"FC"}}
+{"run_id":"win-s03-smoke-01","seq":1300,"t_mono_us":10287042,"source":"clock","kind":"event","payload":{"event":"stop"}}
+{"run_id":"win-s03-smoke-01","seq":1301,"t_mono_us":25006421,"source":"meta","kind":"end","payload":{"clock":{"age_us":14719379,"beats":16.125,"bpm":120.06195196721508,"position_valid":true,"quarter_phase":0.125,"stats":{"continues":0,"song_positions":1,"starts":1,"stops":1,"ticks":387,"ticks_while_stopped":0},"transport":"stopped"},"mtc":{"advancing":false,"age_us":14724860,"blackout":true,"fault":null,"health":"lost","label":"00:00:08:00","position_hms":"00:00:08.302","position_us":8302845,"rate":"30","stats":{"discontinuities":0,"dropped":0,"full_frames":1,"invalid_labels":0,"locks":1,"quarter_frames":904,"rate_changes":0,"reverse_sequences":0,"sequences":113,"stray_pieces":0}},"queue_dropped":0,"records_before_end":1301}}

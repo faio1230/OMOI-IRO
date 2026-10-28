@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-preview-ack"
+description = "Enables the preview_ack command without any pre-configured scope."
+commands.allow = ["preview_ack"]
+
+[[permission]]
+identifier = "deny-preview-ack"
+description = "Denies the preview_ack command without any pre-configured scope."
+commands.deny = ["preview_ack"]

@@ -1,0 +1,64 @@
+MTC input   : loopMIDI Port
+Clock input : loopMIDI Port
+record      : ..\..\artifacts\p0\win-loopback-01.jsonl
+observing (Ctrl+C to stop)...
+  t=  1.070067s mtc   full_frame 01:00:00:00 (30)
+[    1.071s] | MTC      30 acquiring raw=01:00:00:00 pos=01:00:00.000     age=-- qf=0 seq=0 drop=0 disc=0 ff=1 | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | q_drop=0
+  t=  1.070142s clock start
+  t=  1.245333s mtc   locked 01:00:00:02
+[    2.070s] | MTC      30 locked    raw=01:00:00:26 pos=01:00:00.949 adv age=0ms qf=115 seq=14 drop=0 disc=0 ff=1 | CLK 119.94bpm playing  phase=0.92 beats=1.92 pos-ok age=12ms ticks=46 | q_drop=0
+[    3.070s] | MTC      30 locked    raw=01:00:01:26 pos=01:00:01.948 adv age=0ms qf=235 seq=29 drop=0 disc=0 ff=1 | CLK 120.00bpm playing  phase=0.92 beats=3.92 pos-ok age=12ms ticks=94 | q_drop=0
+[    4.070s] | MTC      30 locked    raw=01:00:02:26 pos=01:00:02.950 adv age=8ms qf=354 seq=44 drop=0 disc=0 ff=1 | CLK 120.02bpm playing  phase=0.92 beats=5.92 pos-ok age=12ms ticks=142 | q_drop=0
+[    5.070s] | MTC      30 locked    raw=01:00:03:26 pos=01:00:03.950 adv age=0ms qf=475 seq=59 drop=0 disc=0 ff=1 | CLK 120.03bpm playing  phase=0.92 beats=7.92 pos-ok age=12ms ticks=190 | q_drop=0
+  t=  5.578489s mtc   discontinuity 01:00:03:28 -> 01:00:04:12 (delta +12 frames)
+  t=  5.645370s mtc   locked 01:00:04:14
+[    6.070s] | MTC      30 locked    raw=01:00:04:26 pos=01:00:04.949 adv age=0ms qf=547 seq=68 drop=0 disc=1 ff=1 | CLK 120.07bpm playing  phase=0.92 beats=9.92 pos-ok age=12ms ticks=238 | q_drop=0
+[    7.070s] | MTC      30 locked    raw=01:00:05:26 pos=01:00:05.950 adv age=0ms qf=667 seq=83 drop=0 disc=1 ff=1 | CLK 119.98bpm playing  phase=0.92 beats=11.92 pos-ok age=12ms ticks=286 | q_drop=0
+[    8.070s] | MTC      30 locked    raw=01:00:06:26 pos=01:00:06.950 adv age=8ms qf=786 seq=98 drop=0 disc=1 ff=1 | CLK 119.95bpm playing  phase=0.92 beats=13.92 pos-ok age=12ms ticks=334 | q_drop=0
+[    9.070s] | MTC      30 locked    raw=01:00:07:26 pos=01:00:07.949 adv age=0ms qf=907 seq=113 drop=0 disc=1 ff=1 | CLK 120.00bpm playing  phase=0.92 beats=15.92 pos-ok age=12ms ticks=382 | q_drop=0
+  t=  9.111897s clock stop
+[   10.075s] | MTC      30 lost      raw=01:00:07:28 pos=01:00:08.241     age=963ms qf=912 seq=114 drop=0 disc=1 ff=1 | CLK 119.95bpm stopped  phase=0.00 beats=16.00 pos-ok age=963ms ticks=384 | q_drop=0
+stopped at t=11.001s; queue dropped=0; records=2606
+{
+  "clock": {
+    "age_us": 1888628,
+    "beats": 16.0,
+    "bpm": 119.95297843245447,
+    "position_valid": true,
+    "quarter_phase": 0.0,
+    "stats": {
+      "continues": 0,
+      "song_positions": 0,
+      "starts": 1,
+      "stops": 1,
+      "ticks": 384,
+      "ticks_while_stopped": 0
+    },
+    "transport": "stopped"
+  },
+  "mtc": {
+    "advancing": false,
+    "age_us": 1888787,
+    "blackout": true,
+    "fault": null,
+    "health": "lost",
+    "label": "01:00:07:28",
+    "position_hms": "01:00:08.241",
+    "position_us": 3608241714,
+    "rate": "30",
+    "stats": {
+      "discontinuities": 1,
+      "dropped": 0,
+      "full_frames": 1,
+      "invalid_labels": 0,
+      "locks": 2,
+      "quarter_frames": 912,
+      "rate_changes": 0,
+      "reverse_sequences": 0,
+      "sequences": 114,
+      "stray_pieces": 0
+    }
+  },
+  "queue_dropped": 0,
+  "records": 2605
+}

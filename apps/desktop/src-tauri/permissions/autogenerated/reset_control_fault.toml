@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-reset-control-fault"
+description = "Enables the reset_control_fault command without any pre-configured scope."
+commands.allow = ["reset_control_fault"]
+
+[[permission]]
+identifier = "deny-reset-control-fault"
+description = "Denies the reset_control_fault command without any pre-configured scope."
+commands.deny = ["reset_control_fault"]

@@ -1,0 +1,6 @@
+MTC input   : DJSC Timecode
+Clock input : DJSC Clock
+Link        : joined (observation only; start/stop sync on). Enable Link in Live before starting this.
+record      : <repo>\artifacts\p0\win-s07-link-01.jsonl
+observing (Ctrl+C to stop)...
+  t=  0.094597s link  tempo 120.00

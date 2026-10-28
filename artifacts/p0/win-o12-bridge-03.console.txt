@@ -1,0 +1,109 @@
+Clock input : DJSC Clock
+Bridge UDP  : 127.0.0.1:9007
+record      : <repo>\artifacts\p0\win-o12-bridge-03.jsonl
+observing (Ctrl+C to stop)...
+[    1.083s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE n=10 smpte=0ms beats=0.0 tempo=120.0 playing=false | q_drop=0
+[    2.080s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE n=19 smpte=0ms beats=0.0 tempo=120.0 playing=false | q_drop=0
+[    3.074s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE n=28 smpte=0ms beats=0.0 tempo=120.0 playing=false | q_drop=0
+[    4.075s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE n=38 smpte=0ms beats=0.0 tempo=120.0 playing=false | q_drop=0
+  t=  4.608221s clock start
+[    5.091s] | CLK 120.96bpm playing  phase=0.96 beats=0.96 pos-ok age=20ms ticks=23 | BRIDGE n=78 smpte=471ms beats=0.9410430839002268 tempo=120.0 playing=true | q_drop=0
+[    6.077s] | CLK 119.96bpm playing  phase=0.96 beats=2.96 pos-ok age=0ms ticks=71 | BRIDGE n=146 smpte=1451ms beats=2.901043083900227 tempo=120.0 playing=true | q_drop=0
+[    7.073s] | CLK 119.77bpm playing  phase=0.92 beats=4.92 pos-ok age=22ms ticks=118 | BRIDGE n=216 smpte=2451ms beats=4.901043083900227 tempo=120.0 playing=true | q_drop=0
+[    8.092s] | CLK 121.64bpm playing  phase=0.96 beats=6.96 pos-ok age=20ms ticks=167 | BRIDGE n=286 smpte=3471ms beats=6.941043083900227 tempo=120.0 playing=true | q_drop=0
+[    9.077s] | CLK 139.82bpm playing  phase=0.12 beats=9.12 pos-ok age=0ms ticks=219 | BRIDGE n=356 smpte=4451ms beats=9.051216931216931 tempo=140.0 playing=true | q_drop=0
+[   10.077s] | CLK 140.13bpm playing  phase=0.46 beats=11.46 pos-ok age=0ms ticks=275 | BRIDGE n=425 smpte=5451ms beats=11.384550264550263 tempo=140.0 playing=true | q_drop=0
+[   11.079s] | CLK 139.67bpm playing  phase=0.75 beats=13.75 pos-ok age=20ms ticks=330 | BRIDGE n=495 smpte=6451ms beats=13.717883597883596 tempo=140.0 playing=true | q_drop=0
+[   12.082s] | CLK 139.83bpm playing  phase=0.08 beats=16.08 pos-ok age=20ms ticks=386 | BRIDGE n=565 smpte=7471ms beats=16.097883597883598 tempo=140.0 playing=true | q_drop=0
+[   13.077s] | CLK 139.63bpm playing  phase=0.46 beats=18.46 pos-ok age=0ms ticks=443 | BRIDGE n=633 smpte=8451ms beats=18.384550264550263 tempo=140.0 playing=true | q_drop=0
+[   14.078s] | CLK 143.23bpm playing  phase=0.75 beats=20.75 pos-ok age=20ms ticks=498 | BRIDGE n=703 smpte=9451ms beats=20.7178835978836 tempo=140.0 playing=true | q_drop=0
+[   15.078s] | CLK 103.43bpm playing  phase=0.71 beats=22.71 pos-ok age=20ms ticks=545 | BRIDGE n=773 smpte=10451ms beats=22.67578231292517 tempo=90.0 playing=true | q_drop=0
+[   16.080s] | CLK  89.43bpm playing  phase=0.21 beats=24.21 pos-ok age=20ms ticks=581 | BRIDGE n=842 smpte=11451ms beats=24.17578231292517 tempo=90.0 playing=true | q_drop=0
+[   17.080s] | CLK  89.75bpm playing  phase=0.71 beats=25.71 pos-ok age=20ms ticks=617 | BRIDGE n=912 smpte=12451ms beats=25.67578231292517 tempo=90.0 playing=true | q_drop=0
+[   18.077s] | CLK  90.96bpm playing  phase=0.21 beats=27.21 pos-ok age=20ms ticks=653 | BRIDGE n=982 smpte=13451ms beats=27.17578231292517 tempo=90.0 playing=true | q_drop=0
+[   19.079s] | CLK  91.07bpm playing  phase=0.71 beats=28.71 pos-ok age=21ms ticks=689 | BRIDGE n=1051 smpte=14451ms beats=28.67578231292517 tempo=90.0 playing=true | q_drop=0
+[   20.080s] | CLK  89.75bpm playing  phase=0.21 beats=30.21 pos-ok age=20ms ticks=725 | BRIDGE n=1120 smpte=15451ms beats=30.17578231292517 tempo=90.0 playing=true | q_drop=0
+[   21.082s] | CLK  89.61bpm playing  phase=0.71 beats=31.71 pos-ok age=21ms ticks=761 | BRIDGE n=1191 smpte=16471ms beats=31.70578231292517 tempo=90.0 playing=true | q_drop=0
+[   22.077s] | CLK  91.20bpm playing  phase=0.21 beats=33.21 pos-ok age=20ms ticks=797 | BRIDGE n=1259 smpte=17451ms beats=33.17578231292517 tempo=90.0 playing=true | q_drop=0
+[   23.079s] | CLK  90.98bpm playing  phase=0.71 beats=34.71 pos-ok age=20ms ticks=833 | BRIDGE n=1328 smpte=18451ms beats=34.67578231292517 tempo=90.0 playing=true | q_drop=0
+[   24.081s] | CLK  89.60bpm playing  phase=0.21 beats=36.21 pos-ok age=21ms ticks=869 | BRIDGE n=1399 smpte=19471ms beats=36.20578231292517 tempo=90.0 playing=true | q_drop=0
+[   25.082s] | CLK  90.35bpm playing  phase=0.71 beats=37.71 pos-ok age=20ms ticks=905 | BRIDGE n=1468 smpte=20471ms beats=37.70578231292517 tempo=90.0 playing=true | q_drop=0
+[   26.078s] | CLK  90.85bpm playing  phase=0.21 beats=39.21 pos-ok age=21ms ticks=941 | BRIDGE n=1536 smpte=21451ms beats=39.17578231292517 tempo=90.0 playing=true | q_drop=0
+[   27.090s] | CLK 117.46bpm playing  phase=0.96 beats=40.96 pos-ok age=20ms ticks=983 | BRIDGE n=1608 smpte=22471ms beats=40.941043083900226 tempo=120.0 playing=true | q_drop=0
+[   28.076s] | CLK 118.73bpm playing  phase=0.96 beats=42.96 pos-ok age=0ms ticks=1031 | BRIDGE n=1677 smpte=23451ms beats=42.90104308390023 tempo=120.0 playing=true | q_drop=0
+[   29.078s] | CLK 119.65bpm playing  phase=0.96 beats=44.96 pos-ok age=0ms ticks=1079 | BRIDGE n=1747 smpte=24451ms beats=44.90104308390023 tempo=120.0 playing=true | q_drop=0
+[   30.077s] | CLK 118.76bpm playing  phase=0.92 beats=46.92 pos-ok age=21ms ticks=1126 | BRIDGE n=1816 smpte=25451ms beats=46.90104308390023 tempo=120.0 playing=true | q_drop=0
+[   31.093s] | CLK 119.80bpm playing  phase=0.96 beats=48.96 pos-ok age=21ms ticks=1175 | BRIDGE n=1887 smpte=26471ms beats=48.941043083900226 tempo=120.0 playing=true | q_drop=0
+[   32.077s] | CLK 118.97bpm playing  phase=0.96 beats=50.96 pos-ok age=0ms ticks=1223 | BRIDGE n=1955 smpte=27451ms beats=50.90104308390023 tempo=120.0 playing=true | q_drop=0
+[   33.078s] | CLK 120.27bpm playing  phase=0.96 beats=52.96 pos-ok age=0ms ticks=1271 | BRIDGE n=2025 smpte=28451ms beats=52.90104308390023 tempo=120.0 playing=true | q_drop=0
+[   34.091s] | CLK 122.32bpm playing  phase=0.96 beats=54.96 pos-ok age=20ms ticks=1319 | BRIDGE n=2096 smpte=29471ms beats=54.941043083900226 tempo=120.0 playing=true | q_drop=0
+[   35.092s] | CLK 119.87bpm playing  phase=0.96 beats=56.96 pos-ok age=21ms ticks=1367 | BRIDGE n=2166 smpte=30471ms beats=56.941043083900226 tempo=120.0 playing=true | q_drop=0
+[   36.077s] | CLK 120.12bpm playing  phase=0.96 beats=58.96 pos-ok age=0ms ticks=1415 | BRIDGE n=2234 smpte=31451ms beats=58.90104308390023 tempo=120.0 playing=true | q_drop=0
+  t= 36.117025s clock stop
+[   37.085s] | CLK 120.10bpm stopped  phase=0.00 beats=59.00 pos-ok age=966ms ticks=1417 | BRIDGE n=2249 smpte=31509ms beats=59.018956916099775 tempo=120.0 playing=false | q_drop=0
+[   38.075s] | CLK 120.10bpm stopped  phase=0.00 beats=59.00 pos-ok age=1956ms ticks=1417 | BRIDGE n=2258 smpte=31509ms beats=59.018956916099775 tempo=120.0 playing=false | q_drop=0
+[   39.087s] | CLK 120.10bpm stopped  phase=0.00 beats=59.00 pos-ok age=2968ms ticks=1417 | BRIDGE n=2267 smpte=31509ms beats=59.018956916099775 tempo=120.0 playing=false | q_drop=0
+  t= 39.337455s clock song_position 0 (16ths)
+[   40.081s] | CLK 120.10bpm stopped  phase=0.00 beats=0.00 pos-ok age=743ms ticks=1417 | BRIDGE n=2278 smpte=0ms beats=0.0 tempo=120.0 playing=false | q_drop=0
+[   41.076s] | CLK 120.10bpm stopped  phase=0.00 beats=0.00 pos-ok age=1738ms ticks=1417 | BRIDGE n=2288 smpte=0ms beats=0.0 tempo=120.0 playing=false | q_drop=0
+  t= 41.376938s clock start
+[   42.088s] | CLK 120.18bpm playing  phase=0.42 beats=1.42 pos-ok age=20ms ticks=1451 | BRIDGE n=2341 smpte=702ms beats=1.4034467120181406 tempo=120.0 playing=true | q_drop=0
+[   43.091s] | CLK 119.72bpm playing  phase=0.42 beats=3.42 pos-ok age=21ms ticks=1499 | BRIDGE n=2411 smpte=1702ms beats=3.4034467120181406 tempo=120.0 playing=true | q_drop=0
+[   44.091s] | CLK 119.51bpm playing  phase=0.46 beats=5.46 pos-ok age=0ms ticks=1548 | BRIDGE n=2480 smpte=2702ms beats=5.403446712018141 tempo=120.0 playing=true | q_drop=0
+[   45.078s] | CLK 119.49bpm playing  phase=0.42 beats=7.42 pos-ok age=0ms ticks=1595 | BRIDGE n=2549 smpte=3682ms beats=7.363446712018141 tempo=120.0 playing=true | q_drop=0
+[   46.081s] | CLK 141.63bpm playing  phase=0.62 beats=9.62 pos-ok age=20ms ticks=1648 | BRIDGE n=2620 smpte=4702ms beats=9.637354497354496 tempo=140.0 playing=true | q_drop=0
+[   47.078s] | CLK 139.96bpm playing  phase=0.00 beats=12.00 pos-ok age=0ms ticks=1705 | BRIDGE n=2689 smpte=5682ms beats=11.924021164021164 tempo=140.0 playing=true | q_drop=0
+[   48.080s] | CLK 143.52bpm playing  phase=0.29 beats=14.29 pos-ok age=21ms ticks=1760 | BRIDGE n=2758 smpte=6682ms beats=14.257354497354498 tempo=140.0 playing=true | q_drop=0
+[   49.081s] | CLK 141.56bpm playing  phase=0.67 beats=16.67 pos-ok age=0ms ticks=1817 | BRIDGE n=2828 smpte=7682ms beats=16.59068783068783 tempo=140.0 playing=true | q_drop=0
+[   50.077s] | CLK 142.68bpm playing  phase=0.00 beats=19.00 pos-ok age=0ms ticks=1873 | BRIDGE n=2897 smpte=8682ms beats=18.92402116402117 tempo=140.0 playing=true | q_drop=0
+[   51.079s] | CLK 139.68bpm playing  phase=0.33 beats=21.33 pos-ok age=0ms ticks=1929 | BRIDGE n=2967 smpte=9682ms beats=21.2573544973545 tempo=140.0 playing=true | q_drop=0
+[   52.078s] | CLK  89.70bpm playing  phase=0.08 beats=23.08 pos-ok age=0ms ticks=1971 | BRIDGE n=3038 smpte=10682ms beats=23.02258503401361 tempo=90.0 playing=true | q_drop=0
+[   53.080s] | CLK  89.61bpm playing  phase=0.58 beats=24.58 pos-ok age=0ms ticks=2007 | BRIDGE n=3107 smpte=11682ms beats=24.52258503401361 tempo=90.0 playing=true | q_drop=0
+  t= 53.447011s clock stop
+[   54.086s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=638ms ticks=2020 | BRIDGE n=3141 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   55.080s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=1633ms ticks=2020 | BRIDGE n=3150 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   56.091s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=2643ms ticks=2020 | BRIDGE n=3160 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   57.084s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=3636ms ticks=2020 | BRIDGE n=3169 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   58.077s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=4630ms ticks=2020 | BRIDGE n=3179 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   59.087s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=5639ms ticks=2020 | BRIDGE n=3188 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   60.076s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=6629ms ticks=2020 | BRIDGE n=3198 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   61.088s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=7641ms ticks=2020 | BRIDGE n=3208 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   62.077s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=8630ms ticks=2020 | BRIDGE n=3217 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   63.088s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=9640ms ticks=2020 | BRIDGE n=3227 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   64.078s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=10631ms ticks=2020 | BRIDGE n=3236 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   65.087s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=11639ms ticks=2020 | BRIDGE n=3246 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   66.080s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=12633ms ticks=2020 | BRIDGE n=3255 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   67.087s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=13639ms ticks=2020 | BRIDGE n=3265 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   68.073s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=14626ms ticks=2020 | BRIDGE n=3275 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   69.082s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=15634ms ticks=2020 | BRIDGE n=3284 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   70.076s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=16628ms ticks=2020 | BRIDGE n=3294 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   71.088s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=17641ms ticks=2020 | BRIDGE n=3303 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   72.080s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=18632ms ticks=2020 | BRIDGE n=3312 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   73.075s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=19627ms ticks=2020 | BRIDGE n=3322 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+[   74.091s] | CLK  89.58bpm stopped  phase=0.12 beats=25.12 pos-ok age=20644ms ticks=2020 | BRIDGE n=3332 smpte=12069ms beats=25.102857142857143 tempo=90.0 playing=false | q_drop=0
+stopped at t=75.019s; queue dropped=0; records=5373
+{
+  "bridge": {
+    "queue_dropped": 0,
+    "samples": 3341
+  },
+  "clock": {
+    "age_us": 21571902,
+    "beats": 25.125,
+    "bpm": 89.57978124617419,
+    "position_valid": true,
+    "quarter_phase": 0.125,
+    "stats": {
+      "continues": 0,
+      "song_positions": 1,
+      "stalls": 0,
+      "starts": 2,
+      "stops": 2,
+      "ticks": 2020,
+      "ticks_while_stopped": 1
+    },
+    "transport": "stopped"
+  },
+  "queue_dropped": 0,
+  "records_before_end": 5372
+}

@@ -1,0 +1,63 @@
+MTC input   : DJSC Timecode
+Clock input : DJSC Clock
+record      : <repo>\artifacts\p0\win-loopback-03.jsonl
+observing (Ctrl+C to stop)...
+[    1.073s] | MTC      -- unlocked  raw=--:--:--:-- pos=--     age=-- qf=0 seq=0 drop=0 disc=0 ff=0 | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | q_drop=0
+  t=  2.071992s mtc   full_frame 01:00:00:00 (30)
+[    2.077s] | MTC      30 acquiring raw=01:00:00:00 pos=01:00:00.000     age=-- qf=0 seq=0 drop=0 disc=0 ff=1 | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | q_drop=0
+  t=  2.247165s mtc   locked 01:00:00:02
+[    3.072s] | MTC      30 locked    raw=01:00:00:26 pos=01:00:00.950 adv age=0ms qf=115 seq=14 drop=0 disc=0 ff=1 | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | q_drop=0
+[    4.072s] | MTC      30 locked    raw=01:00:01:26 pos=01:00:01.950 adv age=0ms qf=235 seq=29 drop=0 disc=0 ff=1 | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | q_drop=0
+[    5.072s] | MTC      30 locked    raw=01:00:02:26 pos=01:00:02.950 adv age=0ms qf=355 seq=44 drop=0 disc=0 ff=1 | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | q_drop=0
+  t=  5.580413s mtc   discontinuity 01:00:02:28 -> 01:00:03:12 (delta +12 frames)
+  t=  5.646967s mtc   locked 01:00:03:14
+[    6.072s] | MTC      30 locked    raw=01:00:03:26 pos=01:00:03.949 adv age=0ms qf=427 seq=53 drop=0 disc=1 ff=1 | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | q_drop=0
+[    7.072s] | MTC      30 locked    raw=01:00:04:26 pos=01:00:04.950 adv age=0ms qf=547 seq=68 drop=0 disc=1 ff=1 | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | q_drop=0
+[    8.072s] | MTC      30 locked    raw=01:00:05:26 pos=01:00:05.949 adv age=0ms qf=667 seq=83 drop=0 disc=1 ff=1 | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | q_drop=0
+  t=  8.189861s clock start
+[    9.073s] | MTC      30 lost      raw=01:00:05:28 pos=01:00:06.241     age=959ms qf=672 seq=84 drop=0 disc=1 ff=1 | CLK 120.07bpm playing  phase=0.71 beats=1.71 pos-ok age=0ms ticks=41 | q_drop=0
+  t=  9.231596s clock stop
+stopped at t=10.011s; queue dropped=0; records=851
+{
+  "clock": {
+    "age_us": 779775,
+    "beats": 2.0,
+    "bpm": 119.89952419872147,
+    "position_valid": true,
+    "quarter_phase": 0.0,
+    "stats": {
+      "continues": 0,
+      "song_positions": 0,
+      "starts": 1,
+      "stops": 1,
+      "ticks": 48,
+      "ticks_while_stopped": 0
+    },
+    "transport": "stopped"
+  },
+  "mtc": {
+    "advancing": false,
+    "age_us": 1897563,
+    "blackout": true,
+    "fault": null,
+    "health": "lost",
+    "label": "01:00:05:28",
+    "position_hms": "01:00:06.241",
+    "position_us": 3606241840,
+    "rate": "30",
+    "stats": {
+      "discontinuities": 1,
+      "dropped": 0,
+      "full_frames": 1,
+      "invalid_labels": 0,
+      "locks": 2,
+      "quarter_frames": 672,
+      "rate_changes": 0,
+      "reverse_sequences": 0,
+      "sequences": 84,
+      "stray_pieces": 0
+    }
+  },
+  "queue_dropped": 0,
+  "records_before_end": 850
+}

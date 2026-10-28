@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-preview-subscribe"
+description = "Enables the preview_subscribe command without any pre-configured scope."
+commands.allow = ["preview_subscribe"]
+
+[[permission]]
+identifier = "deny-preview-subscribe"
+description = "Denies the preview_subscribe command without any pre-configured scope."
+commands.deny = ["preview_subscribe"]

@@ -1,0 +1,52 @@
+link-sss-probe kind=Link start_stop_sync=on seconds=22 (observe only)
+t=  0.501 peers=0 tempo=120.00 beat=1.003 phase=1.003 is_playing=false
+event peers -> 1
+t=  1.001 peers=1 tempo=120.00 beat=2.274 phase=2.274 is_playing=false
+t=  1.501 peers=1 tempo=120.00 beat=3.274 phase=3.274 is_playing=false
+t=  2.002 peers=1 tempo=120.00 beat=4.276 phase=0.276 is_playing=false
+t=  2.503 peers=1 tempo=120.00 beat=5.277 phase=1.277 is_playing=false
+t=  3.003 peers=1 tempo=120.00 beat=6.278 phase=2.278 is_playing=false
+event is_playing -> true
+t=  3.504 peers=1 tempo=120.00 beat=7.280 phase=3.280 is_playing=true
+t=  4.004 peers=1 tempo=120.00 beat=8.281 phase=0.281 is_playing=true
+t=  4.505 peers=1 tempo=120.00 beat=9.281 phase=1.281 is_playing=true
+t=  5.005 peers=1 tempo=120.00 beat=10.282 phase=2.282 is_playing=true
+t=  5.506 peers=1 tempo=120.00 beat=11.285 phase=3.285 is_playing=true
+t=  6.008 peers=1 tempo=120.00 beat=12.287 phase=0.287 is_playing=true
+t=  6.509 peers=1 tempo=120.00 beat=13.289 phase=1.289 is_playing=true
+t=  7.009 peers=1 tempo=120.00 beat=14.289 phase=2.289 is_playing=true
+t=  7.509 peers=1 tempo=120.00 beat=15.290 phase=3.290 is_playing=true
+t=  8.010 peers=1 tempo=120.00 beat=16.292 phase=0.292 is_playing=true
+event is_playing -> false
+t=  8.510 peers=1 tempo=120.00 beat=17.293 phase=1.293 is_playing=false
+t=  9.011 peers=1 tempo=120.00 beat=18.293 phase=2.293 is_playing=false
+t=  9.511 peers=1 tempo=120.00 beat=19.294 phase=3.294 is_playing=false
+t= 10.012 peers=1 tempo=120.00 beat=20.296 phase=0.296 is_playing=false
+t= 10.512 peers=1 tempo=120.00 beat=21.297 phase=1.297 is_playing=false
+event is_playing -> true
+t= 11.013 peers=1 tempo=120.00 beat=22.297 phase=2.297 is_playing=true
+t= 11.514 peers=1 tempo=120.00 beat=23.299 phase=3.299 is_playing=true
+t= 12.015 peers=1 tempo=120.00 beat=24.302 phase=0.302 is_playing=true
+t= 12.516 peers=1 tempo=120.00 beat=25.304 phase=1.304 is_playing=true
+t= 13.017 peers=1 tempo=120.00 beat=26.305 phase=2.305 is_playing=true
+t= 13.518 peers=1 tempo=120.00 beat=27.307 phase=3.307 is_playing=true
+t= 14.018 peers=1 tempo=120.00 beat=28.307 phase=0.307 is_playing=true
+t= 14.519 peers=1 tempo=120.00 beat=29.309 phase=1.309 is_playing=true
+t= 15.019 peers=1 tempo=120.00 beat=30.310 phase=2.310 is_playing=true
+t= 15.519 peers=1 tempo=120.00 beat=31.310 phase=3.310 is_playing=true
+t= 16.020 peers=1 tempo=120.00 beat=32.311 phase=0.311 is_playing=true
+t= 16.520 peers=1 tempo=120.00 beat=33.312 phase=1.312 is_playing=true
+event is_playing -> false
+t= 17.021 peers=1 tempo=120.00 beat=34.314 phase=2.314 is_playing=false
+t= 17.522 peers=1 tempo=120.00 beat=35.315 phase=3.315 is_playing=false
+t= 18.022 peers=1 tempo=120.00 beat=36.316 phase=0.316 is_playing=false
+t= 18.523 peers=1 tempo=120.00 beat=37.317 phase=1.317 is_playing=false
+t= 19.024 peers=1 tempo=120.00 beat=38.320 phase=2.320 is_playing=false
+t= 19.525 peers=1 tempo=120.00 beat=39.322 phase=3.322 is_playing=false
+t= 20.025 peers=1 tempo=120.00 beat=40.322 phase=0.322 is_playing=false
+t= 20.525 peers=1 tempo=120.00 beat=41.323 phase=1.323 is_playing=false
+t= 21.026 peers=1 tempo=120.00 beat=42.324 phase=2.324 is_playing=false
+t= 21.527 peers=1 tempo=120.00 beat=43.326 phase=3.326 is_playing=false
+t= 22.028 peers=1 tempo=120.00 beat=44.328 phase=0.328 is_playing=false
+done
+event peers -> 0

@@ -1,0 +1,21 @@
+[package]
+name = "omoiiro-runtime"
+description = "OMOI-IRO runtime: sync decoders (bridge, MTC, MIDI Clock), MTC generator, Link observation, diagnostics (JSONL record, replay, reports)"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+# Ableton Link observation via rusty_link (needs cmake and libclang at build time; see BUILD.md).
+link = ["dep:rusty_link"]
+
+[dependencies]
+omoiiro-core.workspace = true
+omoiiro-devices.workspace = true
+omoiiro-midi.workspace = true
+omoiiro-store.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+crossbeam-channel.workspace = true
+rusty_link = { workspace = true, optional = true }

@@ -1,0 +1,120 @@
+bridge UDP : 127.0.0.1:9007
+MTC out    : DJSC Timecode (30 fps, origin 01:00:00:00, offset 0 ms)
+verify in  : DJSC Timecode (record only; not used as the clock)
+record     : ../../artifacts/p0/win-p1-c2b.jsonl
+running (Ctrl+C to stop)...
+  t=  0.034339s mtc-out full_frame 01:00:28:00 (hold)
+  t=  0.130091s bridge locked at 28000 ms
+[    1.013s] | BRIDGE locked    stopped  song=00:00:28.000     tempo=120.00 age=82ms n=10 disc=0 (playing 0, start 0) stalls=0 | OUT qf=0 late -- | RX MTC      30 acquiring raw=01:00:28:00 pos=01:00:28.000     age=-- qf=0 seq=0 drop=0 disc=0 ff=1 ff_disc=0
+[    2.023s] | BRIDGE locked    stopped  song=00:00:28.000     tempo=120.00 age=76ms n=20 disc=0 (playing 0, start 0) stalls=0 | OUT qf=0 late -- | RX MTC      30 acquiring raw=01:00:28:00 pos=01:00:28.000     age=-- qf=0 seq=0 drop=0 disc=0 ff=1 ff_disc=0
+  t=  2.196615s bridge discontinuity(stopped) 28000 -> 44000 ms (elapsed 49.4 ms, deviation +16000.0 ms)
+  t=  2.204292s mtc-out full_frame 01:00:44:00 (hold)
+  t=  2.247363s bridge locked at 44000 ms
+[    3.028s] | BRIDGE locked    stopped  song=00:00:44.000     tempo=120.00 age=31ms n=31 disc=1 (playing 0, start 0) stalls=0 | OUT qf=0 late -- | RX MTC      30 acquiring raw=01:00:44:00 pos=01:00:44.000     age=-- qf=0 seq=0 drop=0 disc=0 ff=2 ff_disc=1
+[    4.036s] | BRIDGE locked    stopped  song=00:00:44.000     tempo=120.00 age=22ms n=41 disc=1 (playing 0, start 0) stalls=0 | OUT qf=0 late -- | RX MTC      30 acquiring raw=01:00:44:00 pos=01:00:44.000     age=-- qf=0 seq=0 drop=0 disc=0 ff=2 ff_disc=1
+[    5.043s] | BRIDGE locked    stopped  song=00:00:44.000     tempo=120.00 age=96ms n=50 disc=1 (playing 0, start 0) stalls=0 | OUT qf=0 late -- | RX MTC      30 acquiring raw=01:00:44:00 pos=01:00:44.000     age=-- qf=0 seq=0 drop=0 disc=0 ff=2 ff_disc=1
+  t=  5.365126s bridge play at 44000 ms
+  t=  5.374262s mtc-out full_frame 01:00:44:00 (start)
+[    6.047s] | BRIDGE locked    playing  song=00:00:44.675 adv tempo=120.00 age=0ms n=102 disc=1 (playing 0, start 0) stalls=0 | OUT qf=78 late p95 0.15ms max 0.22ms | RX MTC      30 locked    raw=01:00:44:17 pos=01:00:44.679 adv age=4ms qf=78 seq=9 drop=0 disc=0 ff=3 ff_disc=1
+[    7.047s] | BRIDGE locked    playing  song=00:00:45.675 adv tempo=120.00 age=0ms n=171 disc=1 (playing 0, start 0) stalls=0 | OUT qf=198 late p95 0.15ms max 0.22ms | RX MTC      30 locked    raw=01:00:45:17 pos=01:00:45.679 adv age=3ms qf=198 seq=24 drop=0 disc=0 ff=3 ff_disc=1
+[    8.058s] | BRIDGE locked    playing  song=00:00:46.686 adv tempo=120.00 age=11ms n=241 disc=1 (playing 0, start 0) stalls=0 | OUT qf=319 late p95 0.14ms max 0.49ms | RX MTC      30 locked    raw=01:00:46:17 pos=01:00:46.689 adv age=5ms qf=319 seq=39 drop=0 disc=0 ff=3 ff_disc=1
+[    9.064s] | BRIDGE locked    playing  song=00:00:47.695 adv tempo=120.00 age=0ms n=312 disc=1 (playing 0, start 0) stalls=0 | OUT qf=440 late p95 0.14ms max 0.49ms | RX MTC      30 locked    raw=01:00:47:19 pos=01:00:47.694 adv age=3ms qf=440 seq=55 drop=0 disc=0 ff=3 ff_disc=1
+[   10.064s] | BRIDGE locked    playing  song=00:00:48.695 adv tempo=120.00 age=0ms n=381 disc=1 (playing 0, start 0) stalls=0 | OUT qf=560 late p95 0.14ms max 0.49ms | RX MTC      30 locked    raw=01:00:48:19 pos=01:00:48.695 adv age=3ms qf=560 seq=70 drop=0 disc=0 ff=3 ff_disc=1
+[   11.075s] | BRIDGE locked    playing  song=00:00:49.705 adv tempo=120.00 age=10ms n=451 disc=1 (playing 0, start 0) stalls=0 | OUT qf=681 late p95 0.14ms max 0.49ms | RX MTC      30 locked    raw=01:00:49:19 pos=01:00:49.706 adv age=5ms qf=681 seq=85 drop=0 disc=0 ff=3 ff_disc=1
+[   12.075s] | BRIDGE locked    playing  song=00:00:50.706 adv tempo=120.00 age=11ms n=521 disc=1 (playing 0, start 0) stalls=0 | OUT qf=801 late p95 0.14ms max 0.49ms | RX MTC      30 locked    raw=01:00:50:19 pos=01:00:50.706 adv age=5ms qf=801 seq=100 drop=0 disc=0 ff=3 ff_disc=1
+  t= 12.580293s bridge discontinuity(playing) 51195 -> 18287 ms (elapsed 16.8 ms, deviation -32924.8 ms)
+  t= 12.580328s bridge locked at 18287 ms
+  t= 12.585312s mtc-out full_frame 01:00:18:08 (jump)
+[   13.075s] | BRIDGE locked    playing  song=00:00:18.789 adv tempo=90.00 age=10ms n=592 disc=2 (playing 1, start 0) stalls=0 | OUT qf=921 late p95 0.14ms max 0.49ms | RX MTC      30 locked    raw=01:00:18:21 pos=01:00:18.784 adv age=2ms qf=921 seq=114 drop=0 disc=0 ff=4 ff_disc=2
+[   14.075s] | BRIDGE locked    playing  song=00:00:19.790 adv tempo=90.00 age=11ms n=661 disc=2 (playing 1, start 0) stalls=0 | OUT qf=1041 late p95 0.14ms max 0.49ms | RX MTC      30 locked    raw=01:00:19:21 pos=01:00:19.789 adv age=5ms qf=1041 seq=129 drop=0 disc=0 ff=4 ff_disc=2
+[   15.081s] | BRIDGE locked    playing  song=00:00:20.799 adv tempo=90.00 age=0ms n=732 disc=2 (playing 1, start 0) stalls=0 | OUT qf=1162 late p95 0.14ms max 0.49ms | RX MTC      30 locked    raw=01:00:20:21 pos=01:00:20.795 adv age=3ms qf=1162 seq=144 drop=0 disc=0 ff=4 ff_disc=2
+[   16.081s] | BRIDGE locked    playing  song=00:00:21.799 adv tempo=90.00 age=0ms n=801 disc=2 (playing 1, start 0) stalls=0 | OUT qf=1282 late p95 0.14ms max 0.49ms | RX MTC      30 locked    raw=01:00:21:21 pos=01:00:21.795 adv age=4ms qf=1282 seq=159 drop=0 disc=0 ff=4 ff_disc=2
+[   17.081s] | BRIDGE locked    playing  song=00:00:22.799 adv tempo=120.00 age=0ms n=872 disc=2 (playing 1, start 0) stalls=0 | OUT qf=1402 late p95 0.14ms max 0.49ms | RX MTC      30 locked    raw=01:00:22:21 pos=01:00:22.796 adv age=4ms qf=1402 seq=174 drop=0 disc=0 ff=4 ff_disc=2
+[   18.081s] | BRIDGE locked    playing  song=00:00:23.799 adv tempo=120.00 age=0ms n=941 disc=2 (playing 1, start 0) stalls=0 | OUT qf=1522 late p95 0.14ms max 0.49ms | RX MTC      30 locked    raw=01:00:23:21 pos=01:00:23.796 adv age=4ms qf=1522 seq=189 drop=0 disc=0 ff=4 ff_disc=2
+[   19.092s] | BRIDGE locked    playing  song=00:00:24.810 adv tempo=120.00 age=11ms n=1011 disc=2 (playing 1, start 0) stalls=0 | OUT qf=1643 late p95 0.14ms max 0.65ms | RX MTC      30 locked    raw=01:00:24:21 pos=01:00:24.806 adv age=6ms qf=1643 seq=204 drop=0 disc=0 ff=4 ff_disc=2
+  t= 19.581119s bridge discontinuity(playing) 25279 -> 75299 ms (elapsed 16.4 ms, deviation +50003.6 ms)
+  t= 19.597569s bridge locked at 75309 ms
+  t= 19.600463s mtc-out full_frame 01:01:15:09 (jump)
+[   20.098s] | BRIDGE locked    playing  song=00:01:15.809 adv tempo=120.00 age=0ms n=1081 disc=3 (playing 2, start 0) stalls=0 | OUT qf=1760 late p95 0.14ms max 0.65ms | RX MTC      30 locked    raw=01:01:15:22 pos=01:01:15.810 adv age=3ms qf=1760 seq=219 drop=0 disc=0 ff=5 ff_disc=3
+[   21.108s] | BRIDGE locked    playing  song=00:01:16.819 adv tempo=120.00 age=10ms n=1151 disc=3 (playing 2, start 0) stalls=0 | OUT qf=1881 late p95 0.14ms max 0.65ms | RX MTC      30 locked    raw=01:01:16:22 pos=01:01:16.821 adv age=5ms qf=1881 seq=234 drop=0 disc=0 ff=5 ff_disc=3
+[   22.108s] | BRIDGE locked    playing  song=00:01:17.819 adv tempo=120.00 age=10ms n=1220 disc=3 (playing 2, start 0) stalls=0 | OUT qf=2001 late p95 0.14ms max 0.65ms | RX MTC      30 locked    raw=01:01:17:22 pos=01:01:17.823 adv age=6ms qf=2001 seq=249 drop=0 disc=0 ff=5 ff_disc=3
+[   23.109s] | BRIDGE locked    playing  song=00:01:18.819 adv tempo=120.00 age=10ms n=1290 disc=3 (playing 2, start 0) stalls=0 | OUT qf=2121 late p95 0.14ms max 0.65ms | RX MTC      30 locked    raw=01:01:18:22 pos=01:01:18.823 adv age=7ms qf=2121 seq=264 drop=0 disc=0 ff=5 ff_disc=3
+  t= 23.930901s bridge stop at 79636 ms
+  t= 23.935298s mtc-out full_frame 01:01:19:19 (stop)
+[   24.116s] | BRIDGE locked    stopped  song=00:01:19.636     tempo=120.00 age=84ms n=1350 disc=3 (playing 2, start 0) stalls=0 | OUT qf=2220 late p95 0.14ms max 0.65ms | RX MTC      30 acquiring raw=01:01:19:19 pos=01:01:19.633     age=188ms qf=2220 seq=276 drop=0 disc=0 ff=6 ff_disc=3
+[   25.119s] | BRIDGE locked    stopped  song=00:01:19.636     tempo=120.00 age=53ms n=1360 disc=3 (playing 2, start 0) stalls=0 | OUT qf=2220 late p95 0.14ms max 0.65ms | RX MTC      30 acquiring raw=01:01:19:19 pos=01:01:19.633     age=1191ms qf=2220 seq=276 drop=0 disc=0 ff=6 ff_disc=3
+[   26.124s] | BRIDGE locked    stopped  song=00:01:19.636     tempo=120.00 age=41ms n=1370 disc=3 (playing 2, start 0) stalls=0 | OUT qf=2220 late p95 0.14ms max 0.65ms | RX MTC      30 acquiring raw=01:01:19:19 pos=01:01:19.633     age=2196ms qf=2220 seq=276 drop=0 disc=0 ff=6 ff_disc=3
+[   27.128s] | BRIDGE locked    stopped  song=00:01:19.636     tempo=120.00 age=112ms n=1379 disc=3 (playing 2, start 0) stalls=0 | OUT qf=2220 late p95 0.14ms max 0.65ms | RX MTC      30 acquiring raw=01:01:19:19 pos=01:01:19.633     age=3201ms qf=2220 seq=276 drop=0 disc=0 ff=6 ff_disc=3
+[   28.128s] | BRIDGE locked    stopped  song=00:01:19.636     tempo=120.00 age=63ms n=1389 disc=3 (playing 2, start 0) stalls=0 | OUT qf=2220 late p95 0.14ms max 0.65ms | RX MTC      30 acquiring raw=01:01:19:19 pos=01:01:19.633     age=4201ms qf=2220 seq=276 drop=0 disc=0 ff=6 ff_disc=3
+[   29.136s] | BRIDGE locked    stopped  song=00:01:19.636     tempo=120.00 age=20ms n=1399 disc=3 (playing 2, start 0) stalls=0 | OUT qf=2220 late p95 0.14ms max 0.65ms | RX MTC      30 acquiring raw=01:01:19:19 pos=01:01:19.633     age=5208ms qf=2220 seq=276 drop=0 disc=0 ff=6 ff_disc=3
+[   30.142s] | BRIDGE locked    stopped  song=00:01:19.636     tempo=120.00 age=10ms n=1409 disc=3 (playing 2, start 0) stalls=0 | OUT qf=2220 late p95 0.14ms max 0.65ms | RX MTC      30 acquiring raw=01:01:19:19 pos=01:01:19.633     age=6214ms qf=2220 seq=276 drop=0 disc=0 ff=6 ff_disc=3
+[   31.150s] | BRIDGE locked    stopped  song=00:01:19.636     tempo=120.00 age=52ms n=1418 disc=3 (playing 2, start 0) stalls=0 | OUT qf=2220 late p95 0.14ms max 0.65ms | RX MTC      30 acquiring raw=01:01:19:19 pos=01:01:19.633     age=7223ms qf=2220 seq=276 drop=0 disc=0 ff=6 ff_disc=3
+[   32.151s] | BRIDGE locked    stopped  song=00:01:19.636     tempo=120.00 age=84ms n=1427 disc=3 (playing 2, start 0) stalls=0 | OUT qf=2220 late p95 0.14ms max 0.65ms | RX MTC      30 acquiring raw=01:01:19:19 pos=01:01:19.633     age=8223ms qf=2220 seq=276 drop=0 disc=0 ff=6 ff_disc=3
+[   33.160s] | BRIDGE locked    stopped  song=00:01:19.636     tempo=120.00 age=94ms n=1437 disc=3 (playing 2, start 0) stalls=0 | OUT qf=2220 late p95 0.14ms max 0.65ms | RX MTC      30 acquiring raw=01:01:19:19 pos=01:01:19.633     age=9233ms qf=2220 seq=276 drop=0 disc=0 ff=6 ff_disc=3
+{
+  "bridge": {
+    "advancing": false,
+    "age_us": 51024,
+    "beats": 155.27209140066284,
+    "blackout": false,
+    "fault": null,
+    "health": "locked",
+    "song_ms": 79636.0,
+    "stats": {
+      "discontinuities": 3,
+      "faults": 0,
+      "locks": 4,
+      "playing_discontinuities": 2,
+      "reordered": 0,
+      "restarts": 0,
+      "samples": 1446,
+      "stalls": 0,
+      "start_discontinuities": 0
+    },
+    "tempo": 120.0,
+    "transport": "stopped"
+  },
+  "dropped": {
+    "bridge": 0,
+    "sent_records": 0,
+    "verify": 0
+  },
+  "generator": {
+    "full_frames": 6,
+    "jumps": 2,
+    "quarter_frames": 2220,
+    "resyncs": 0,
+    "starts": 1,
+    "stops": 1
+  },
+  "qf_late_ms": {
+    "max": 0.6466221028491854,
+    "median": 0.06830290095042438,
+    "n": 2220,
+    "p95": 0.13507039696350695
+  },
+  "verify_mtc": {
+    "advancing": false,
+    "age_us": 10089423,
+    "blackout": false,
+    "fault": null,
+    "health": "acquiring",
+    "label": "01:01:19:19",
+    "position_hms": "01:01:19.633",
+    "position_us": 3679633333,
+    "rate": "30",
+    "stats": {
+      "discontinuities": 0,
+      "dropped": 0,
+      "ff_discontinuities": 3,
+      "full_frames": 6,
+      "invalid_labels": 0,
+      "locks": 3,
+      "quarter_frames": 2220,
+      "rate_changes": 0,
+      "reverse_sequences": 0,
+      "sequences": 276,
+      "stray_pieces": 0
+    }
+  }
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-settings-listen"
+description = "Enables the settings_listen command without any pre-configured scope."
+commands.allow = ["settings_listen"]
+
+[[permission]]
+identifier = "deny-settings-listen"
+description = "Denies the settings_listen command without any pre-configured scope."
+commands.deny = ["settings_listen"]

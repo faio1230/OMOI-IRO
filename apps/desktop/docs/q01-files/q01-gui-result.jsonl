@@ -1,0 +1,11 @@
+{"id":"G1.1","title":"GUI：新規ショーと編集","expect":"新規（未保存）にレイヤー・常時レイヤー・プリセットを追加できる","pass":true,"result":"new True, dirty True","t":"2026-10-28T09:44:29"}
+{"id":"G1.2","title":"GUI：名前を付けて保存（Windows のダイアログ）","expect":"ファイルができ、render で読める、保存済み表示","pass":false,"result":"<repo>\\apps\\desktop\\docs\\q01-files\\q01-gui-new.show.json","t":"2026-10-28T09:44:43"}
+{"id":"G2.1","title":"GUI：再読込と無変更の保存","expect":"Undo 履歴は空、無変更の保存でバイト一致","pass":true,"result":"undo enabled False, hash equal True","t":"2026-10-28T09:45:12"}
+{"id":"G3.1","title":"GUI：任意位置プレビューの画素 = render","expect":"64パッドの画面の色が render の RGB と±3以内（7bit 量子化と描画）","pass":true,"result":"t=12345000 us, 最大差 0","t":"2026-10-28T09:45:15"}
+{"id":"G4.1","title":"GUI：追従、編集の反映、Blackout、再接続","expect":"locked、編集が rev 2 で反映、Blackout の暗転理由、再接続後も動作","pass":false,"result":"locked True, rev2 False, blackout True","t":"2026-10-28T09:45:25"}
+{"id":"G5.1","title":"GUI：未保存で閉じる → キャンセル","expect":"確認が出る、キャンセルで残る、保存せずに終了でファイル不変","pass":true,"result":"asked True, stayed True, exited True, file unchanged True","t":"2026-10-28T09:45:32"}
+{"id":"G4.1","title":"GUI：追従、編集の反映、Blackout、再接続","expect":"locked、編集が rev 2 で反映、Blackout の暗転理由、再接続後も動作","pass":false,"result":"locked True, rev2 False, blackout True","t":"2026-10-28T09:45:57"}
+{"id":"G4.1","title":"GUI：追従、編集の反映、Blackout、再接続","expect":"locked、編集が rev 2 で反映、Blackout の暗転理由、再接続後も動作","pass":true,"result":"locked True, rev2 True, blackout True","t":"2026-10-28T09:46:48"}
+{"id":"G1.1","title":"GUI：新規ショーと編集","expect":"新規（未保存）にレイヤー・常時レイヤー・プリセットを追加できる","pass":true,"result":"new True, dirty True","t":"2026-10-28T09:47:04"}
+{"id":"G1.2","title":"GUI：名前を付けて保存（Windows のダイアログ）","expect":"ファイルができ、render で読める、保存済み表示","pass":false,"result":"<repo>\\apps\\desktop\\docs\\q01-files\\q01-gui-new.show.json","t":"2026-10-28T09:47:19"}
+{"id":"G6.1","title":"GUI：メモリー（NFR07 の予備）","expect":"開始10秒後と600 秒後の working set を記録（増加の傾向を見る）","pass":true,"result":"omoiiro.exe 45.7 -> 46.2 MB; 子プロセス込み 172.1 -> 184.1 MB; プレビュー間引き ","t":"2026-10-28T09:57:40"}

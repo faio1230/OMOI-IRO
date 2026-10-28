@@ -1,0 +1,87 @@
+Clock input : DJSC Clock
+Link        : joined (observation only; start/stop sync on). Enable Link in Live before starting this.
+record      : <repo>\artifacts\p0\win-s07-link-03.jsonl
+observing (Ctrl+C to stop)...
+  t=  0.089706s link  tempo 120.00
+  t=  0.576034s link  peers 0 -> 1
+[    1.077s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm unknown  beat=0.05 phase=0.05/4 is_playing=false | q_drop=0
+[    2.070s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm unknown  beat=3.04 phase=3.04/4 is_playing=false | q_drop=0
+[    3.085s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm unknown  beat=5.07 phase=1.07/4 is_playing=false | q_drop=0
+[    4.074s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm unknown  beat=7.10 phase=3.10/4 is_playing=false | q_drop=0
+[    5.085s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm unknown  beat=9.12 phase=1.12/4 is_playing=false | q_drop=0
+  t=  5.250180s link  is_playing -> true (peers 1)
+[    6.081s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm playing  beat=11.15 phase=3.15/4 is_playing=true | q_drop=0
+[    7.086s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm playing  beat=13.17 phase=1.17/4 is_playing=true | q_drop=0
+[    8.074s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm playing  beat=15.18 phase=3.18/4 is_playing=true | q_drop=0
+[    9.086s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm playing  beat=17.20 phase=1.20/4 is_playing=true | q_drop=0
+[   10.083s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm playing  beat=19.23 phase=3.23/4 is_playing=true | q_drop=0
+[   11.074s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm playing  beat=21.26 phase=1.26/4 is_playing=true | q_drop=0
+  t= 11.310132s link  is_playing -> false (peers 1)
+[   12.083s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm stopped  beat=23.28 phase=3.28/4 is_playing=false | q_drop=0
+[   13.077s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=1 120.00bpm stopped  beat=25.30 phase=1.30/4 is_playing=false | q_drop=0
+  t= 13.525365s link  peers 1 -> 0
+  t= 13.525365s link  transport unknown (no peers)
+[   14.088s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=27.33 phase=3.33/4 is_playing=false | q_drop=0
+[   15.075s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=29.35 phase=1.35/4 is_playing=false | q_drop=0
+[   16.080s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=31.36 phase=3.36/4 is_playing=false | q_drop=0
+[   17.073s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=33.38 phase=1.38/4 is_playing=false | q_drop=0
+[   18.081s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=35.40 phase=3.40/4 is_playing=false | q_drop=0
+[   19.070s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=37.42 phase=1.42/4 is_playing=false | q_drop=0
+[   20.079s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=39.44 phase=3.44/4 is_playing=false | q_drop=0
+[   21.089s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=41.46 phase=1.46/4 is_playing=false | q_drop=0
+[   22.079s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=43.48 phase=3.48/4 is_playing=false | q_drop=0
+[   23.068s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=45.50 phase=1.50/4 is_playing=false | q_drop=0
+[   24.082s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=47.52 phase=3.52/4 is_playing=false | q_drop=0
+[   25.072s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=49.55 phase=1.55/4 is_playing=false | q_drop=0
+[   26.083s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=51.57 phase=3.57/4 is_playing=false | q_drop=0
+[   27.074s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=53.59 phase=1.59/4 is_playing=false | q_drop=0
+[   28.086s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=55.61 phase=3.61/4 is_playing=false | q_drop=0
+[   29.083s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=57.65 phase=1.65/4 is_playing=false | q_drop=0
+[   30.077s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=59.67 phase=3.67/4 is_playing=false | q_drop=0
+[   31.071s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=61.71 phase=1.71/4 is_playing=false | q_drop=0
+[   32.083s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=63.73 phase=3.73/4 is_playing=false | q_drop=0
+[   33.077s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=65.76 phase=1.76/4 is_playing=false | q_drop=0
+[   34.069s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=67.78 phase=3.78/4 is_playing=false | q_drop=0
+[   35.079s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=69.81 phase=1.81/4 is_playing=false | q_drop=0
+[   36.072s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=71.83 phase=3.83/4 is_playing=false | q_drop=0
+[   37.082s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=73.85 phase=1.85/4 is_playing=false | q_drop=0
+[   38.075s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=75.87 phase=3.87/4 is_playing=false | q_drop=0
+[   39.087s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | LINK peers=0 120.00bpm unknown  beat=77.91 phase=1.91/4 is_playing=false | q_drop=0
+stopped at t=40.016s; queue dropped=0; records=52
+{
+  "clock": {
+    "age_us": null,
+    "beats": null,
+    "bpm": null,
+    "position_valid": false,
+    "quarter_phase": null,
+    "stats": {
+      "continues": 0,
+      "song_positions": 0,
+      "stalls": 0,
+      "starts": 0,
+      "stops": 0,
+      "ticks": 0,
+      "ticks_while_stopped": 0
+    },
+    "transport": "unknown"
+  },
+  "link": {
+    "beat": 79.92951,
+    "is_playing": false,
+    "peers": 0,
+    "phase": 3.92951,
+    "quantum": 4.0,
+    "stats": {
+      "is_playing_changes": 2,
+      "peer_changes": 2,
+      "samples": 40,
+      "tempo_changes": 1
+    },
+    "tempo": 120.0,
+    "transport": "unknown"
+  },
+  "link_queue_dropped": 0,
+  "queue_dropped": 0,
+  "records_before_end": 51
+}

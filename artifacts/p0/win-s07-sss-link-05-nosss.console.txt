@@ -1,0 +1,94 @@
+Clock input : DJSC Clock
+Bridge UDP  : 127.0.0.1:9007
+record      : ../../artifacts/p0/win-s07-sss-link-05-nosss.jsonl
+observing (Ctrl+C to stop)...
+  t=  0.247186s bridge locked at 2000 ms
+[    1.087s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:02.000     tempo=120.00 age=90ms n=9 disc=0 (playing 0, start 0) stalls=0 tc=01:00:02:00 | q_drop=0
+[    2.081s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:02.000     tempo=120.00 age=0ms n=19 disc=0 (playing 0, start 0) stalls=0 tc=01:00:02:00 | q_drop=0
+[    3.089s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:02.000     tempo=120.00 age=41ms n=28 disc=0 (playing 0, start 0) stalls=0 tc=01:00:02:00 | q_drop=0
+  t=  3.216050s bridge play at 2000 ms
+  t=  3.263689s bridge discontinuity(start) 2000 -> 2000 ms (elapsed 47.6 ms, deviation -47.6 ms)
+  t=  3.364362s bridge discontinuity(playing) 2000 -> 2000 ms (elapsed 100.7 ms, deviation -100.7 ms)
+  t=  3.464100s bridge discontinuity(playing) 2000 -> 2000 ms (elapsed 99.7 ms, deviation -99.7 ms)
+  t=  3.563737s bridge discontinuity(playing) 2000 -> 2000 ms (elapsed 99.6 ms, deviation -99.6 ms)
+  t=  3.563737s bridge stalled at 2000 ms (playing, no advance for 348 ms)
+  t=  3.680379s bridge discontinuity(playing) 2000 -> 2000 ms (elapsed 116.6 ms, deviation -116.6 ms)
+  t=  3.780046s bridge discontinuity(playing) 2000 -> 2000 ms (elapsed 99.7 ms, deviation -99.7 ms)
+  t=  3.880478s bridge discontinuity(playing) 2000 -> 2000 ms (elapsed 100.4 ms, deviation -100.4 ms)
+  t=  3.980424s bridge discontinuity(playing) 2000 -> 2000 ms (elapsed 99.9 ms, deviation -99.9 ms)
+[    4.083s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE acquiring stalled  song=00:00:02.000     tempo=120.00 age=102ms n=38 disc=8 (playing 7, start 1) stalls=1 tc=01:00:02:00 | q_drop=0
+  t=  4.097496s bridge discontinuity(playing) 2000 -> 2000 ms (elapsed 117.1 ms, deviation -117.1 ms)
+  t=  4.196891s bridge discontinuity(playing) 2000 -> 2000 ms (elapsed 99.4 ms, deviation -99.4 ms)
+  t=  4.212659s clock stop
+  t=  4.212746s clock song_position 16 (16ths)
+  t=  4.212812s clock continue
+  t=  4.213597s bridge locked at 2001 ms
+  t=  4.213597s bridge resumed at 2001 ms
+[    5.077s] | CLK 119.99bpm playing  phase=0.75 beats=5.75 pos-ok age=0ms ticks=42 | BRIDGE locked    playing  song=00:00:02.862 adv tempo=120.00 age=13ms n=100 disc=10 (playing 9, start 1) stalls=1 tc=01:00:02:25 | q_drop=0
+[    6.077s] | CLK 120.33bpm playing  phase=0.75 beats=7.75 pos-ok age=0ms ticks=90 | BRIDGE locked    playing  song=00:00:03.862 adv tempo=120.00 age=12ms n=170 disc=10 (playing 9, start 1) stalls=1 tc=01:00:03:25 | q_drop=0
+[    7.083s] | CLK 141.07bpm playing  phase=0.04 beats=10.04 pos-ok age=0ms ticks=145 | BRIDGE locked    playing  song=00:00:04.868 adv tempo=140.00 age=2ms n=241 disc=10 (playing 9, start 1) stalls=1 tc=01:00:04:26 | q_drop=0
+[    8.078s] | CLK 142.08bpm playing  phase=0.38 beats=12.38 pos-ok age=0ms ticks=201 | BRIDGE locked    playing  song=00:00:05.864 adv tempo=140.00 age=14ms n=309 disc=10 (playing 9, start 1) stalls=1 tc=01:00:05:25 | q_drop=0
+[    9.085s] | CLK 139.60bpm playing  phase=0.71 beats=14.71 pos-ok age=0ms ticks=257 | BRIDGE locked    playing  song=00:00:06.861 adv tempo=140.00 age=4ms n=380 disc=10 (playing 9, start 1) stalls=1 tc=01:00:06:25 | q_drop=0
+  t=  9.422410s clock stop
+  t=  9.430578s bridge stop at 7204 ms
+[   10.082s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=659ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=51ms n=411 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   11.093s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=1670ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=12ms n=421 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   12.084s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=2661ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=53ms n=430 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   13.092s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=3669ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=60ms n=439 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   14.084s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=4661ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=3ms n=449 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   15.081s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=5658ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=15ms n=458 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   16.092s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=6669ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=44ms n=467 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   17.088s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=7665ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=107ms n=476 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   18.084s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=8661ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=36ms n=486 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   19.094s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=9671ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=96ms n=495 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   20.092s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=10669ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=60ms n=505 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   21.084s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=11661ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=19ms n=515 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   22.078s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=12655ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=30ms n=524 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   23.076s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=13653ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=61ms n=533 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   24.091s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=14668ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=92ms n=542 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+[   25.082s] | CLK 142.08bpm stopped  phase=0.50 beats=15.50 pos-ok age=15659ms ticks=276 | BRIDGE locked    stopped  song=00:00:07.204     tempo=140.00 age=34ms n=552 disc=10 (playing 9, start 1) stalls=1 tc=01:00:07:06 | q_drop=0
+stopped at t=26.012s; queue dropped=0; records=863
+{
+  "bridge": {
+    "advancing": false,
+    "age_us": 30557,
+    "beats": 15.4762289998926,
+    "blackout": false,
+    "fault": null,
+    "health": "locked",
+    "song_ms": 7204.0,
+    "stats": {
+      "discontinuities": 10,
+      "faults": 0,
+      "locks": 2,
+      "playing_discontinuities": 9,
+      "reordered": 0,
+      "restarts": 0,
+      "samples": 561,
+      "stalls": 1,
+      "start_discontinuities": 1
+    },
+    "tempo": 140.0,
+    "transport": "stopped"
+  },
+  "bridge_queue_dropped": 0,
+  "clock": {
+    "age_us": 16589453,
+    "beats": 15.5,
+    "bpm": 142.0844739559159,
+    "position_valid": true,
+    "quarter_phase": 0.5,
+    "stats": {
+      "continues": 1,
+      "song_positions": 1,
+      "stalls": 0,
+      "starts": 0,
+      "stops": 2,
+      "ticks": 276,
+      "ticks_while_stopped": 0
+    },
+    "transport": "stopped"
+  },
+  "queue_dropped": 0,
+  "records_before_end": 862
+}

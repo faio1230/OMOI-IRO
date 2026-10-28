@@ -1,0 +1,47 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/omoiiro-core",
+    "crates/omoiiro-devices",
+    "crates/omoiiro-midi",
+    "crates/omoiiro-store",
+    "crates/omoiiro-runtime",
+    "apps/probe",
+    "apps/desktop/src-tauri",
+]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+publish = false
+
+[workspace.dependencies]
+clap = { version = "4.6", features = ["derive"] }
+midir = "0.11.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+crossbeam-channel = "0.5"
+ctrlc = "3"
+rusty_link = "0.4.9"
+jsonschema = { version = "=0.60.2", default-features = false }
+omoiiro-core = { path = "crates/omoiiro-core" }
+omoiiro-devices = { path = "crates/omoiiro-devices" }
+omoiiro-midi = { path = "crates/omoiiro-midi" }
+omoiiro-store = { path = "crates/omoiiro-store" }
+omoiiro-runtime = { path = "crates/omoiiro-runtime" }
+# Desktop shell (M5). Versions are pinned; see BUILD.md.
+tauri = { version = "=2.12.5", features = [] }
+tauri-build = { version = "=2.7.4", features = [] }
+tauri-plugin-dialog = "=2.8.4"
+
+# Debug info limited to line tables: backtraces keep file:line, target stays
+# small (C: is tight). The test profile inherits from dev. Incremental is off
+# in .cargo/config.toml.
+[profile.dev]
+debug = "line-tables-only"
+
+# The cmake crate builds the Link SDK as "Debug" at opt-level 0, which links
+# the MSVC debug CRT (MSVCRTD) while Rust links the release CRT. Optimizing
+# only rusty_link makes cmake use a release-CRT configuration.
+[profile.dev.package.rusty_link]
+opt-level = 2

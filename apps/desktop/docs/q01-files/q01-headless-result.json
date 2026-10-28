@@ -1,0 +1,299 @@
+{
+  "build": "debug",
+  "failed": 0,
+  "files": {
+    "failures": [
+      "apps/desktop/docs/q01-files\\q01-broken.show.json",
+      "apps/desktop/docs/q01-files\\q01-version-0.0.9.show.json",
+      "apps/desktop/docs/q01-files\\q01-version-0.2.0.show.json"
+    ],
+    "sample": "apps/desktop/docs/q01-files\\q01-sample.show.json"
+  },
+  "follow_summary": {
+    "control": {
+      "blocked": 0,
+      "callback_to_send": {
+        "max_us": 64,
+        "mean_us": 41.5,
+        "n": 2,
+        "p50_us": 19,
+        "p95_us": 64,
+        "p99_us": 64
+      },
+      "fault": null,
+      "faults": 1,
+      "ignored": 0,
+      "input": null,
+      "input_state": "disconnected",
+      "log": [
+        "Connected { generation: 2, name: \"OMOI-IRO Control\" }",
+        "Connected { generation: 3, name: \"Pads\" }",
+        "fault: oversize input",
+        "fault reset by command",
+        "reconnect requested",
+        "Connected { generation: 5, name: \"OMOI-IRO Control\" }",
+        "Connected { generation: 6, name: \"Pads\" }"
+      ],
+      "normalized": 0,
+      "output": "OMOI-IRO Control",
+      "output_state": "ready",
+      "pending_note_offs": 0,
+      "received": 2,
+      "released": 2,
+      "send_errors": 0,
+      "sent": 2,
+      "stale": 0,
+      "suppressed": 0
+    },
+    "dropped": {
+      "bridge": 0,
+      "clock": 0,
+      "control": 0,
+      "control_oversize": 1
+    },
+    "led": {
+      "bytes": 12641,
+      "frames_sent": 363,
+      "full_refreshes": 1,
+      "log": [],
+      "mailbox_overwritten": 0,
+      "packets": 60,
+      "render_to_sent": {
+        "max_us": 214,
+        "mean_us": 43.8,
+        "n": 363,
+        "p50_us": 39,
+        "p95_us": 69,
+        "p99_us": 115
+      },
+      "send_errors": 0,
+      "send_time": {
+        "max_us": 45,
+        "mean_us": 6.0,
+        "n": 363,
+        "p50_us": 4,
+        "p95_us": 20,
+        "p99_us": 25
+      },
+      "sink": "virtual",
+      "state": "virtual",
+      "unchanged_frames": 304
+    },
+    "mtc_out": {
+      "full_frames": 2,
+      "jumps": 1,
+      "quarter_frames": 1447,
+      "records_dropped": 0,
+      "records_left": 1449,
+      "resyncs": 0,
+      "starts": 1,
+      "stops": 0
+    },
+    "render": {
+      "frames": 363,
+      "jitter": {
+        "max_us": 869,
+        "mean_us": 306.1,
+        "n": 363,
+        "p50_us": 298,
+        "p95_us": 596,
+        "p99_us": 798
+      },
+      "jumps": 0,
+      "render_time": {
+        "max_us": 196,
+        "mean_us": 26.4,
+        "n": 363,
+        "p50_us": 21,
+        "p95_us": 51,
+        "p99_us": 103
+      },
+      "show_swaps": 2,
+      "skipped_frames": 0
+    },
+    "transport": {
+      "advancing": true,
+      "beat": null,
+      "beat_health": "unknown",
+      "beat_phase_valid": null,
+      "generations": {
+        "bridge": 0,
+        "clock": 0,
+        "link": 0
+      },
+      "mtc_label": "01:00:12:03",
+      "output": "follow",
+      "output_gain": 1.0,
+      "show_time_us": 12124102,
+      "stalled": false,
+      "tempo_bpm": null,
+      "time_health": "holdover",
+      "transport": "playing"
+    }
+  },
+  "q01": "synthetic run-through: no Live, no device, no MIDI port (fake backend, in-process UDP bridge)",
+  "rows": [
+    {
+      "expect": "空のショーが検証を通る、未保存",
+      "id": "1.1",
+      "pass": true,
+      "result": "layers 0, presets 1, dirty true",
+      "title": "新規ショー"
+    },
+    {
+      "expect": "3種が1つずつ追加される",
+      "id": "1.2",
+      "pass": true,
+      "result": "[\"builtin.solid\", \"builtin.solid\", \"builtin.chase\", \"builtin.pulse\"]",
+      "title": "プリセット新規（Solid / Chase / Pulse）"
+    },
+    {
+      "expect": "3レイヤー（timeline 2、常時 1）、clip 3、重なりとフェードあり",
+      "id": "1.3",
+      "pass": true,
+      "result": "layers 3, undo depth 15",
+      "title": "clip 配置（重なり、フェード、常時レイヤー）"
+    },
+    {
+      "expect": "0.25拍周期 × 120 bpm = 8 Hz > 3 Hz で警告1件",
+      "id": "1.4",
+      "pass": true,
+      "result": "Pulse 0.25 拍周期 × 120.0 bpm = 8.00 Hz（上限 3 Hz）",
+      "title": "安全警告（高速 Pulse）"
+    },
+    {
+      "expect": "1拍周期（2 Hz）で警告0件",
+      "id": "1.5",
+      "pass": true,
+      "result": "警告 0 件",
+      "title": "安全警告の解除"
+    },
+    {
+      "expect": "一時ファイル→置換で保存、未保存の印が消える",
+      "id": "1.6",
+      "pass": true,
+      "result": "apps/desktop/docs/q01-files\\q01-sample.show.json (3051 bytes)",
+      "title": "名前を付けて保存"
+    },
+    {
+      "expect": "保存したものと同じショーが読める",
+      "id": "2.1",
+      "pass": true,
+      "result": "equal true",
+      "title": "再読込"
+    },
+    {
+      "expect": "バイト単位で一致（差分なし）",
+      "id": "2.2",
+      "pass": true,
+      "result": "3051 bytes, identical true",
+      "title": "無変更の保存"
+    },
+    {
+      "expect": "再読込後は空（元に戻す対象なし）、未保存の印なし",
+      "id": "2.3",
+      "pass": true,
+      "result": "can_undo false, dirty false",
+      "title": "Undo 履歴"
+    },
+    {
+      "expect": "6時刻の64パッドで、プレビュー（機器の7bit値）と render（8bit）の差が1段（±2）以内",
+      "id": "3.1",
+      "pass": true,
+      "result": "時刻 [0, 750000, 5250000, 10500000, 12345678, 19000000] us、最大差 1",
+      "title": "任意位置プレビュー = render"
+    },
+    {
+      "expect": "3秒以内に locked / follow",
+      "id": "4.1",
+      "pass": true,
+      "result": "\"locked\" / Some(\"follow\")",
+      "title": "合成ブリッジで追従開始"
+    },
+    {
+      "expect": "検証済みの版が次の frame 境界で採用（数 frame 以内）",
+      "id": "4.2",
+      "pass": true,
+      "result": "rev 2, Some(1) frame 後",
+      "title": "追従中の編集の反映"
+    },
+    {
+      "expect": "LED は黒、Live への転送は続く",
+      "id": "4.3",
+      "pass": true,
+      "result": "dark Some(Some(\"blackout\")), forwarded true",
+      "title": "Blackout"
+    },
+    {
+      "expect": "gain 0.5 が掛かり、全チャンネルが半分（64）以下",
+      "id": "4.4",
+      "pass": true,
+      "result": "gain 0.5, max 13",
+      "title": "明るさ"
+    },
+    {
+      "expect": "全チャンネルが 30% 以下（各色の天井）",
+      "id": "4.5",
+      "pass": true,
+      "result": "max 34 (上限 38)",
+      "title": "安全上限（輝度の天井）"
+    },
+    {
+      "expect": "原因つきで fault、reset で転送が戻る",
+      "id": "4.6",
+      "pass": true,
+      "result": "fault \"oversize input\", reset true, forward true",
+      "title": "操作経路の fault と reset"
+    },
+    {
+      "expect": "タイムコード出力の接続世代が変わり、操作経路は ready に戻る",
+      "id": "4.7",
+      "pass": true,
+      "result": "timecode gen Some(1) -> Some(4), control ready true",
+      "title": "全ポート再接続"
+    },
+    {
+      "expect": "Note Off を送って停止、要約が出る",
+      "id": "4.8",
+      "pass": true,
+      "result": "frames 363, Note Off true, MTC 1444 件, datagrams 708",
+      "title": "停止"
+    },
+    {
+      "expect": "jitter / render / LED 送信の p95 を記録（render p95 ≤ 5 ms は NFR03）",
+      "id": "6.1",
+      "pass": true,
+      "result": "jitter p95 596 us, render p95 51 us, LED 送信 p95 20 us, skipped 0",
+      "title": "計測（追従中、合成源）"
+    },
+    {
+      "expect": "拒否、JSON Pointer つきの理由",
+      "id": "5.1",
+      "pass": true,
+      "result": "/layers/0/content/clips/0/preset_id: unknown preset \"missing\"",
+      "title": "壊れたファイル（意味検証）"
+    },
+    {
+      "expect": "読込前に版で拒否",
+      "id": "5.2",
+      "pass": true,
+      "result": "unsupported schema_version \"0.0.9\" (this build reads 0.1.1)",
+      "title": "未対応の版 0.0.9"
+    },
+    {
+      "expect": "読込前に版で拒否",
+      "id": "5.3",
+      "pass": true,
+      "result": "unsupported schema_version \"0.2.0\" (this build reads 0.1.1)",
+      "title": "未対応の版 0.2.0"
+    },
+    {
+      "expect": "16 MB を超えると拒否",
+      "id": "5.4",
+      "pass": true,
+      "result": "file too large (16777217 bytes, limit 16777216)",
+      "title": "大きすぎるファイル"
+    }
+  ],
+  "unix_s": 1793147435
+}

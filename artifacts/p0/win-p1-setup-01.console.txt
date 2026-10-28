@@ -1,0 +1,91 @@
+Clock input : DJSC Clock
+Bridge UDP  : 127.0.0.1:9007
+record      : ../../artifacts/p0/win-p1-setup-01.jsonl
+observing (Ctrl+C to stop)...
+  t=  0.254237s bridge locked at 0 ms
+[    1.084s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=112ms n=9 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+  t=  1.864604s bridge script restart (seq 1)
+  t=  2.004096s bridge locked at 0 ms
+[    2.094s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=90ms n=20 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[    3.087s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=115ms n=29 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[    4.079s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=41ms n=39 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[    5.093s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=21ms n=49 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[    6.085s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=64ms n=58 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[    7.096s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=58ms n=68 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[    8.083s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=95ms n=77 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[    9.097s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=42ms n=87 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   10.091s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=85ms n=96 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   11.079s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=57ms n=106 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   12.095s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=72ms n=116 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   13.087s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=32ms n=126 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   14.081s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=91ms n=135 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   15.088s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=66ms n=145 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   16.081s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=92ms n=154 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   17.091s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=52ms n=164 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   18.084s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=95ms n=173 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   19.095s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=56ms n=183 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   20.081s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=92ms n=192 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   21.089s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=67ms n=202 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   22.079s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=90ms n=211 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   23.094s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=71ms n=221 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   24.082s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=26ms n=231 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   25.080s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=57ms n=240 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   26.095s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=72ms n=250 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   27.084s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=28ms n=260 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   28.092s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=2ms n=270 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   29.078s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=55ms n=279 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   30.090s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=50ms n=289 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   31.080s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=90ms n=298 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   32.092s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=52ms n=308 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   33.084s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=11ms n=318 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   34.093s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=69ms n=327 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   35.080s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=7ms n=337 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   36.089s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=66ms n=346 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   37.079s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=5ms n=356 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   38.086s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=46ms n=365 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+[   39.078s] | CLK   --  bpm unknown  phase=-- beats=-- pos-? age=-- ticks=0 | BRIDGE locked    stopped  song=00:00:00.000     tempo=120.00 age=21ms n=375 disc=0 (playing 0, start 0) stalls=0 tc=01:00:00:00 | q_drop=0
+stopped at t=40.004s; queue dropped=0; records=388
+{
+  "bridge": {
+    "advancing": false,
+    "age_us": 81814,
+    "beats": 0.0,
+    "blackout": false,
+    "fault": null,
+    "health": "locked",
+    "song_ms": 0.0,
+    "stats": {
+      "discontinuities": 0,
+      "faults": 0,
+      "locks": 2,
+      "playing_discontinuities": 0,
+      "reordered": 0,
+      "restarts": 1,
+      "samples": 383,
+      "stalls": 0,
+      "start_discontinuities": 0
+    },
+    "tempo": 120.0,
+    "transport": "stopped"
+  },
+  "bridge_queue_dropped": 0,
+  "clock": {
+    "age_us": null,
+    "beats": null,
+    "bpm": null,
+    "position_valid": false,
+    "quarter_phase": null,
+    "stats": {
+      "continues": 0,
+      "song_positions": 0,
+      "stalls": 0,
+      "starts": 0,
+      "stops": 0,
+      "ticks": 0,
+      "ticks_while_stopped": 0
+    },
+    "transport": "unknown"
+  },
+  "queue_dropped": 0,
+  "records_before_end": 387
+}

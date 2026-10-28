@@ -1,0 +1,109 @@
+{
+  "$schema": "../../schemas/show.schema.json",
+  "schema_version": "0.1.2",
+  "id": "effects-0-1-2",
+  "name": "0.1.2 の演出（点滅・ノイズ）",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "noise-blue",
+      "name": "青のノイズ",
+      "effect": {
+        "type": "builtin.noise",
+        "version": 1,
+        "params": {
+          "base_color": "#0D2346",
+          "highlight_color": "#9FE8FF",
+          "density": 0.3,
+          "rate_hz": 6,
+          "seed": 1,
+          "smooth": false,
+          "depth": 0.5
+        }
+      }
+    },
+    {
+      "id": "strobe-beat",
+      "name": "拍の点滅",
+      "effect": {
+        "type": "builtin.strobe",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF",
+          "mode": "beat",
+          "rate_hz": 2,
+          "beats_per_cycle": 1,
+          "duty": 0.25,
+          "phase_offset": 0
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "noise",
+      "name": "ノイズ",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "noise-blue"
+      }
+    },
+    {
+      "id": "strobe",
+      "name": "点滅",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 0.4,
+      "blend": "add",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "strobe-1",
+            "preset_id": "strobe-beat",
+            "start_us": 4000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    }
+  ]
+}

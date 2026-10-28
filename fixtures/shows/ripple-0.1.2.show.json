@@ -1,0 +1,72 @@
+{
+  "$schema": "../../schemas/show.schema.json",
+  "schema_version": "0.1.2",
+  "id": "ripple-0-1-2",
+  "name": "0.1.2 の演出（波紋）",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "ripple-cyan",
+      "name": "シアンの波紋",
+      "effect": {
+        "type": "builtin.ripple",
+        "version": 1,
+        "params": {
+          "color": "#00DCC8",
+          "speed": 6,
+          "ring_width": 1,
+          "lifetime_ms": 1200,
+          "fade": "linear",
+          "max_concurrent": 8,
+          "trigger": "any_pad"
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "ripple",
+      "name": "波紋",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "ripple-cyan"
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-preview-set-bpm"
+description = "Enables the preview_set_bpm command without any pre-configured scope."
+commands.allow = ["preview_set_bpm"]
+
+[[permission]]
+identifier = "deny-preview-set-bpm"
+description = "Denies the preview_set_bpm command without any pre-configured scope."
+commands.deny = ["preview_set_bpm"]

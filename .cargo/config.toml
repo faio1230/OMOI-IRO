@@ -1,0 +1,9 @@
+# Only the `link` feature uses cmake (rusty_link). cmake 3.26 does not know the
+# VS 2026 generator, so build Link SDK with NMake from a VS developer shell.
+[env]
+CMAKE_GENERATOR = "NMake Makefiles"
+
+# Incremental cache is off to keep target small (C: is tight; see BUILD.md).
+# The CARGO_INCREMENTAL environment variable still overrides this.
+[build]
+incremental = false

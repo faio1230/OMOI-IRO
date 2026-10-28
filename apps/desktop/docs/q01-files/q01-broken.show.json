@@ -1,0 +1,151 @@
+{
+  "id": "show-1",
+  "layers": [
+    {
+      "blend": "over",
+      "content": {
+        "clips": [
+          {
+            "duration_us": 20000000,
+            "fade_in_us": 1000000,
+            "fade_out_us": 2000000,
+            "id": "clip-1",
+            "preset_id": "missing",
+            "start_us": 0
+          },
+          {
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0,
+            "id": "clip-2",
+            "preset_id": "preset-white",
+            "start_us": 10000000
+          }
+        ],
+        "kind": "timeline"
+      },
+      "enabled": true,
+      "id": "layer-1",
+      "name": "背景",
+      "opacity": 1,
+      "target_id": "main-pad"
+    },
+    {
+      "blend": "add",
+      "content": {
+        "clips": [
+          {
+            "duration_us": 10000000,
+            "fade_in_us": 500000,
+            "fade_out_us": 500000,
+            "id": "clip-3",
+            "preset_id": "preset-2",
+            "start_us": 5000000
+          }
+        ],
+        "kind": "timeline"
+      },
+      "enabled": true,
+      "id": "layer-2",
+      "name": "動き",
+      "opacity": 0.8,
+      "target_id": "main-pad"
+    },
+    {
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "preset-3"
+      },
+      "enabled": true,
+      "id": "layer-3",
+      "name": "拍",
+      "opacity": 0.3,
+      "target_id": "main-pad"
+    }
+  ],
+  "name": "Q01 サンプル",
+  "presets": [
+    {
+      "effect": {
+        "params": {
+          "color": "#FFFFFF"
+        },
+        "type": "builtin.solid",
+        "version": 1
+      },
+      "id": "preset-white",
+      "name": "白"
+    },
+    {
+      "effect": {
+        "params": {
+          "color": "#2040FF"
+        },
+        "type": "builtin.solid",
+        "version": 1
+      },
+      "id": "preset-1",
+      "name": "青"
+    },
+    {
+      "effect": {
+        "params": {
+          "axis": "x",
+          "color": "#00DCC8",
+          "period_us": 4000000,
+          "width": 2
+        },
+        "type": "builtin.chase",
+        "version": 1
+      },
+      "id": "preset-2",
+      "name": "流れ"
+    },
+    {
+      "effect": {
+        "params": {
+          "beats_per_cycle": 1,
+          "color": "#FFFFFF",
+          "depth": 1,
+          "waveform": "sine"
+        },
+        "type": "builtin.pulse",
+        "version": 1
+      },
+      "id": "preset-3",
+      "name": "拍"
+    }
+  ],
+  "preview": {
+    "bpm": 120
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "schema_version": "0.1.1",
+  "seed": 1,
+  "sync": {
+    "beat_source": "ableton_link",
+    "loss": {
+      "blackout_after_ms": 1000,
+      "holdover_ms": 250,
+      "recovery_fade_ms": 100
+    },
+    "stop_behavior": "hold",
+    "timecode": {
+      "frame_rate": "30",
+      "input_offset_us": 0,
+      "origin": "01:00:00:00",
+      "source": "live_bridge"
+    }
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ]
+}

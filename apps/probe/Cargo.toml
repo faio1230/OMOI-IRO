@@ -1,0 +1,23 @@
+[package]
+name = "omoiiro-probe"
+description = "OMOI-IRO probe CLI (formerly tools/p0-probe): MIDI ports, MTC / MIDI Clock / bridge monitor, JSONL record and replay, MTC output, Launchpad X check, Note/CC routing check"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+# Ableton Link observation (`monitor --link`); see BUILD.md.
+link = ["omoiiro-runtime/link"]
+
+[dependencies]
+omoiiro-core.workspace = true
+omoiiro-devices.workspace = true
+omoiiro-store.workspace = true
+omoiiro-midi.workspace = true
+omoiiro-runtime.workspace = true
+clap.workspace = true
+midir.workspace = true
+serde_json.workspace = true
+crossbeam-channel.workspace = true
+ctrlc.workspace = true

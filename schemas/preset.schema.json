@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omoi-iro.invalid/schemas/preset.schema.json",
+  "title": "OMOI-IRO Preset file 0.1.2",
+  "description": "A single preset exported from a show. The preset object is the show schema definition. 0.1.1 files are read as well (additive change).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "preset"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "schema_version": {
+      "enum": [
+        "0.1.1",
+        "0.1.2"
+      ]
+    },
+    "kind": {
+      "const": "omoiiro.preset"
+    },
+    "preset": {
+      "$ref": "show.schema.json#/$defs/preset"
+    }
+  }
+}
