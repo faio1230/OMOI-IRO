@@ -152,6 +152,9 @@ export interface StatusDto {
   preview_skipped: number;
   /** 0.1.3: show time the pad recording began at (null: not recording). */
   recording_since_us: number | null;
+  /** Frames whose rendering panicked (the previous frame was held) and the last message. */
+  render_panics: number;
+  render_fault: string | null;
   /** 0.1.3: bridge meters (null: none received in this run). */
   audio: { age_ms: number; lost: boolean; master: [number, number]; tracks: [string, [number, number]][] } | null;
   safety: SafetyDto;

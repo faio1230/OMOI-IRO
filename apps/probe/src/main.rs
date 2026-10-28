@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use omoiiro_probe::{bench_cmd, bridge, check_shows_cmd, follow_cmd, import_frames_cmd, make_recording_cmd, q01_cmd, gen, lpx, monitor, mtc_out, ports_cmd, render_cmd, replay_cmd, route, synth, transport_cmd};
+use omoiiro_probe::{bench_cmd, bridge, check_shows_cmd, fuzz_shows_cmd, route_latency_cmd, follow_cmd, import_frames_cmd, make_recording_cmd, q01_cmd, gen, lpx, monitor, mtc_out, ports_cmd, render_cmd, replay_cmd, route, synth, transport_cmd};
 use omoiiro_midi::ports;
 use omoiiro_runtime::sync::bridge_ingress;
 use std::path::PathBuf;
@@ -60,6 +60,12 @@ enum Cmd {
     /// Load, save, reload (byte for byte) and render every *.show.json under the given folders.
     #[command(name = "check-shows")]
     CheckShows(check_shows_cmd::CheckShowsArgs),
+    /// Randomly damage valid shows: every load must reject or accept, never panic.
+    #[command(name = "fuzz-shows")]
+    FuzzShows(fuzz_shows_cmd::FuzzShowsArgs),
+    /// Operation route latency (callback → send) while following a show (fake MIDI, synthetic bridge).
+    #[command(name = "route-latency")]
+    RouteLatency(route_latency_cmd::RouteLatencyArgs),
     /// Add an omoiiro.frames / omoiiro.bitmap asset to a show as a frames preset.
     #[command(name = "import-frames")]
     ImportFrames(import_frames_cmd::ImportFramesArgs),
@@ -157,6 +163,8 @@ fn main() {
         Cmd::Render(args) => render_cmd::run(args),
         Cmd::ImportFrames(args) => import_frames_cmd::run(args),
         Cmd::CheckShows(args) => check_shows_cmd::run(args),
+        Cmd::FuzzShows(args) => fuzz_shows_cmd::run(args),
+        Cmd::RouteLatency(args) => route_latency_cmd::run(args),
         Cmd::MakeRecording(args) => make_recording_cmd::run(args),
         Cmd::Follow(args) => follow_cmd::run(args),
         Cmd::BenchRender(args) => bench_cmd::run(args),

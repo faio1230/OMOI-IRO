@@ -44,3 +44,13 @@ fn a_broken_show_fails_with_its_reason() {
     assert!(text.contains("[FAIL]") && text.contains("broken.show.json") && text.contains("unknown preset"), "{text}");
     assert!(text.contains("checked 2 files, 1 failed"), "only *.show.json: {text}");
 }
+
+#[test]
+fn damaged_shows_are_rejected_or_accepted_never_panic() {
+    let out = Command::new(env!("CARGO_BIN_EXE_omoiiro-probe"))
+        .args(["fuzz-shows", concat!(env!("CARGO_MANIFEST_DIR"), "/../../fixtures/shows/input-states-0.1.3.show.json"), "--iterations", "60", "--seed", "3"])
+        .output()
+        .unwrap();
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert!(out.status.success() && text.contains("60 damaged shows") && text.contains(", 0 panics"), "{text}");
+}

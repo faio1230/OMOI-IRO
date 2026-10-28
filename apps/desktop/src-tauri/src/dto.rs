@@ -170,6 +170,9 @@ pub struct StatusDto {
     pub recording_since_us: Option<i64>,
     /// 0.1.3: bridge meters (None: none received in this run).
     pub audio: Option<AudioDto>,
+    /// Frames whose rendering panicked (the previous frame was held) and the last message.
+    pub render_panics: u64,
+    pub render_fault: Option<String>,
     pub safety: SafetyDto,
     pub document: Option<DocumentDto>,
     /// The window was asked to close while the document has unsaved changes.
@@ -208,6 +211,8 @@ impl StatusDto {
             preview_skipped: 0,
             recording_since_us: None,
             audio: None,
+            render_panics: 0,
+            render_fault: None,
             safety: SafetyDto { max_brightness: limits.max_brightness, max_flash_hz: limits.max_flash_hz, limit_flash: limits.limit_flash, warnings: Vec::new(), muted_layers: Vec::new() },
             document: None,
             close_requested: false,
@@ -253,6 +258,8 @@ impl StatusDto {
             diag: Some(f.diag),
             preview_skipped,
             recording_since_us: s.recording_since(),
+            render_panics: f.render_panics,
+            render_fault: f.render_fault.clone(),
             audio: s.audio().map(|(age, a)| AudioDto { age_ms: age / 1000, lost: age > omoiiro_core::render::AudioInput::LOST_AFTER_US, master: a.master, tracks: a.tracks }),
             safety: {
                 let l = s.shared().overrides.limits();

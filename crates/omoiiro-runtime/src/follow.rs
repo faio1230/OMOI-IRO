@@ -141,6 +141,9 @@ pub struct FollowStatus {
     /// Flashing warnings at the current tempo and layers muted by the limit.
     pub safety_warnings: Vec<omoiiro_core::safety::FlashWarning>,
     pub muted_layers: Vec<String>,
+    /// Frames whose rendering panicked (the previous frame was held) and the last message.
+    pub render_panics: u64,
+    pub render_fault: Option<String>,
 }
 
 /// Running totals and timing percentiles since the session started.
@@ -219,7 +222,13 @@ impl RenderLoop {
             _ => self.engine.audio_fresh = false,
         }
         self.engine.audio.now_us = t0;
+        let panics_before = self.engine.render_panics;
         let eval = self.engine.evaluate(&snap, &shared.overrides);
+        if self.engine.render_panics != panics_before {
+            let mut st = shared.status.lock().unwrap();
+            st.render_panics = self.engine.render_panics;
+            st.render_fault = self.engine.render_fault.clone();
+        }
         if self.engine.safety_changed {
             self.engine.safety_changed = false;
             let mut st = shared.status.lock().unwrap();

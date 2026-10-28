@@ -166,6 +166,15 @@ pub struct Engine {
     /// Bridge meters for this frame, and whether they are fresh (0.1.3).
     pub audio: omoiiro_core::render::AudioInput,
     pub audio_fresh: bool,
+    /// Frames whose rendering panicked (an effect bug): the previous frame
+    /// was held instead, and the LED output, the operation route and the
+    /// clocks kept running. `render_fault` is the last panic message.
+    pub render_panics: u64,
+    pub render_fault: Option<String>,
+    last_frame: omoiiro_core::surface::Frame,
+    /// Tests: make the next frames' rendering panic.
+    #[cfg(test)]
+    pub inject_panics: u32,
 }
 
 impl Default for Engine {
@@ -189,6 +198,11 @@ impl Engine {
             pads: PadInput { now_us: 0, hits: Vec::with_capacity(PadInput::CAPACITY), history: Vec::with_capacity(PadInput::HISTORY_CAPACITY) },
             audio: Default::default(),
             audio_fresh: false,
+            render_panics: 0,
+            render_fault: None,
+            last_frame: Default::default(),
+            #[cfg(test)]
+            inject_panics: 0,
         }
     }
 
@@ -256,7 +270,35 @@ impl Engine {
             return dark(DarkReason::NoTime, None);
         };
         let gain = snap.output_gain.clamp(0.0, 1.0) * ov.brightness();
-        let mut frame = renderer.render_all(t, snap.beat, Some(&self.pads), self.audio_fresh.then_some(&self.audio));
+        // A panic inside an effect must not stop the show: hold the previous
+        // frame, count it and keep the message (reported as a fault).
+        let (pads, audio) = (&self.pads, self.audio_fresh.then_some(&self.audio));
+        #[cfg(test)]
+        let inject = {
+            let k = self.inject_panics > 0;
+            self.inject_panics = self.inject_panics.saturating_sub(1);
+            k
+        };
+        #[cfg(not(test))]
+        let inject = false;
+        let rendered = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            if inject {
+                panic!("injected render panic (test)");
+            }
+            renderer.render_all(t, snap.beat, Some(pads), audio)
+        }));
+        let mut frame = match rendered {
+            Ok(f) => {
+                self.last_frame = f;
+                f
+            }
+            Err(p) => {
+                self.render_panics += 1;
+                let msg = p.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| p.downcast_ref::<String>().cloned()).unwrap_or_else(|| "unknown panic".into());
+                self.render_fault = Some(format!("render panic at {t} us: {msg}"));
+                self.last_frame
+            }
+        };
         // Overrides (transport gain, brightness), then the safety ceiling per
         // channel, then device quantization.
         if gain != 1.0 {
@@ -293,6 +335,26 @@ mod tests {
             mtc_label: None,
             generations: Generations::default(),
         }
+    }
+
+    #[test]
+    fn a_panicking_render_holds_the_last_frame_and_keeps_going() {
+        let mut e = engine();
+        let ov = Overrides::default();
+        let good = e.evaluate(&snap(9_000_000, 120.0), &ov);
+        assert!(good.rendered && good.frame.lit() > 0);
+        e.inject_panics = 3;
+        for k in 1..=3 {
+            let held = e.evaluate(&snap(9_000_000 + k * 33_333, 120.0), &ov);
+            assert_eq!(held.frame, good.frame, "the previous frame is held");
+            assert!(held.rendered);
+        }
+        assert_eq!(e.render_panics, 3);
+        assert!(e.render_fault.as_deref().is_some_and(|m| m.contains("injected render panic")), "{:?}", e.render_fault);
+        // The next frame renders again.
+        let next = e.evaluate(&snap(30_000_000, 120.0), &ov);
+        assert!(next.rendered && next.frame != DeviceFrame::black());
+        assert_eq!(e.render_panics, 3);
     }
 
     fn engine() -> Engine {

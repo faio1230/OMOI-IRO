@@ -73,7 +73,7 @@ function Health({ s, onReset, onReconnect, busy }: { s: StatusDto; onReset: () =
           detail={[s.running ? `transport ${s.transport} · 出力 ${s.output} ${s.gain.toFixed(2)}` : null, s.dark ? `暗転の理由：${s.dark}` : null]}
         />
         <Tile title="拍源" tone={beatTone} value={s.running ? s.beat_health : "--"} detail={[s.beat ? `${s.beat.beat.toFixed(2)} 拍 · ${s.beat.tempo_bpm.toFixed(1)} bpm${s.beat.phase_valid ? "" : "（位相未確定）"}` : null, s.beat_seeded ? "bridge の拍で原点を補完" : null]} />
-        <Tile title="LED出力" tone={bindingTone(s.led.state)} value={ja(s.led.state)} detail={[s.led.generation !== null ? `接続世代 ${s.led.generation}` : null, s.running ? `点灯 ${s.led.lit}` : null, s.led.error]} />
+        <Tile title="LED出力" tone={s.render_panics > 0 ? "bad" : bindingTone(s.led.state)} value={ja(s.led.state)} detail={[s.led.generation !== null ? `接続世代 ${s.led.generation}` : null, s.running ? `点灯 ${s.led.lit}` : null, s.led.error, s.render_panics > 0 ? `描画の異常 ${s.render_panics} フレーム（前のフレームを保持。最後：${s.render_fault ?? ""}）` : null]} />
         <Tile
           title="操作経路（→ Live）"
           tone={controlTone}
