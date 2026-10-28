@@ -57,6 +57,7 @@ surfaceは左下原点のLEDリストとしてCoreへ読み込む。汎用的な
 | `builtin.wave` v1（0.1.2） | `color`, `axis`, `wavelength`, `amplitude`, `center`, `speed`, `thickness`, `beat_amplitude` | 正弦曲線からの距離でalpha。拍で振幅0.3〜1倍（不明なら固定）。安全解析は|speed|×2を警告のみ（消灯対象外） |
 | `builtin.path` v1（0.1.3） | `color`, `path`, `speed`, `size`, `tail`, `loop`, `phase`, `mirror`（+ 経路ごとの座標） | 光点が経路に沿って動く。閉路は周/秒、開路はセル/秒。mirrorで対称の分身。安全解析は警告のみ |
 | `builtin.shape` v1（0.1.3） | `shape`, `color`, `fill`, `stroke`, `center_x/y`, `size`, `size_y`（任意）, `angle`, `edge` | 符号つき距離（`omoiiro_core::shape`）で描く静止図形。ripple / path も同じ距離関数を使う。`wipe`（半平面）と `invert` あり。遷移（アイリス・シャッター）は黒い図形を `over` で重ねて作る（合成器にマスクのscope belowは持たない） |
+| `builtin.particles` v1（0.1.3） | `mode`, `color`, `speed_min/max`, `angle`, `spread`, `gravity`, `drag`, `lifetime_ms`, `size`, `tail`, `edge_mode`, `seed`（任意：count, rate, color_end, origin_x/y, rise_speed, burst_height, pause_ms, implode_radius） | `omoiiro_core::particles`。粒子ごとの初期値は hash(seed, event, index)、位置は解析解（重力、指数減衰のdrag、三角波の折り返し、vanishは永続）。seek可。上限は1レイヤー 16イベント / 256粒。最悪負荷（外8レイヤー全部fountain）のrender p95 4.02 ms（上限5 ms） |
 | `builtin.orb` v1（0.1.2） | `color`, `center_x/y`, `radius`, `edge`, `light_angle`, `shading`, `dither`, `dither_rate_hz`, `seed`, `motion`, `speed`, `orbit_radius`, `bounce_angle` | 陰影つき円。orbitは周回、bounceは三角波で端反射（状態なし）。安全解析はdither>0でdither_rate_hz/2 |
 
 colorは`#RRGGBB`のsRGB、alphaはfadeとopacityで表す。Chaseの`period_us`は帯が1周する時間、widthは1〜8セル。PulseはMVPで0.25/0.5/1拍周期だけに限定し、不明な小節位置から長周期を推定しない。depth 0は常時最大、depth 1は周期内でゼロまで下がる。PulseはRGB色を固定しalphaを変化させる規約とし、位相0で最大となる。

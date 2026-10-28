@@ -44,11 +44,13 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 | `builtin.path` | 経路 | `color`, `path`（`line` / `perimeter` / `orbit` / `figure8` / `points`）, `speed`, `size`（光点の半径 0.5〜3）, `tail`（0〜8）, `loop`（bool）, `phase`（0〜1）, `mirror`（`none` / `x` / `y` / `xy`）。`line` は `from_x` / `from_y` / `to_x` / `to_y`、`orbit` と `figure8` は `center_x` / `center_y` / `orbit_radius`、`points` は `points`（[[x,y],…] 2〜32点） | 光点が経路に沿って動く。閉じた経路（perimeter / orbit / figure8）の speed は周/秒（0.05〜4）、line / points はセル/秒（0.5〜16）。loop false は終点で止まり、true は往復か周回。mirror で対称の分身（ムービングヘッドのペア） |
 | `builtin.shape` | 図形 | `shape`（`line` / `circle` / `rect` / `diamond` / `wipe`）, `color`, `fill`（bool、false で輪郭）, `stroke`（0.5〜3）, `center_x` / `center_y`（−4〜11、盤の外も可）, `size`（半径または半辺 0〜6）, `angle`（0〜360）, `edge`（0〜2）。任意 `size_y`（rect の縦）、`invert`（bool、図形の外側を塗る） | 静止した形。拡大・移動・回転はキーフレームで作る。`wipe` は半平面（angle 0 で center から右側）。**下を隠す遷移は黒い図形を `over` で重ねる**：アイリス = 黒 circle + invert + size 0→6、シャッター = 黒 wipe 2枚（angle 0 / 180、center を中央から外へ）または黒 rect の size 4→0 |
 
+| `builtin.particles` | 粒子 | `mode`（`burst` 一度に count 個 / `fountain` 毎秒 rate 個 / `rocket` 上昇して burst_height で破裂 / `implode` 円周から中心へ集まり pause_ms 後に破裂）, `color`, `speed_min` / `speed_max`（セル/秒 0〜16）, `angle`（度、0 = 右、90 = 上）, `spread`（度 0〜360）, `gravity`（セル/秒² −32〜32、負で下）, `drag`（0〜8）, `lifetime_ms`（100〜6000）, `size`（0.5〜2）, `tail`（0〜4）, `edge_mode`（`vanish` 消える / `bounce` 跳ね返る）, `seed`。任意 `count`（1〜64、既定 16）, `rate`（0.5〜64、既定 8）, `color_end`（寿命で補間）, `origin_x` / `origin_y`（時刻駆動の発生源、既定 3.5）, `rise_speed`（rocket、既定 10）, `burst_height`（rocket、既定 5）, `pause_ms`（implode、既定 200）, `implode_radius`（1〜6、既定 4） | 火花 = press + burst + gravity −12 + drag 2。花火 = press + rocket（押した列の下から）。しずく = burst count 1 + gravity + bounce。吸い込み→爆発 = implode。timeline はクリップ開始で1回（fountain はクリップの間ずっと）、continuous は繰り返し、triggered は押した位置から（hold で fountain は押している間）。1レイヤーの上限は同時 256 粒・16 イベント。発生時刻からの解析解なので seek しても同じ |
+
 レイヤーには任意の `mask` を付けられる（そのレイヤー自身の描画だけを切り抜く）：`{ "shape": "circle" | "rect" | "diamond" | "wipe", "center_x", "center_y", "size", "size_y"?, "angle"?, "edge", "invert" }`。全項目キーフレーム可で、時間の基準はそのレイヤーの content と同じ。例：雨を円の中だけに出す（`fixtures/shows/transitions-0.1.3.show.json` の冒頭）。
 
 `builtin.regions` の `pattern` に `custom` を指定すると `groups`（[[セル番号,…],…] 1〜32群、セル番号 = 行×8+列）が必須になり、任意の `offset`（群ごとの位相差 0〜1、群数と同じ長さ）が使える。
 
-すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）、`d-effects-0.1.2.show.json`（領域ステップ・余熱・十字・形つき波紋）、`triggered-0.1.3.show.json`（発火レイヤー）、`keyframes-0.1.3.show.json`（粒から豪雨へ、加速する走査）、`paths-shapes-0.1.3.show.json`（外周ランナー2種、ムービングヘッド対、ひし形の拡大、自由グループ）、`transitions-0.1.3.show.json`（円の中の雨、アイリス、シャッター2種）。
+すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）、`d-effects-0.1.2.show.json`（領域ステップ・余熱・十字・形つき波紋）、`triggered-0.1.3.show.json`（発火レイヤー）、`keyframes-0.1.3.show.json`（粒から豪雨へ、加速する走査）、`paths-shapes-0.1.3.show.json`（外周ランナー2種、ムービングヘッド対、ひし形の拡大、自由グループ）、`transitions-0.1.3.show.json`（円の中の雨、アイリス、シャッター2種）、`particles-0.1.3.show.json`（火花、花火、しずく、吸い込み→爆発、噴水）。
 
 ## 3b. 発火レイヤーとキーフレーム（0.1.3）
 
@@ -121,3 +123,4 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 - `sync`、`render`、`targets` はテンプレートのまま。
 - プリセットの `params` に Schema にないキーを足さない（読み込みで拒否される）。
 - 点滅の速いプリセットを「常時レイヤー」に置かない（本番で開いた瞬間から点滅する）。
+- 粒子（particles）を多くのレイヤーで同時に使わない。最悪条件（8 レイヤー全部が噴水、尾つき）で描画 p95 4.0 ms と上限 5 ms に近い。2〜3 レイヤーまでが目安。

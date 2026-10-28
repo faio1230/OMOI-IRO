@@ -98,10 +98,11 @@
 | §4-2 キーフレーム（Param<T>::Keyframes、ease、最悪値の安全解析） | 完了（249件） | 88f4548 |
 | §4-3 領域・経路・図形（regions custom、builtin.path、builtin.shape、shape モジュール） | 完了（257件） | 5724e07 |
 | §4-4 マスク（shape の invert / wipe、レイヤーの self マスク。下を隠す遷移は黒図形の over） | 完了（262件） | 43f3d8f |
-| §4-5 粒子（builtin.particles：burst / fountain / rocket / implode、解析解で seek 可、bounce は折り返し） | 実装中 | — |
-| §4-6 以降 | 未着手 | — |
+| §4-5 粒子（builtin.particles：burst / fountain / rocket / implode、解析解で seek 可、bounce は折り返し。最悪負荷 p95 4.02 ms） | 完了（273件） | 80eca4b |
+| §4-6 複合素材（show 内 `compounds`、参照 + 複製して独立、tint と time_scale、内部レイヤー4まで） | 実装中 | — |
+| §4-7 以降 | 未着手 | — |
 
-これで 05 / 06 / 07 / 08 / 12 / 22 / 28 / 42 / 45〜52 / 35 / 36 / 37 / 38 が作れるようになった（対応表の「小拡張」はすべて解消、「新基盤」のうち 13 ブラインダー相当の hold も可）。Mac 実機での表示確認は未実施。
+これで 05 / 06 / 07 / 08 / 12 / 22 / 28 / 42 / 45〜52 / 35 / 36 / 37 / 38 / 09 / 10 / 11 / 40 が作れるようになった（対応表の「小拡張」はすべて解消、「新基盤」のうち 13 ブラインダー相当の hold も可）。Mac 実機での表示確認は未実施。
 
 ## 4. 基盤（Codex 案を採用、順序案。§3 の後に着手）
 
