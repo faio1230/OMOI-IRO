@@ -55,6 +55,8 @@ surfaceは左下原点のLEDリストとしてCoreへ読み込む。汎用的な
 | `builtin.ripple` v1（0.1.2） | `color`, `speed`, `ring_width`, `lifetime_ms`, `fade`, `max_concurrent`, `trigger` | 操作入力（パッド押下）を起点に輪が広がる。render(show, t)の純粋性の例外：`render_input(t, beat, Option<&PadInput>)` で入力状態を受ける |
 | `builtin.rain` v1（0.1.2） | `color`, `head_color`（任意）, `direction`, `speed`, `density`, `tail`, `seed`, `flicker` | レーンごとに0.5秒枠で確率発生、先頭+線形減衰の尾、flickerは8 Hzのhash。時刻だけで決まる。安全解析はflicker>0で4 Hz |
 | `builtin.wave` v1（0.1.2） | `color`, `axis`, `wavelength`, `amplitude`, `center`, `speed`, `thickness`, `beat_amplitude` | 正弦曲線からの距離でalpha。拍で振幅0.3〜1倍（不明なら固定）。安全解析は|speed|×2を警告のみ（消灯対象外） |
+| `builtin.path` v1（0.1.3） | `color`, `path`, `speed`, `size`, `tail`, `loop`, `phase`, `mirror`（+ 経路ごとの座標） | 光点が経路に沿って動く。閉路は周/秒、開路はセル/秒。mirrorで対称の分身。安全解析は警告のみ |
+| `builtin.shape` v1（0.1.3） | `shape`, `color`, `fill`, `stroke`, `center_x/y`, `size`, `size_y`（任意）, `angle`, `edge` | 符号つき距離（`omoiiro_core::shape`）で描く静止図形。ripple / path も同じ距離関数を使う。遷移（アイリス・シャッター）は黒い図形を `over` で重ねて作る（合成器にマスクのscope belowは持たない） |
 | `builtin.orb` v1（0.1.2） | `color`, `center_x/y`, `radius`, `edge`, `light_angle`, `shading`, `dither`, `dither_rate_hz`, `seed`, `motion`, `speed`, `orbit_radius`, `bounce_angle` | 陰影つき円。orbitは周回、bounceは三角波で端反射（状態なし）。安全解析はdither>0でdither_rate_hz/2 |
 
 colorは`#RRGGBB`のsRGB、alphaはfadeとopacityで表す。Chaseの`period_us`は帯が1周する時間、widthは1〜8セル。PulseはMVPで0.25/0.5/1拍周期だけに限定し、不明な小節位置から長周期を推定しない。depth 0は常時最大、depth 1は周期内でゼロまで下がる。PulseはRGB色を固定しalphaを変化させる規約とし、位相0で最大となる。
@@ -69,6 +71,8 @@ layerはtarget、enabled、opacity、blend、contentを持つ。配列順が下�
 
 - `timeline`：clipsを持ち、現在時刻に有効なclipだけを評価する。
 - `continuous`：preset IDを1つ持ち、show時刻が非負である限り有効。常時の拍反応レイヤーに使用する。
+- `triggered`（0.1.3）：clipsと `trigger { on: press | release | hold | clip_start | interval, interval_ms?, origin_x?, origin_y? }` を持つ。クリップの区間が有効範囲。press / release / hold はパッド入力の到着時刻（モノトニック）基準でseekでは再現しない（消えもしない）。clip_start / interval はクリップのローカル時刻基準で決定的。holdは10 sで打ち切り、入力経路の切断と「全ポートを再接続」でrelease-allを合成する。インスタンスはクリップごとに最大64。位置を受けるEffect（ripple / tap_glow / cross）以外はholdでのみ使える（押している間だけ全面）。
+- キーフレーム（0.1.3）：`Param<T>` の `{ "keyframes": [ { t_us, v, ease? } ] }`。数値と色は補間（色はsRGB各チャンネルをf32で補間、量子化は出力直前）、個数の整数・enum・boolはstepのみ。時間基準はクリップのローカル時刻 / show時刻 / インスタンスのage。安全解析は最悪値。速度や周期をキーフレームで変えたときの位相は「その時点の値×経過時間」（積分ではない）。
 
 clipはid、preset ID、start/duration、fade in/outを持つ。同じレイヤー内で重なる場合は配列順にover合成する。clip終端を過ぎた値やseek前の値を残さない。continuousのlocal timeはshow time、timelineのlocal timeはshow timeからstartを引いた値とする。
 

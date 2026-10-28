@@ -2,7 +2,7 @@
 
 OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセットを、アプリの GUI を使わずに JSON で量産するための手引き。制作物はデータだけで、アプリのコードには触れない。複数人や複数の AI が並行して作っても衝突しない。
 
-対象の Schema は 0.1.2（`schemas/show.schema.json`）。この文書と食い違ったら Schema が正しい。
+対象の Schema は 0.1.3（`schemas/show.schema.json`、2026-10-28 夜時点）。0.1.2 以前のファイルもそのまま読める。この文書と食い違ったら Schema が正しい。
 
 ## 1. 納品の形
 
@@ -20,7 +20,7 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 - 合成は `layers` の配列順。後ろが上。`blend` は `over`（上書き）、`add`（加算）、`max`（明るい方）。
 - 点滅の安全上限は端末設定で既定 3 Hz。これを超えるプリセットは警告が出て、本番側が上限を上げない限り消灯されうる。速い点滅は「本番で意図して上限を上げる前提」と名前に書く（例：`strobe-fast-8hz`）。
 
-## 3. 演出の種類と params（Schema 0.1.2）
+## 3. 演出の種類と params（Schema 0.1.3）
 
 すべて `effect: { "type": ..., "version": 1, "params": { ... } }`。`params` は必須項目をすべて書き、知らないキーは入れない。
 
@@ -41,7 +41,41 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 | `builtin.tap_glow` | 余熱 | `color_start`, `color_mid`, `color_end`, `lifetime_ms`（100〜5000）, `radius`（0〜3）, `repeats`（1〜8）, `repeat_interval_ms`（50〜2000）, `repeat_decay`（0〜1） | 押した位置が start → mid → end と色を変えて消える。repeats でエコー。入力駆動（CLI の render では見えない） |
 | `builtin.cross` | 十字 | `color`, `speed`（セル/秒 1〜32）, `length`（尾 0.5〜8）, `lifetime_ms`（100〜3000） | 押した位置から上下左右へ光が走る。入力駆動 |
 
-すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）、`d-effects-0.1.2.show.json`（領域ステップ・余熱・十字・形つき波紋）。
+| `builtin.path` | 経路 | `color`, `path`（`line` / `perimeter` / `orbit` / `figure8` / `points`）, `speed`, `size`（光点の半径 0.5〜3）, `tail`（0〜8）, `loop`（bool）, `phase`（0〜1）, `mirror`（`none` / `x` / `y` / `xy`）。`line` は `from_x` / `from_y` / `to_x` / `to_y`、`orbit` と `figure8` は `center_x` / `center_y` / `orbit_radius`、`points` は `points`（[[x,y],…] 2〜32点） | 光点が経路に沿って動く。閉じた経路（perimeter / orbit / figure8）の speed は周/秒（0.05〜4）、line / points はセル/秒（0.5〜16）。loop false は終点で止まり、true は往復か周回。mirror で対称の分身（ムービングヘッドのペア） |
+| `builtin.shape` | 図形 | `shape`（`line` / `circle` / `rect` / `diamond`）, `color`, `fill`（bool、false で輪郭）, `stroke`（0.5〜3）, `center_x` / `center_y`, `size`（半径または半辺 0.5〜6）, `angle`（0〜360）, `edge`（0〜2）。任意 `size_y`（rect の縦） | 静止した形。拡大・移動・回転はキーフレームで作る。黒い図形を `over` で重ねると下を隠せる（アイリス・シャッターの作り方） |
+
+`builtin.regions` の `pattern` に `custom` を指定すると `groups`（[[セル番号,…],…] 1〜32群、セル番号 = 行×8+列）が必須になり、任意の `offset`（群ごとの位相差 0〜1、群数と同じ長さ）が使える。
+
+すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）、`d-effects-0.1.2.show.json`（領域ステップ・余熱・十字・形つき波紋）、`triggered-0.1.3.show.json`（発火レイヤー）、`keyframes-0.1.3.show.json`（粒から豪雨へ、加速する走査）、`paths-shapes-0.1.3.show.json`（外周ランナー2種、ムービングヘッド対、ひし形の拡大、自由グループ）。
+
+## 3b. 発火レイヤーとキーフレーム（0.1.3）
+
+**発火レイヤー**：`content` の `kind` を `triggered` にすると、クリップの区間内だけ入力や時刻に反応する。
+
+```json
+"content": {
+  "kind": "triggered",
+  "trigger": { "on": "press" },
+  "clips": [ { "id": "c1", "preset_id": "drop-blue", "start_us": 0, "duration_us": 600000000, "fade_in_us": 0, "fade_out_us": 0 } ]
+}
+```
+
+- `on`：`press`（押した瞬間）、`release`（離した瞬間）、`hold`（押している間だけ）、`clip_start`（クリップの開始時刻）、`interval`（クリップ内で `interval_ms` ごと。`origin_x` / `origin_y` で位置、既定 3.5）。
+- 位置を受ける演出（ripple / tap_glow / cross）は押した場所から出る。それ以外の演出は `hold` のときだけ使え、押している間だけ全面に出る（ブラインダー）。
+- 押下は巻き戻し（seek）では再現しない。消えもしない（寿命まで残る）。
+- 常時反応させたいときは 0 から十分長いクリップを1つ置く。
+
+**キーフレーム**：数値と色の params は、値の代わりに次の形を書ける。
+
+```json
+"density": { "keyframes": [ { "t_us": 0, "v": 0.05 }, { "t_us": 16000000, "v": 1, "ease": "linear" } ] }
+```
+
+- `t_us` は昇順、1〜64 点。最初の前は最初の値、最後の後は最後の値。
+- `ease` はその点から次の点への補間：`linear`（既定）、`step`、`ease_in`、`ease_out`、`ease_in_out`。
+- 時間の基準：timeline / triggered のクリップはクリップのローカル時刻、continuous は show 時刻、押下から出る演出（ripple など）は発火からの経過。
+- 個数の整数（seed、repeats、max_concurrent、chase の width）と enum と bool は `step` だけ。長さの整数（period_us、lifetime_ms など）は補間される。
+- 安全解析はキーフレームの最悪値（最大の rate など）で判定する。
 
 ## 4. 書き方の規則
 
@@ -81,7 +115,7 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 
 ## 7. やってはいけないこと
 
-- `schema_version` を変えない（0.1.2）。
+- `schema_version` は雛形のまま（0.1.2 か 0.1.3。どちらも読める）。
 - `sync`、`render`、`targets` はテンプレートのまま。
 - プリセットの `params` に Schema にないキーを足さない（読み込みで拒否される）。
 - 点滅の速いプリセットを「常時レイヤー」に置かない（本番で開いた瞬間から点滅する）。

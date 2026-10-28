@@ -89,6 +89,19 @@
 3. `builtin.tap_glow`「余熱」：入力駆動。color_start / color_mid / color_end、lifetime_ms、radius（0〜3、線形減衰）、repeats（1〜8）、repeat_interval_ms、repeat_decay。05 と 12。
 4. `builtin.cross`「十字」：入力駆動。color、speed、length、lifetime_ms。06。
 
+## 3a. 進捗（2026-10-28 夜）
+
+| 段階 | 状態 | コミット |
+| --- | --- | --- |
+| §3 小拡張（ripple shape / interval、wave phase、orb orbit_phase、regions、tap_glow、cross） | 完了（235件） | 9efb737 |
+| §4-1 発火モデル（triggered レイヤー、press / release / hold / clip_start / interval、Schema 0.1.3） | 完了（242件） | 0aba923 |
+| §4-2 キーフレーム（Param<T>::Keyframes、ease、最悪値の安全解析） | 完了（249件） | 88f4548 |
+| §4-3 領域・経路・図形（regions custom、builtin.path、builtin.shape、shape モジュール） | 完了（257件） | 5724e07 |
+| §4-4 マスク（shape の invert / wipe、レイヤーの self マスク。下を隠す遷移は黒図形の over） | 実装中 | — |
+| §4-5 以降 | 未着手 | — |
+
+これで 05 / 06 / 07 / 08 / 12 / 22 / 28 / 42 / 45〜52 / 35 / 36 が作れるようになった（対応表の「小拡張」はすべて解消、「新基盤」のうち 13 ブラインダー相当の hold も可）。Mac 実機での表示確認は未実施。
+
 ## 4. 基盤（Codex 案を採用、順序案。§3 の後に着手）
 
 1. 発火モデル：押下・解放・保持・クリップ開始・反復。入力駆動 Effect（ripple、tap_glow、cross）を共通の発火源に載せ替える。押下中の点灯（42）と長押し（13）。
