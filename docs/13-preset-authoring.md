@@ -49,11 +49,29 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 | `builtin.frames` | フレーム列 | `frames`（1 フレーム = 64 セル × `RRGGBB` の 384 桁 hex、上の行から左から右、1〜240 枚）, `fps`（1〜30）, `loop`, `hold_last`（loop でないとき最後を保持）, `hold_ms`（0〜60000）, `anchor`（`board` / `pad`：押したパッドにフレームの (3,3) を合わせる）, `opacity_key`（黒を透明に、既定 true）。任意 `color`（2値フレーム用：点灯セルをこの色に） | ドット絵とアニメ。キーフレーム不可。手で書くより、外部形式（`omoiiro.frames` / `omoiiro.bitmap`、[prompts/codex-assets.md](../prompts/codex-assets.md) に定義）を GUI の「フレーム列を読み込み…」か `omoiiro-probe import-frames --show <show> --file <asset>` で取り込む。triggered press + anchor pad でスタンプ（53） |
 | `builtin.text` | 文字 | `text`（ASCII 1〜64）, `font`（`5x7` / `3x5`）, `color`, `mode`（`static` / `scroll_left` / `scroll_up` / `sequential`）, `speed`（scroll はセル/秒 0.5〜16、sequential は文字/秒 0.2〜8）, `gap`（0〜2）, `beat_step`（sequential を拍ごとに）, `loop` | 内蔵フォント。3×5 は小文字を大文字で。54 スクロール、55 カウントダウン（"4321" sequential + 白の solid クリップ） |
 
+| `builtin.pads` | パッドの状態 | `mode`（`heat` 叩くほど溜まる / `plant` 押した所が育って消える / `paint` 色を置く）。heat：`color_low` / `color_high`, `gain`（0.05〜1）, `decay_ms`。plant：`color`, `attack_ms` / `sustain_ms` / `release_ms`, `size`。paint：`color`, `palette`（任意 2〜8 色、同じパッドを叩くたびに次の色）, `decay_ms`（0 で残り続ける） | 入力履歴（最後のリセット以降、60 秒・1,024 件）から毎フレーム計算。クリップの区間内の押下だけを数え、クリップ開始で空から。巻き戻しでは再現しない。15 / 57 / 58 |
+| `builtin.cycle` | 叩くたびに色 | `palette`（2〜8 色）, `scope`（`global` / `per_pad`）, `lifetime_ms`（0 で次の押下まで）, `radius`（0〜3） | 色 = palette[回数 mod 長さ]。56 |
+| `builtin.constellation` | 星座 | `color`, `stroke`（0.5〜2）, `lifetime_ms`, `fade`（`linear` / `exp`）, `max_segments`（1〜16）, `dots`（bool） | 直前の押下と今回の押下を線で結ぶ。14 |
+
+`builtin.tap_glow` に `charge`（bool）を付けると、`hold` の発火で押している間に半径と明るさが育ち、離すと届いた大きさで光って冷める（13 長押しチャージ）。
+
+**記録（60 演奏の残像ループ）**：triggered レイヤーのクリップに `recording` を持たせると、記録した押下を時刻どおりに再生し、実際の押下と重ねる。
+
+```json
+{ "id": "rec1", "preset_id": "glow-white", "start_us": 0, "duration_us": 8000000, "fade_in_us": 0, "fade_out_us": 0, "loop": true,
+  "recording": { "length_us": 2000000, "events": [ { "t_us": 0, "x": 0, "y": 0, "velocity": 100, "duration_us": 150000 }, { "t_us": 500000, "x": 7, "y": 0, "velocity": 100 } ] } }
+```
+
+- `events` は時刻順、最大 1,024 件。`length_us` 省略時は最後のイベントの終わり。`loop` で繰り返す。記録部分は時刻だけで決まるので seek しても同じ。
+- 作り方：演奏タブの「● 録音」→「■ 録音を止めて追加」（追従中のみ）、または `omoiiro-probe make-recording --in <follow の JSONL> --show <show> --layer <id> --start-us <µs>`。
+- 入力履歴のリセットは演奏タブの「入力をリセット」か、`follow` の stdin コマンド `reset-input`。
+- 入力に依存する効果（pads / cycle / constellation / ripple など）は複合素材の中では描かれない（内部の時刻が曲の時刻とずれるため）。
+
 レイヤーには任意の `mask` を付けられる（そのレイヤー自身の描画だけを切り抜く）：`{ "shape": "circle" | "rect" | "diamond" | "wipe", "center_x", "center_y", "size", "size_y"?, "angle"?, "edge", "invert" }`。全項目キーフレーム可で、時間の基準はそのレイヤーの content と同じ。例：雨を円の中だけに出す（`fixtures/shows/transitions-0.1.3.show.json` の冒頭）。
 
 `builtin.regions` の `pattern` に `custom` を指定すると `groups`（[[セル番号,…],…] 1〜32群、セル番号 = 行×8+列）が必須になり、任意の `offset`（群ごとの位相差 0〜1、群数と同じ長さ）が使える。
 
-すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）、`d-effects-0.1.2.show.json`（領域ステップ・余熱・十字・形つき波紋）、`triggered-0.1.3.show.json`（発火レイヤー）、`keyframes-0.1.3.show.json`（粒から豪雨へ、加速する走査）、`paths-shapes-0.1.3.show.json`（外周ランナー2種、ムービングヘッド対、ひし形の拡大、自由グループ）、`transitions-0.1.3.show.json`（円の中の雨、アイリス、シャッター2種）、`particles-0.1.3.show.json`（火花、花火、しずく、吸い込み→爆発、噴水）、`compounds-0.1.3.show.json`（複合素材）、`frames-text-0.1.3.show.json`（星のスタンプ、文字スクロール、カウントダウン、8 フレームのループ）。
+すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）、`d-effects-0.1.2.show.json`（領域ステップ・余熱・十字・形つき波紋）、`triggered-0.1.3.show.json`（発火レイヤー）、`keyframes-0.1.3.show.json`（粒から豪雨へ、加速する走査）、`paths-shapes-0.1.3.show.json`（外周ランナー2種、ムービングヘッド対、ひし形の拡大、自由グループ）、`transitions-0.1.3.show.json`（円の中の雨、アイリス、シャッター2種）、`particles-0.1.3.show.json`（火花、花火、しずく、吸い込み→爆発、噴水）、`compounds-0.1.3.show.json`（複合素材）、`frames-text-0.1.3.show.json`（星のスタンプ、文字スクロール、カウントダウン、8 フレームのループ）、`input-states-0.1.3.show.json`（星座、熱、色の循環、育つ光、塗る、長押しチャージ、記録ループ）。
 
 ## 3b. 発火レイヤーとキーフレーム（0.1.3）
 
