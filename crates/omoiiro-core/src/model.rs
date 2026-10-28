@@ -1,4 +1,4 @@
-//! Show data model (docs/04-show-data.md, schemas/show.schema.json 0.1.3).
+//! Show data model (docs/04-show-data.md, schemas/show.schema.json 0.1.2).
 //!
 //! These types are the serde DTO and the domain model at once. Field order
 //! follows the Schema so that serialization gives the canonical key order;
@@ -10,10 +10,10 @@
 use crate::time::FrameRate;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-pub const SCHEMA_VERSION: &str = "0.1.3";
+pub const SCHEMA_VERSION: &str = "0.1.2";
 /// Older versions the store migrates on load (additive changes: only the
-/// version is rewritten; 0.1.2 adds effect types, 0.1.3 the triggered layer).
-pub const MIGRATABLE_VERSIONS: &[&str] = &["0.1.0", "0.1.1", "0.1.2"];
+/// version is rewritten; 0.1.2 adds effect types).
+pub const MIGRATABLE_VERSIONS: &[&str] = &["0.1.0", "0.1.1"];
 
 /// Serialize an `f64` as an integer when it is one (1.0 -> `1`, 0.6 -> `0.6`).
 pub fn ser_num<S: Serializer>(v: &f64, s: S) -> Result<S::Ok, S::Error> {
