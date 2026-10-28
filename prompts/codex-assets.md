@@ -21,7 +21,7 @@
 
 各テーマに最低：背景 2（noise / rain / wave / orb のいずれか）、タップ 2（ripple の変種。常時レイヤー）、アクセント 2（strobe / pulse / chase）、終了演出 1（31 白い一撃 → 32 色の着地）。プリセット id は `<theme>-<案番号>-<短い名>`（例 `seabed-01-drop`）。レイヤーは「比較用」に、4秒ずつ順番に並べる（ripple は常時レイヤーで、説明欄がないので `name` に「パッドを押す」と書く）。
 
-確認：`target\release\omoiiro-probe.exe render --show <file> --at <µs> --beat <拍>` で、各プリセットのクリップ区間の始まり・中・終わりを見る。読み込みエラーは JSON Pointer つきで出る。すべてのショーがエラーなしで読めること。
+確認：`dist-win\omoiiro-probe.exe render --show <file> --at <µs> --beat <拍>`（`dist-win` はこのPCにある 0.1.2 対応版。なければ `cargo build --release -p omoiiro-probe` で作る）で、各プリセットのクリップ区間の始まり・中・終わりを見る。読み込みエラーは JSON Pointer つきで出る。すべてのショーがエラーなしで読めること。
 
 ## 依頼2：8×8 ビットマップとフォントの素材（データのみ）
 
