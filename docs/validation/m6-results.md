@@ -51,6 +51,8 @@
 | 重いshowの10分soak（粒子2層、frames、text、recording駆動の熱・余熱・星座、meter glow、fake_bridge `--meter`、仮想LED） | 本体 43.4 → 44.3 MB（横ばい）、子孫込み 493.3 → 524.5 MB（+6.3%、516〜529で頭打ち）。合格。PadLogと履歴は増え続けない |
 | Live 12.4.7 の音量メーター（v3ブリッジ、実機） | 停止中 約10 Hz、再生中 24.6 Hz（間隔 p50 33.5 ms / p95 66.3 ms / 最大 82.8 ms）。曲中時刻のリスナーは同時に 60.0 Hz で影響なし。`[LED] Kick`（Core LibraryのEDM Kick）の値は平滑化済みで 0.75〜0.92。通し（Live → アプリ、fixture 59）：時刻源は終始locked、glowで64点灯、orb区間52点灯 |
 
+| 堅牢性（同夜） | 描画のpanicは `catch_unwind` で受け、前のフレームを保持して `render_panics` / `render_fault` に記録（LED出力タイルが赤）。`fuzz-shows`：18ファイル×1,000回の損傷入力で受理157 / 拒否17,843 / panic 0。`route-latency`：追従中の押下20回/秒で callback→Live送信 p95 22 µs（軽いshow・重いshowとも。描画p95は17 µs対618 µs）。合成データ |
+
 Liveのメーターは平滑化済みの値で、拍の立ち上がりは1〜2フレーム遅れる。キックに反応させるには `floor` で下を切って伸長する（0.1.3の後半でfloorの意味を「引いて伸長」に変更）。
 
 ## Mac：ビルド、Live追従、Launchpad X（2026-10-28）
