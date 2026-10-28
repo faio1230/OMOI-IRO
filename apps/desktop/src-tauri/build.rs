@@ -28,6 +28,7 @@ const COMMANDS: &[&str] = &[
     "editor_undo",
     "editor_redo",
     "preset_import",
+    "frames_import",
     "preset_export",
     "editor_save",
     "editor_save_as",

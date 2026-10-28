@@ -25,14 +25,14 @@ pub fn run(args: BenchArgs) -> Result<(), Box<dyn std::error::Error>> {
     let report = if args.compounds {
         let h = nfr03::measure(&nfr03::load_show_compounds(args.particles), args.frames);
         let load = if args.particles {
-            "64 pads, 8 layers x 4 inner compound layers, every inner layer a capped fountain (32 x 256 particles), loop, tint on 4"
+            "64 pads, 8 layers x 4 inner compound layers, every inner layer a capped fountain (256 per layer, 768 per show drawn), loop, tint on 4"
         } else {
             "64 pads, 8 layers x 4 inner compound layers, overlapping 2 s clips with fades over chase/pulse/noise/rain/orb, over/add/max, loop, tint on 4"
         };
         nfr03::report_load(&h, build, load)
     } else if args.particles {
         let h = nfr03::measure(&nfr03::load_show_particles(), args.frames);
-        nfr03::report_load(&h, build, "64 pads, 8 continuous particle layers, fountain 64/s x 6 s (256 drawn per layer), size 2, tail 4, bounce, over/add/max")
+        nfr03::report_load(&h, build, "64 pads, 8 continuous particle layers, fountain 64/s x 6 s (256 per layer, 768 per show drawn), size 2, tail 4, bounce, over/add/max")
     } else {
         let minutes = (args.frames / (30 * 60) + 1) as u32;
         let h = nfr03::measure(&nfr03::load_show(minutes), args.frames);

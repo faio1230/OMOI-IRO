@@ -15,6 +15,9 @@ use crate::surface::{LayerFrame, Rgb, Rgba, GRID_H, GRID_W};
 pub const MAX_EVENTS: usize = 16;
 /// Particles drawn per layer at most; older ones are dropped first.
 pub const MAX_PARTICLES: usize = 256;
+/// Particles drawn per frame over the whole show (docs/14 §4-5): layers
+/// draw bottom first, each newest first, until this is used up.
+pub const MAX_SHOW_PARTICLES: usize = 768;
 
 /// Grid walls: cell centres are 0..=7, a cell reaches half a cell further.
 const LO: f64 = -0.5;

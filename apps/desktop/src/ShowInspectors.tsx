@@ -3,7 +3,7 @@
 // hand-off as the timeline); ranges shown here follow the show schema.
 import { useEffect, useState, type ReactElement } from "react";
 import * as ipc from "./ipc/commands";
-import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, PathKind, Mirror, ShapeKind, LayerMask, ParticleMode, TriggerOn, TriggerSpec, K, Keyframe, Ease } from "./ipc/types";
+import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, PathKind, Mirror, ShapeKind, LayerMask, ParticleMode, TextMode, TriggerOn, TriggerSpec, K, Keyframe, Ease } from "./ipc/types";
 
 const TYPE_JA: Record<EffectType, string> = {
   "builtin.solid": "単色（Solid）",
@@ -21,6 +21,8 @@ const TYPE_JA: Record<EffectType, string> = {
   "builtin.path": "経路（Path）",
   "builtin.shape": "図形（Shape）",
   "builtin.particles": "粒子（Particles）",
+  "builtin.frames": "フレーム列（Frames）",
+  "builtin.text": "文字（Text）",
 };
 
 const isKeyed = <T,>(v: K<T>): v is { keyframes: Keyframe<T>[] } => typeof v === "object" && v !== null && "keyframes" in v;
@@ -159,6 +161,34 @@ const parseOffsets = (n: number) => (s: string): number[] | undefined | string =
   if (v.length !== n || v.some((x) => !(x >= 0 && x <= 1))) return `ずれは 0〜1 をグループ数（${n}）だけ`;
   return v;
 };
+
+/** 8 × 8 editor of the frames (click a cell to switch it between white and black). */
+function FramePainter({ frames, onChange }: { frames: string[]; onChange: (f: string[]) => void }) {
+  const [k, setK] = useState(0);
+  const i = Math.min(k, frames.length - 1);
+  const f = frames[i];
+  const cell = (c: number) => f.slice(c * 6, c * 6 + 6);
+  const toggle = (c: number) => {
+    const next = f.slice(0, c * 6) + (cell(c) === "000000" ? "FFFFFF" : "000000") + f.slice(c * 6 + 6);
+    onChange(frames.map((x, j) => (j === i ? next : x)));
+  };
+  return (
+    <div className="field wide frame-painter">
+      <span>フレーム {i + 1} / {frames.length}（上の行から。クリックで白と黒を切り替え）</span>
+      <div className="frame-grid">
+        {Array.from({ length: 64 }, (_, c) => (
+          <button key={c} className="frame-cell" style={{ background: `#${cell(c)}` }} onClick={() => toggle(c)} aria-label={`行 ${Math.floor(c / 8) + 1} 列 ${(c % 8) + 1}`} />
+        ))}
+      </div>
+      <div className="actions">
+        <button className="small" disabled={i === 0} onClick={() => setK(i - 1)}>前</button>
+        <button className="small" disabled={i === frames.length - 1} onClick={() => setK(i + 1)}>次</button>
+        <button className="small" disabled={frames.length >= 240} onClick={() => { onChange([...frames.slice(0, i + 1), f, ...frames.slice(i + 1)]); setK(i + 1); }}>このフレームを複製</button>
+        <button className="small danger" disabled={frames.length === 1} onClick={() => { onChange(frames.filter((_, j) => j !== i)); setK(Math.max(0, i - 1)); }}>削除</button>
+      </div>
+    </div>
+  );
+}
 
 /** Parameter form for one effect. Ranges and units follow schemas/show.schema.json. */
 export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e: Effect) => void }) {
@@ -309,6 +339,98 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
           <label className="field check">
             <input type="checkbox" checked={p.loop} onChange={(e) => set({ loop: e.target.checked })} />
             <span>終点で折り返して往復する（切ると終点で止まる）</span>
+          </label>
+        )}
+      </div>
+    );
+  }
+  if (effect.type === "builtin.frames") {
+    const p = effect.params;
+    const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
+    return (
+      <div className="insp-grid">
+        <FramePainter frames={p.frames} onChange={(frames) => set({ frames })} />
+        <NumberField fixed label="1秒あたりのフレーム数" value={p.fps} min={1} max={30} step={1} hint="1〜30。6 以上は点滅として警告（消灯はしない）" onChange={(v) => set({ fps: first(v) })} />
+        <label className="field check">
+          <input type="checkbox" checked={p.loop} onChange={(e) => set({ loop: e.target.checked })} />
+          <span>繰り返す</span>
+        </label>
+        {!p.loop && (
+          <>
+            <label className="field check">
+              <input type="checkbox" checked={p.hold_last} onChange={(e) => set({ hold_last: e.target.checked })} />
+              <span>最後のフレームを残し続ける</span>
+            </label>
+            {!p.hold_last && <NumberField fixed label="最後のフレームを残す時間（ms）" value={p.hold_ms ?? 0} min={0} max={60000} step={100} integer hint="スタンプの寿命など。0 ですぐ消える" onChange={(v) => set({ hold_ms: first(v) || undefined })} />}
+          </>
+        )}
+        <label className="field">
+          <span>位置</span>
+          <select value={p.anchor} onChange={(e) => set({ anchor: e.target.value as "board" | "pad" })}>
+            <option value="board">盤全体</option>
+            <option value="pad">押したパッドに合わせる（発火レイヤー）</option>
+          </select>
+          <span className="hint">パッドに合わせると、絵の (3, 3)（下から4段目・左から4列目）が押した位置に来る</span>
+        </label>
+        <label className="field check">
+          <input type="checkbox" checked={p.color !== undefined} onChange={(e) => set({ color: e.target.checked ? "#FFFFFF" : undefined })} />
+          <span>点灯セルを1色で塗る</span>
+        </label>
+        {p.color !== undefined && (
+          <label className="field">
+            <span>塗る色</span>
+            <input type="color" value={p.color} onChange={(e) => set({ color: e.target.value.toUpperCase() })} />
+          </label>
+        )}
+        <label className="field check">
+          <input type="checkbox" checked={p.opacity_key ?? true} onChange={(e) => set({ opacity_key: e.target.checked ? undefined : false })} />
+          <span>黒を透明にする</span>
+        </label>
+      </div>
+    );
+  }
+  if (effect.type === "builtin.text") {
+    const p = effect.params;
+    const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
+    const seq = p.mode === "sequential";
+    return (
+      <div className="insp-grid">
+        <label className="field wide">
+          <span>文字（ASCII 1〜64 文字）</span>
+          <input value={p.text} maxLength={64} spellCheck={false} onChange={(e) => set({ text: e.target.value.replace(/[^ -~]/g, "") || " " })} />
+        </label>
+        <label className="field">
+          <span>フォント</span>
+          <select value={p.font} onChange={(e) => set({ font: e.target.value as "5x7" | "3x5" })}>
+            <option value="5x7">5×7（小文字あり）</option>
+            <option value="3x5">3×5（小文字は大文字で表示）</option>
+          </select>
+        </label>
+        <ColorField value={p.color} onChange={(color) => set({ color })} />
+        <label className="field">
+          <span>出し方</span>
+          <select value={p.mode} onChange={(e) => {
+            const mode = e.target.value as TextMode;
+            set({ mode, speed: mode === "sequential" ? Math.min(8, Math.max(0.2, p.speed)) : Math.max(0.5, p.speed) });
+          }}>
+            <option value="static">中央に表示（入る分だけ）</option>
+            <option value="scroll_left">左へ流す</option>
+            <option value="scroll_up">上へ流す</option>
+            <option value="sequential">1文字ずつ</option>
+          </select>
+        </label>
+        {p.mode !== "static" && <NumberField fixed label={seq ? "1秒あたりの文字数" : "速さ（セル/秒）"} value={p.speed} min={seq ? 0.2 : 0.5} max={seq ? 8 : 16} step={seq ? 0.1 : 0.5} hint={seq ? "0.2〜8" : "0.5〜16"} onChange={(v) => set({ speed: first(v) })} />}
+        <NumberField fixed label="文字の間隔（セル）" value={p.gap} min={0} max={2} step={1} integer onChange={(v) => set({ gap: first(v) })} />
+        {seq && (
+          <label className="field check">
+            <input type="checkbox" checked={p.beat_step ?? false} onChange={(e) => set({ beat_step: e.target.checked || undefined })} />
+            <span>拍ごとに進める（拍が不明な間は速さで）</span>
+          </label>
+        )}
+        {p.mode !== "static" && (
+          <label className="field check">
+            <input type="checkbox" checked={p.loop} onChange={(e) => set({ loop: e.target.checked })} />
+            <span>繰り返す</span>
           </label>
         )}
       </div>
@@ -932,6 +1054,10 @@ export function PresetPanel(props: {
           <option value="error">ID が衝突したらエラー</option>
         </select>
         <button disabled={!importPath} onClick={() => applyView(() => ipc.presetImport(importPath, conflict))}>読み込み</button>
+      </div>
+      <div className="io-row">
+        <button onClick={() => ipc.pickFramesAsset().then((p) => p && applyView(() => ipc.framesImport(p, conflict)))} title="omoiiro.frames（8×8 のフレーム列）か omoiiro.bitmap（8×8 の点灯図）を、フレーム列のプリセットとして読み込む">フレーム列を読み込み…</button>
+        <span className="hint">ID の衝突は左の設定に従う。ビットマップは白い1枚として入る（色はプリセットで変えられる）。</span>
       </div>
       {note && <p className="hint">{note}</p>}
     </section>

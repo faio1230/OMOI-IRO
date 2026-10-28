@@ -45,6 +45,7 @@ export const editorUndo = () => invoke<EditorView>("editor_undo");
 export const editorRedo = () => invoke<EditorView>("editor_redo");
 /** Import a 0.1.1 preset file (kind omoiiro.preset) through the history. */
 export const presetImport = (path: string, onConflict: OnConflict) => invoke<EditorView>("preset_import", { path, onConflict });
+export const framesImport = (path: string, onConflict: OnConflict) => invoke<EditorView>("frames_import", { path, onConflict });
 export const presetExport = (presetId: string, path: string, overwrite: boolean) => invoke<string>("preset_export", { presetId, path, overwrite });
 
 export const editorSave = () => invoke<EditorView>("editor_save");
@@ -59,6 +60,7 @@ export const closeDecision = (action: "save" | "discard" | "cancel") => invoke<v
 export const pickShow = () => open({ multiple: false, directory: false, filters: [{ name: "OMOI-IRO show (*.show.json)", extensions: ["json"] }] }) as Promise<string | null>;
 export const pickShowSave = (defaultPath?: string) => save({ defaultPath, filters: [{ name: "OMOI-IRO show (*.show.json)", extensions: ["json"] }] });
 export const pickPreset = () => open({ multiple: false, directory: false, filters: [{ name: "OMOI-IRO preset (*.preset.json)", extensions: ["json"] }] }) as Promise<string | null>;
+export const pickFramesAsset = () => open({ multiple: false, directory: false, filters: [{ name: "フレーム列・ビットマップ（omoiiro.frames / omoiiro.bitmap）", extensions: ["json"] }] }) as Promise<string | null>;
 export const pickPresetSave = (defaultPath?: string) => save({ defaultPath, filters: [{ name: "OMOI-IRO preset (*.preset.json)", extensions: ["json"] }] });
 
 /** Pointer list of a validation error, if any. */

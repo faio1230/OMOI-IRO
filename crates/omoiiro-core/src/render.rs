@@ -63,7 +63,7 @@
 use crate::model::{
     Axis, Blend, Content, Effect, LayerMask, Mirror, OrbMotion, PathKind, ShapeKind, TriggerOn, RainDirection, RegionPattern, RippleFade, RippleShape, RippleTrigger, Show, StepMode, StepOrder, StrobeMode, Waveform,
 };
-use crate::particles::{paint_event, Event, ParticleLook, MAX_EVENTS, MAX_PARTICLES};
+use crate::particles::{paint_event, Event, ParticleLook, MAX_EVENTS, MAX_PARTICLES, MAX_SHOW_PARTICLES};
 use crate::surface::{Frame, LayerFrame, Rgb, Rgba, GRID_H, GRID_LEDS, GRID_W};
 use crate::time::{BeatState, ShowTimeUs};
 use crate::timeline::{ClipIndex, ClipSpan};
@@ -71,8 +71,9 @@ use crate::validation::{validate, Issue};
 use std::collections::HashMap;
 use std::f64::consts::TAU;
 
-/// An effect with its parameters parsed for rendering.
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// An effect with its parameters parsed for rendering (cheap to clone:
+/// frame data is shared).
+#[derive(Clone, Debug, PartialEq)]
 pub enum CompiledEffect {
     Solid { color: Rgb },
     Chase { color: Rgb, period_us: u64, width: u32, axis: Axis, reverse: bool },
@@ -103,6 +104,10 @@ pub enum CompiledEffect {
     Cross { color: Rgb, speed: f64, length: f64, lifetime_us: i64 },
     /// 0.1.3: particles; layers turn time or pads into events (`particles`).
     Particles(ParticleLook),
+    /// 0.1.3: frames played by time (instances on a triggered layer).
+    Frames(FramesLook),
+    /// 0.1.3: text in a built-in font.
+    Text(TextLook),
     Regions { pattern: RegionPattern, color: Rgb, color_b: Option<Rgb>, mode: StepMode, step_beats: f64, step_s: f64, order: StepOrder, soft: f64, duty: f64, custom: Option<CustomGroups> },
     Path(PathLook),
     Shape { kind: ShapeKind, color: Rgb, fill: bool, stroke: f64, center: (f64, f64), size: (f64, f64), angle: f64, edge: f64, invert: bool },
@@ -349,6 +354,8 @@ impl CompiledEffect {
             },
             Effect::Path { params, .. } => CompiledEffect::Path(compile_path(params, t)?),
             Effect::Particles { params, .. } => CompiledEffect::Particles(ParticleLook::compile(params, t, col)?),
+            Effect::Frames { params, .. } => CompiledEffect::Frames(FramesLook::compile(params)?),
+            Effect::Text { params, .. } => CompiledEffect::Text(TextLook::compile(params, t)?),
             Effect::Shape { params, .. } => {
                 let size = params.size.at(t);
                 CompiledEffect::Shape {
@@ -450,6 +457,12 @@ impl CompiledEffect {
             CompiledEffect::Ripple { interval: None, .. } => {}
             // Pad driven: drawn by `paint_input`.
             CompiledEffect::TapGlow { .. } | CompiledEffect::Cross { .. } => {}
+            CompiledEffect::Frames(ref f) => {
+                if let Some(frame) = f.frame_at(local_us) {
+                    paint_frame(frame, (0, 0), alpha, layer);
+                }
+            }
+            CompiledEffect::Text(ref look) => paint_text(look, local_us, beat, alpha, layer),
             // On its own (a timeline clip, a preview): one event at the emitter from local 0.
             CompiledEffect::Particles(look) => {
                 let ev = Event { x: look.origin.0, y: look.origin.1, age_s: local_us as f64 / 1e6, emit_s: f64::INFINITY, id: 0, start_us: 0 };
@@ -598,7 +611,7 @@ impl CompiledEffect {
 
     /// True for effects drawn from instances (position + age).
     pub fn takes_instances(&self) -> bool {
-        matches!(self, CompiledEffect::Ripple { .. } | CompiledEffect::TapGlow { .. } | CompiledEffect::Cross { .. })
+        matches!(self, CompiledEffect::Ripple { .. } | CompiledEffect::TapGlow { .. } | CompiledEffect::Cross { .. } | CompiledEffect::Frames(_))
     }
 
     /// Draw instances (newest first). Other effects draw nothing here.
@@ -609,6 +622,14 @@ impl CompiledEffect {
                 paint_tap_glow(inst, [start, mid, end], lifetime_us, radius, repeats, repeat_us, decay, alpha, layer)
             }
             CompiledEffect::Cross { color, speed, length, lifetime_us } => paint_cross(inst, color, speed, length, lifetime_us, alpha, layer),
+            // Each press shows the frames from its own start; `pad` moves cell (3, 3) onto the pad.
+            CompiledEffect::Frames(ref f) => {
+                for &(x, y, age) in inst {
+                    let Some(frame) = (age >= 0).then(|| f.frame_at(age as u64)).flatten() else { continue };
+                    let off = if f.pad { (x.round() as i64 - 3, y.round() as i64 - 3) } else { (0, 0) };
+                    paint_frame(frame, off, alpha, layer);
+                }
+            }
             _ => {}
         }
     }
@@ -1070,8 +1091,8 @@ pub fn has_keyframes(e: &Effect) -> bool {
 /// Effect `i` at time `t` on its axis: the compiled constant unless it has keyframes.
 fn sample(effects: &[CompiledEffect], keyed: &[Option<Effect>], i: usize, t: u64) -> CompiledEffect {
     match &keyed[i] {
-        Some(src) => CompiledEffect::compile_at(src, t).unwrap_or(effects[i]),
-        None => effects[i],
+        Some(src) => CompiledEffect::compile_at(src, t).unwrap_or_else(|| effects[i].clone()),
+        None => effects[i].clone(),
     }
 }
 
@@ -1086,9 +1107,210 @@ fn paint_instances_sampled(effects: &[CompiledEffect], keyed: &[Option<Effect>],
                 _ => MAX_INSTANCES,
             };
             for one in inst.iter().filter(|x| x.2 >= 0).take(limit) {
-                let e = CompiledEffect::compile_at(src, one.2 as u64).unwrap_or(effects[i]);
+                let e = CompiledEffect::compile_at(src, one.2 as u64).unwrap_or_else(|| effects[i].clone());
                 e.paint_instances(std::slice::from_ref(one), alpha, layer);
             }
+        }
+    }
+}
+
+/// Frames parsed once: each frame's 64 cells in LED order (None = transparent).
+#[derive(Clone, Debug, PartialEq)]
+pub struct FramesLook {
+    pub frames: std::sync::Arc<[[Option<Rgb>; GRID_LEDS]]>,
+    pub fps: f64,
+    pub looping: bool,
+    pub hold_last: bool,
+    pub hold_us: u64,
+    pub pad: bool,
+}
+
+impl FramesLook {
+    /// Parse the frames (top row first in the file, bottom-left origin here).
+    pub fn compile(p: &crate::model::FramesParams) -> Option<FramesLook> {
+        let color = match &p.color {
+            Some(c) => Some(Rgb::from_hex(c)?),
+            None => None,
+        };
+        let key = p.opacity_key.unwrap_or(true);
+        let mut frames = Vec::with_capacity(p.frames.len());
+        for s in &p.frames {
+            if s.len() != 6 * GRID_LEDS || !s.is_ascii() {
+                return None;
+            }
+            let mut f = [None; GRID_LEDS];
+            for i in 0..GRID_LEDS {
+                let c = Rgb::from_hex(&format!("#{}", &s[6 * i..6 * i + 6]))?;
+                let black = c.r == 0.0 && c.g == 0.0 && c.b == 0.0;
+                let (row_top, col) = (i / GRID_W, i % GRID_W);
+                f[(GRID_H - 1 - row_top) * GRID_W + col] = match (black, key) {
+                    (true, true) => None,
+                    (true, false) => Some(c),
+                    (false, _) => Some(color.unwrap_or(c)),
+                };
+            }
+            frames.push(f);
+        }
+        if frames.is_empty() {
+            return None;
+        }
+        Some(FramesLook {
+            frames: frames.into(),
+            fps: p.fps.max(0.001),
+            looping: p.looping,
+            hold_last: p.hold_last,
+            hold_us: p.hold_ms.unwrap_or(0) as u64 * 1000,
+            pad: p.anchor == crate::model::FrameAnchor::Pad,
+        })
+    }
+
+    /// The frame `t_us` after the start: wraps with loop; else the last one
+    /// stays (`hold_last`) or for `hold_us` after the end, then none.
+    pub fn frame_at(&self, t_us: u64) -> Option<&[Option<Rgb>; GRID_LEDS]> {
+        let n = self.frames.len() as u64;
+        let k = (t_us as f64 / 1e6 * self.fps).floor() as u64;
+        if self.looping {
+            return Some(&self.frames[(k % n) as usize]);
+        }
+        if k < n {
+            return Some(&self.frames[k as usize]);
+        }
+        let end_us = (n as f64 / self.fps * 1e6) as u64;
+        (self.hold_last || t_us < end_us + self.hold_us).then(|| &self.frames[(n - 1) as usize])
+    }
+}
+
+/// Draw a frame moved by `off` cells (what leaves the grid is cut).
+fn paint_frame(frame: &[Option<Rgb>; GRID_LEDS], off: (i64, i64), alpha: f64, layer: &mut LayerFrame) {
+    for (i, px) in layer.px.iter_mut().enumerate() {
+        let (x, y) = ((i % GRID_W) as i64 - off.0, (i / GRID_W) as i64 - off.1);
+        if (0..GRID_W as i64).contains(&x) && (0..GRID_H as i64).contains(&y) {
+            if let Some(c) = frame[y as usize * GRID_W + x as usize] {
+                over(px, Rgba::from_color(c, alpha as f32));
+            }
+        }
+    }
+}
+
+/// Text: the glyphs of the text (font columns) and its layout parameters.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TextLook {
+    pub glyphs: std::sync::Arc<[crate::font::Glyph]>,
+    pub w: usize,
+    pub h: usize,
+    pub color: Rgb,
+    pub mode: crate::model::TextMode,
+    pub speed: f64,
+    pub gap: usize,
+    pub beat_step: bool,
+    pub looping: bool,
+}
+
+impl TextLook {
+    pub fn compile(p: &crate::model::TextParams, t: u64) -> Option<TextLook> {
+        let (w, h) = crate::font::size(p.font);
+        Some(TextLook {
+            glyphs: p.text.chars().map(|c| crate::font::glyph(p.font, c)).collect::<Vec<_>>().into(),
+            w,
+            h,
+            color: col(&p.color, t)?,
+            mode: p.mode,
+            speed: p.speed.max(0.001),
+            gap: p.gap as usize,
+            beat_step: p.beat_step.unwrap_or(false),
+            looping: p.looping,
+        })
+    }
+
+    /// Glyph `ci`, column `x`, row `r` (from the top) lit?
+    fn lit(&self, ci: usize, x: usize, r: usize) -> bool {
+        x < self.w && r < self.h && self.glyphs[ci][x] >> r & 1 == 1
+    }
+
+    /// Grid row of glyph row 0 (5 × 7 from row 7 down, 3 × 5 from row 6).
+    fn top(&self) -> i64 {
+        if self.h >= 7 {
+            7
+        } else {
+            6
+        }
+    }
+}
+
+/// Text at `local_us`: static (what fits, centred), scrolling left or up
+/// (entering from the edge), or one character at a time (per `speed`, or
+/// per beat counted from the clip start with `beat_step`).
+fn paint_text(look: &TextLook, local_us: u64, beat: Option<BeatState>, alpha: f64, layer: &mut LayerFrame) {
+    use crate::model::TextMode;
+    let n = look.glyphs.len();
+    if n == 0 {
+        return;
+    }
+    let t = local_us as f64 / 1e6;
+    let src = Rgba::from_color(look.color, alpha as f32);
+    let mut put = |x: i64, y: i64| {
+        if (0..GRID_W as i64).contains(&x) && (0..GRID_H as i64).contains(&y) {
+            over(&mut layer.px[y as usize * GRID_W + x as usize], src);
+        }
+    };
+    let top = look.top();
+    // One glyph with its left column at x0.
+    let glyph = |ci: usize, x0: i64, top: i64, put: &mut dyn FnMut(i64, i64)| {
+        for x in 0..look.w {
+            for r in 0..look.h {
+                if look.lit(ci, x, r) {
+                    put(x0 + x as i64, top - r as i64);
+                }
+            }
+        }
+    };
+    let centred = |width: usize| (GRID_W as i64 - width as i64).div_euclid(2);
+    // Cells moved since the start, wrapped over `period` cells with loop (None: done).
+    let moved = |period: i64| -> Option<i64> {
+        let k = (look.speed * t).floor() as i64;
+        if look.looping {
+            Some(k.rem_euclid(period))
+        } else {
+            (k < period).then_some(k)
+        }
+    };
+    match look.mode {
+        TextMode::Static => {
+            let fit = (1..=n).rev().find(|m| m * look.w + (m - 1) * look.gap <= GRID_W).unwrap_or(1);
+            let x0 = centred(fit * look.w + (fit - 1) * look.gap);
+            for ci in 0..fit {
+                glyph(ci, x0 + (ci * (look.w + look.gap)) as i64, top, &mut put);
+            }
+        }
+        TextMode::ScrollLeft => {
+            let unit = look.w + look.gap;
+            let width = (n * unit - look.gap) as i64;
+            let Some(k) = moved(width + GRID_W as i64) else { return };
+            // The strip starts just right of the grid and moves left one cell per step.
+            for ci in 0..n {
+                glyph(ci, GRID_W as i64 - k + (ci * unit) as i64, top, &mut put);
+            }
+        }
+        TextMode::ScrollUp => {
+            let unit = look.h + look.gap;
+            let height = (n * unit - look.gap) as i64;
+            let Some(k) = moved(height + GRID_H as i64) else { return };
+            // The stack starts just below the grid; its first glyph leads.
+            for ci in 0..n {
+                glyph(ci, centred(look.w), k - 1 - (ci * unit) as i64, &mut put);
+            }
+        }
+        TextMode::Sequential => {
+            let step = match beat.filter(|b| look.beat_step && b.phase_valid && b.beat.is_finite() && b.tempo_bpm > 0.0) {
+                // Beats since the clip start (taken to be on a beat).
+                Some(b) => {
+                    let start = (b.beat - t * b.tempo_bpm / 60.0).round();
+                    (b.beat - start).floor().max(0.0) as usize
+                }
+                None => (look.speed * t).floor() as usize,
+            };
+            let ci = if look.looping { step % n } else if step < n { step } else { return };
+            glyph(ci, centred(look.w), top, &mut put);
         }
     }
 }
@@ -1101,13 +1323,16 @@ fn particle_look(effects: &[CompiledEffect], keyed: &[Option<Effect>], i: usize,
     }
 }
 
-/// Draw particle events (newest first) of effect `i`, at most `MAX_PARTICLES`.
-fn paint_particles(effects: &[CompiledEffect], keyed: &[Option<Effect>], i: usize, events: &[Event], alpha: f64, layer: &mut LayerFrame) {
-    let mut budget = MAX_PARTICLES;
+/// Draw particle events (newest first) of effect `i`: at most `MAX_PARTICLES`
+/// per call and what is left of the frame's `show_left` (`MAX_SHOW_PARTICLES`).
+fn paint_particles(effects: &[CompiledEffect], keyed: &[Option<Effect>], i: usize, events: &[Event], alpha: f64, layer: &mut LayerFrame, show_left: &mut usize) {
+    let mut budget = MAX_PARTICLES.min(*show_left);
+    let start = budget;
     let look_at = |t: u64| particle_look(effects, keyed, i, t);
     for ev in events {
         paint_event(ev, &look_at, alpha, layer, &mut budget);
     }
+    *show_left -= start - budget;
 }
 
 /// Events of a continuous particle layer at show time `t`: a fountain emits
@@ -1363,7 +1588,8 @@ fn blend_into(dst: &mut LayerFrame, src: &LayerFrame, blend: Blend, opacity: f32
 }
 
 /// Timeline clips at `t` (layer time) into `buf`: presets only (particles included).
-fn paint_timeline_presets(effects: &[CompiledEffect], keyed: &[Option<Effect>], fx: &[usize], active: &[ClipSpan], t: ShowTimeUs, beat: Option<BeatState>, input: Option<&PadInput>, buf: &mut LayerFrame) {
+#[allow(clippy::too_many_arguments)]
+fn paint_timeline_presets(effects: &[CompiledEffect], keyed: &[Option<Effect>], fx: &[usize], active: &[ClipSpan], t: ShowTimeUs, beat: Option<BeatState>, input: Option<&PadInput>, buf: &mut LayerFrame, show_left: &mut usize) {
     for span in active {
         let local = span.local_us(t);
         let ei = fx[span.order];
@@ -1371,7 +1597,7 @@ fn paint_timeline_presets(effects: &[CompiledEffect], keyed: &[Option<Effect>], 
             // One event from the clip start; parameters as at the start.
             let Some(l) = particle_look(effects, keyed, ei, 0) else { continue };
             let ev = Event { x: l.origin.0, y: l.origin.1, age_s: local as f64 / 1e6, emit_s: f64::INFINITY, id: span.order as u64, start_us: 0 };
-            paint_particles(effects, keyed, ei, std::slice::from_ref(&ev), span.fade(t), buf);
+            paint_particles(effects, keyed, ei, std::slice::from_ref(&ev), span.fade(t), buf, show_left);
             continue;
         }
         sample(effects, keyed, ei, local).paint_input(local, beat, input, span.fade(t), buf);
@@ -1381,7 +1607,7 @@ fn paint_timeline_presets(effects: &[CompiledEffect], keyed: &[Option<Effect>], 
 /// A compound at its inner time `t` into `out` (cleared): each inner layer
 /// drawn into `layer`, masked, then blended with its blend and opacity.
 #[allow(clippy::too_many_arguments)]
-fn paint_compound(effects: &[CompiledEffect], keyed: &[Option<Effect>], u: &CompoundUse, t: u64, beat: Option<BeatState>, input: Option<&PadInput>, active: &mut Vec<ClipSpan>, events: &mut Vec<Event>, layer: &mut LayerFrame, out: &mut LayerFrame) {
+fn paint_compound(effects: &[CompiledEffect], keyed: &[Option<Effect>], u: &CompoundUse, t: u64, beat: Option<BeatState>, input: Option<&PadInput>, active: &mut Vec<ClipSpan>, events: &mut Vec<Event>, layer: &mut LayerFrame, out: &mut LayerFrame, show_left: &mut usize) {
     out.clear();
     for l in &u.layers {
         if !l.enabled || l.opacity <= 0.0 {
@@ -1392,7 +1618,7 @@ fn paint_compound(effects: &[CompiledEffect], keyed: &[Option<Effect>], u: &Comp
             InnerContent::Continuous { effect } => {
                 if matches!(effects[*effect], CompiledEffect::Particles(_)) {
                     continuous_particle_events(&|x| particle_look(effects, keyed, *effect, x), t, events);
-                    paint_particles(effects, keyed, *effect, events, 1.0, layer);
+                    paint_particles(effects, keyed, *effect, events, 1.0, layer, show_left);
                 } else {
                     sample(effects, keyed, *effect, t).paint_input(t, beat, input, 1.0, layer);
                 }
@@ -1400,7 +1626,7 @@ fn paint_compound(effects: &[CompiledEffect], keyed: &[Option<Effect>], u: &Comp
             }
             InnerContent::Timeline { index, effects: fx } => {
                 index.active(t as ShowTimeUs, active);
-                paint_timeline_presets(effects, keyed, fx, active, t as ShowTimeUs, beat, input, layer);
+                paint_timeline_presets(effects, keyed, fx, active, t as ShowTimeUs, beat, input, layer, show_left);
                 active.first().map(|s| s.local_us(t as ShowTimeUs))
             }
         };
@@ -1582,6 +1808,8 @@ impl Renderer {
     /// `render` with the pad hits for input-driven effects.
     pub fn render_input(&mut self, t: ShowTimeUs, beat: Option<BeatState>, input: Option<&PadInput>) -> Frame {
         let mut frame = Frame::default();
+        // Particles left for this frame (all layers): lower layers draw first.
+        let mut show_left = MAX_SHOW_PARTICLES;
         for (i, layer) in self.layers.iter().enumerate() {
             if !layer.enabled || layer.opacity <= 0.0 || t < 0 || self.muted[i] {
                 continue;
@@ -1591,7 +1819,7 @@ impl Renderer {
                 LayerContent::Continuous { effect } if matches!(self.effects[*effect], CompiledEffect::Particles(_)) => {
                     let (effects, keyed, ei) = (&self.effects, &self.keyed, *effect);
                     continuous_particle_events(&|x| particle_look(effects, keyed, ei, x), t as u64, &mut self.events);
-                    paint_particles(effects, keyed, ei, &self.events, 1.0, &mut self.buf);
+                    paint_particles(effects, keyed, ei, &self.events, 1.0, &mut self.buf, &mut show_left);
                 }
                 LayerContent::Continuous { effect } => {
                     let e = sample(&self.effects, &self.keyed, *effect, t as u64);
@@ -1609,7 +1837,7 @@ impl Renderer {
                     index.active(t, &mut self.active);
                     for span in &self.active {
                         let Some(u) = uses[span.order] else {
-                            paint_timeline_presets(&self.effects, &self.keyed, effects, std::slice::from_ref(span), t, beat, input, &mut self.buf);
+                            paint_timeline_presets(&self.effects, &self.keyed, effects, std::slice::from_ref(span), t, beat, input, &mut self.buf, &mut show_left);
                             continue;
                         };
                         // A compound: inner time = local × time_scale; past its
@@ -1622,7 +1850,7 @@ impl Renderer {
                             }
                             inner %= u.length_us;
                         }
-                        paint_compound(&self.effects, &self.keyed, u, inner, beat, input, &mut self.inner_active, &mut self.events, &mut self.inner_buf, &mut self.compound_buf);
+                        paint_compound(&self.effects, &self.keyed, u, inner, beat, input, &mut self.inner_active, &mut self.events, &mut self.inner_buf, &mut self.compound_buf, &mut show_left);
                         blend_into(&mut self.buf, &self.compound_buf, Blend::Over, span.fade(t) as f32);
                     }
                 }
@@ -1634,7 +1862,7 @@ impl Renderer {
                         if matches!(self.effects[ei], CompiledEffect::Particles(_)) {
                             let (fx, keyed) = (&self.effects, &self.keyed);
                             triggered_particle_events(*on, *interval_us, span, local, input, &|x| particle_look(fx, keyed, ei, x), &mut self.events);
-                            paint_particles(fx, keyed, ei, &self.events, span.fade(t), &mut self.buf);
+                            paint_particles(fx, keyed, ei, &self.events, span.fade(t), &mut self.buf, &mut show_left);
                             continue;
                         }
                         triggered_instances(*on, *interval_us, *origin, span, local, input, &mut self.inst);
@@ -1747,52 +1975,52 @@ mod tests {
     #[test]
     fn pulse_follows_phase_and_is_transparent_without_a_beat() {
         let mk = |depth: f64, wf: Waveform| CompiledEffect::Pulse { color: Rgb::new(1.0, 1.0, 1.0), beats_per_cycle: 1.0, depth, waveform: wf };
-        let alpha = |e: CompiledEffect, beat: Option<BeatState>| {
+        let alpha = |e: &CompiledEffect, beat: Option<BeatState>| {
             let mut l = LayerFrame::default();
             e.paint(0, beat, 1.0, &mut l);
             l.px[0].a
         };
         let sine = mk(1.0, Waveform::Sine);
-        assert!((alpha(sine, Some(BeatState::new(4.0, 120.0))) - 1.0).abs() < 1e-6); // phase 0 = max
-        assert!(alpha(sine, Some(BeatState::new(4.5, 120.0))) < 1e-6); // half phase = 0
-        assert!((alpha(mk(0.0, Waveform::Sine), Some(BeatState::new(4.5, 120.0))) - 1.0).abs() < 1e-6); // depth 0
-        assert!((alpha(mk(1.0, Waveform::Triangle), Some(BeatState::new(0.25, 120.0))) - 0.5).abs() < 1e-6);
-        assert_eq!(alpha(sine, None), 0.0);
+        assert!((alpha(&sine, Some(BeatState::new(4.0, 120.0))) - 1.0).abs() < 1e-6); // phase 0 = max
+        assert!(alpha(&sine, Some(BeatState::new(4.5, 120.0))) < 1e-6); // half phase = 0
+        assert!((alpha(&mk(0.0, Waveform::Sine), Some(BeatState::new(4.5, 120.0))) - 1.0).abs() < 1e-6); // depth 0
+        assert!((alpha(&mk(1.0, Waveform::Triangle), Some(BeatState::new(0.25, 120.0))) - 0.5).abs() < 1e-6);
+        assert_eq!(alpha(&sine, None), 0.0);
         let mut unknown = BeatState::new(4.0, 120.0);
         unknown.phase_valid = false;
-        assert_eq!(alpha(sine, Some(unknown)), 0.0);
+        assert_eq!(alpha(&sine, Some(unknown)), 0.0);
         // 0.25 beats per cycle: beat 0.125 is mid-cycle.
         let quarter = CompiledEffect::Pulse { color: Rgb::new(1.0, 1.0, 1.0), beats_per_cycle: 0.25, depth: 1.0, waveform: Waveform::Sine };
-        assert!(alpha(quarter, Some(BeatState::new(0.125, 120.0))) < 1e-6);
+        assert!(alpha(&quarter, Some(BeatState::new(0.125, 120.0))) < 1e-6);
     }
 
     #[test]
     fn strobe_is_a_square_wave_in_hz_or_on_the_beat() {
         let white = Rgb::new(1.0, 1.0, 1.0);
         let hz = CompiledEffect::Strobe { color: white, mode: StrobeMode::Hz, rate_hz: 4.0, beats_per_cycle: 1.0, duty: 0.25, phase_offset: 0.0 };
-        let alpha = |e: CompiledEffect, local: u64, beat: Option<BeatState>| {
+        let alpha = |e: &CompiledEffect, local: u64, beat: Option<BeatState>| {
             let mut l = LayerFrame::default();
             e.paint(local, beat, 1.0, &mut l);
             assert!(l.px.iter().all(|p| p.a == l.px[0].a), "whole surface");
             l.px[0].a
         };
         // 4 Hz = 250 ms cycles, on for the first 62.5 ms.
-        assert_eq!(alpha(hz, 0, None), 1.0);
-        assert_eq!(alpha(hz, 62_000, None), 1.0);
-        assert_eq!(alpha(hz, 63_000, None), 0.0);
-        assert_eq!(alpha(hz, 250_000, None), 1.0);
+        assert_eq!(alpha(&hz, 0, None), 1.0);
+        assert_eq!(alpha(&hz, 62_000, None), 1.0);
+        assert_eq!(alpha(&hz, 63_000, None), 0.0);
+        assert_eq!(alpha(&hz, 250_000, None), 1.0);
         // phase_offset 0.5 shifts the on part by half a cycle.
         let off = CompiledEffect::Strobe { color: white, mode: StrobeMode::Hz, rate_hz: 4.0, beats_per_cycle: 1.0, duty: 0.25, phase_offset: 0.5 };
-        assert_eq!(alpha(off, 0, None), 0.0);
-        assert_eq!(alpha(off, 125_000, None), 1.0);
+        assert_eq!(alpha(&off, 0, None), 0.0);
+        assert_eq!(alpha(&off, 125_000, None), 1.0);
         // Beat mode: 2 beats per cycle, duty 0.5; transparent without a phase.
         let beat = CompiledEffect::Strobe { color: white, mode: StrobeMode::Beat, rate_hz: 1.0, beats_per_cycle: 2.0, duty: 0.5, phase_offset: 0.0 };
-        assert_eq!(alpha(beat, 0, Some(BeatState::new(4.9, 120.0))), 1.0);
-        assert_eq!(alpha(beat, 0, Some(BeatState::new(5.1, 120.0))), 0.0);
-        assert_eq!(alpha(beat, 0, None), 0.0);
+        assert_eq!(alpha(&beat, 0, Some(BeatState::new(4.9, 120.0))), 1.0);
+        assert_eq!(alpha(&beat, 0, Some(BeatState::new(5.1, 120.0))), 0.0);
+        assert_eq!(alpha(&beat, 0, None), 0.0);
         let mut unknown = BeatState::new(4.0, 120.0);
         unknown.phase_valid = false;
-        assert_eq!(alpha(beat, 0, Some(unknown)), 0.0);
+        assert_eq!(alpha(&beat, 0, Some(unknown)), 0.0);
     }
 
     #[test]
@@ -1800,31 +2028,31 @@ mod tests {
         let base = Rgb::from_hex("#0D2346").unwrap();
         let hi = Rgb::from_hex("#9FE8FF").unwrap();
         let mk = |density: f64, smooth: bool, seed: u32| CompiledEffect::Noise { base, highlight: hi, density, rate_hz: 6.0, seed, smooth, depth: 0.5 };
-        let paint = |e: CompiledEffect, local: u64| {
+        let paint = |e: &CompiledEffect, local: u64| {
             let mut l = LayerFrame::default();
             e.paint(local, None, 1.0, &mut l);
             l
         };
         let e = mk(0.3, false, 1);
         // Same time, same picture; within one step (1/6 s) the pattern holds.
-        assert_eq!(paint(e, 1_000_000).px, paint(e, 1_000_000).px);
-        assert_eq!(paint(e, 1_000_000).px, paint(e, 1_100_000).px);
-        assert_ne!(paint(e, 1_000_000).px, paint(e, 1_200_000).px);
+        assert_eq!(paint(&e, 1_000_000).px, paint(&e, 1_000_000).px);
+        assert_eq!(paint(&e, 1_000_000).px, paint(&e, 1_100_000).px);
+        assert_ne!(paint(&e, 1_000_000).px, paint(&e, 1_200_000).px);
         // Another seed gives another pattern.
-        assert_ne!(paint(e, 1_000_000).px, paint(mk(0.3, false, 2), 1_000_000).px);
+        assert_ne!(paint(&e, 1_000_000).px, paint(&mk(0.3, false, 2), 1_000_000).px);
         // Density: the share of non-base cells over many steps is close to 0.3.
         let mut lit = 0;
         for step in 0..100u64 {
-            let l = paint(e, step * 166_667 + 1);
+            let l = paint(&e, step * 166_667 + 1);
             lit += l.px.iter().filter(|p| (p.b - base.b).abs() > 1e-6).count();
         }
         let share = lit as f64 / 6400.0;
         assert!((0.25..0.35).contains(&share), "{share}");
         // Density 0 is the base color everywhere, opaque.
-        assert!(paint(mk(0.0, false, 1), 0).px.iter().all(|p| p.a == 1.0 && (p.r - base.r).abs() < 1e-6));
+        assert!(paint(&mk(0.0, false, 1), 0).px.iter().all(|p| p.a == 1.0 && (p.r - base.r).abs() < 1e-6));
         // Smooth: halfway between two steps is the average of both patterns.
         let s = mk(0.3, true, 1);
-        let (a, b, mid) = (paint(e, 1_000_000), paint(e, 1_166_667), paint(s, 1_083_334));
+        let (a, b, mid) = (paint(&e, 1_000_000), paint(&e, 1_166_667), paint(&s, 1_083_334));
         for i in 0..64 {
             assert!((mid.px[i].r - (a.px[i].r + b.px[i].r) / 2.0).abs() < 0.01, "cell {i}");
         }
@@ -2309,6 +2537,25 @@ mod tests {
     }
 
     #[test]
+    fn particles_are_capped_over_the_whole_show() {
+        // Three capped fountains: 256 + 256 + 256 = 768, a fourth draws nothing.
+        let e = CompiledEffect::compile(&particles(|p| {
+            p.mode = crate::model::ParticleMode::Fountain.into();
+            p.rate = Some(64.0.into());
+            p.lifetime_ms = 6000.into();
+        }))
+        .unwrap();
+        let ev = Event { x: 3.5, y: 3.5, age_s: 10.0, emit_s: f64::INFINITY, id: 0, start_us: 0 };
+        let mut left = MAX_SHOW_PARTICLES;
+        for k in 0..4 {
+            let mut l = LayerFrame::default();
+            paint_particles(std::slice::from_ref(&e), &[None], 0, &[ev], 1.0, &mut l, &mut left);
+            assert_eq!(left, MAX_SHOW_PARTICLES.saturating_sub(256 * (k + 1)));
+            assert_eq!(l.px.iter().any(|p| p.a > 0.0), k < 3, "layer {k}");
+        }
+    }
+
+    #[test]
     fn particles_per_layer_are_capped() {
         // 64 per second for 6 s = 384 alive: only 256 are drawn.
         let CompiledEffect::Particles(look) = CompiledEffect::compile(&particles(|p| {
@@ -2390,6 +2637,104 @@ mod tests {
         // Add brightens some cells above the plain solid.
         let solid = r.render(6_500_000, None).leds[0];
         assert!(f.leds.iter().any(|c| c.g > solid.g));
+    }
+    /// A frame (top row first) with `cells` = (row from the top, column, hex color) lit.
+    fn frame_hex(cells: &[(usize, usize, &str)]) -> String {
+        let mut v = vec!["000000".to_string(); 64];
+        for &(r, c, hex) in cells {
+            v[r * 8 + c] = hex.into();
+        }
+        v.concat()
+    }
+
+    fn frames_effect(f: impl FnOnce(&mut crate::model::FramesParams)) -> Effect {
+        let mut e = crate::edit::default_effect("builtin.frames").unwrap();
+        let Effect::Frames { params, .. } = &mut e else { unreachable!() };
+        params.frames = vec![frame_hex(&[(0, 0, "FF0000")]), frame_hex(&[(7, 7, "0000FF")])];
+        params.fps = 2.0;
+        params.looping = false;
+        f(params);
+        e
+    }
+
+    #[test]
+    fn frames_play_by_time_hold_and_loop() {
+        let lit = |e: &Effect, t| lit_cells(&alpha_grid(&CompiledEffect::compile(e).unwrap(), t, None));
+        let once = frames_effect(|p| p.hold_ms = Some(500));
+        // The file's top-left cell is LED 56 (top row, bottom-left origin); its bottom-right is LED 7.
+        assert_eq!(lit(&once, 0), vec![56]);
+        assert_eq!(lit(&once, 600_000), vec![7]);
+        assert_eq!(lit(&once, 1_200_000), vec![7], "held 0.5 s after the end (1 s)");
+        assert_eq!(lit(&once, 1_600_000), Vec::<usize>::new());
+        assert_eq!(lit(&frames_effect(|p| p.hold_last = true), 9_000_000), vec![7]);
+        assert_eq!(lit(&frames_effect(|p| p.looping = true), 1_200_000), vec![56]);
+        // Black is see-through unless asked; `color` repaints the lit cells.
+        assert_eq!(lit(&frames_effect(|p| p.opacity_key = Some(false)), 0).len(), 64);
+        let tinted = CompiledEffect::compile(&frames_effect(|p| p.color = Some("#00FF00".into()))).unwrap();
+        let mut l = LayerFrame::default();
+        tinted.paint(0, None, 1.0, &mut l);
+        assert_eq!((l.px[56].r, l.px[56].g), (0.0, 1.0));
+    }
+
+    #[test]
+    fn frames_follow_the_pad_with_anchor_pad() {
+        // Cell (3, 3) from the bottom-left is row 4 from the top, column 3 in the file.
+        let star = frames_effect(|p| {
+            p.frames = vec![frame_hex(&[(4, 3, "FFFFFF"), (4, 4, "FFFFFF")])];
+            p.anchor = crate::model::FrameAnchor::Pad;
+            p.hold_last = true;
+        });
+        let mut r = Renderer::new(&triggered_show(star, on(TriggerOn::Press))).unwrap();
+        let mut input = PadInput::default();
+        input.apply(PadEvent::Press { x: 6, y: 6, velocity: 100, t_us: 0 }, Some(2_000_000));
+        input.advance(10_000);
+        let f = r.render_input(2_010_000, None, Some(&input));
+        let on: Vec<usize> = (0..64).filter(|i| f.leds[*i].r > 0.0).collect();
+        assert_eq!(on, vec![6 * 8 + 6, 6 * 8 + 7], "cells (3, 3) and (4, 3) moved by (3, 3) onto the pad");
+    }
+
+    fn text_effect(text: &str, font: crate::model::TextFont, mode: crate::model::TextMode, f: impl FnOnce(&mut crate::model::TextParams)) -> CompiledEffect {
+        let mut e = crate::edit::default_effect("builtin.text").unwrap();
+        let Effect::Text { params, .. } = &mut e else { unreachable!() };
+        params.text = text.into();
+        params.font = font;
+        params.mode = mode;
+        params.speed = 1.0;
+        params.looping = false;
+        f(params);
+        CompiledEffect::compile(&e).unwrap()
+    }
+
+    #[test]
+    fn text_static_scroll_and_sequence() {
+        use crate::model::{TextFont::*, TextMode::*};
+        let row = |e: &CompiledEffect, t, y: usize, beat| {
+            let a = alpha_grid(e, t, beat);
+            (0..8).filter(|x| a[y * 8 + x] > 0.0).collect::<Vec<_>>()
+        };
+        // 5 × 7 "A", centred from column 1: its top row .XXX. is columns 2..=4 of row 7.
+        let a = text_effect("AB", F5x7, Static, |_| {});
+        assert_eq!(row(&a, 0, 7, None), vec![2, 3, 4], "only what fits (one glyph)");
+        // 3 × 5 "42" with a gap of 1 fits (7 cells) from column 0; top row at row 6.
+        let digits = text_effect("42", F3x5, Static, |p| p.gap = 1);
+        assert_eq!(row(&digits, 0, 6, None), vec![0, 2, 4, 5, 6]);
+        // Scrolling left at 1 cell/s: empty at 0, the first column of A at x 7 after 1 s.
+        let s = text_effect("A", F5x7, ScrollLeft, |_| {});
+        assert_eq!(lit_cells(&alpha_grid(&s, 0, None)), Vec::<usize>::new());
+        assert_eq!(lit_cells(&alpha_grid(&s, 1_000_000, None)), (1..=6).map(|y| y * 8 + 7).collect::<Vec<_>>());
+        assert_eq!(lit_cells(&alpha_grid(&s, 20_000_000, None)), Vec::<usize>::new(), "gone without loop");
+        // One character per second, or per beat counted from the clip start.
+        let seq = text_effect("12", F3x5, Sequential, |_| {});
+        assert_eq!(row(&seq, 0, 6, None), vec![3], "\"1\" (top row .X.) centred from column 2");
+        assert_ne!(alpha_grid(&seq, 1_500_000, None), alpha_grid(&seq, 0, None));
+        assert_eq!(lit_cells(&alpha_grid(&seq, 2_500_000, None)), Vec::<usize>::new());
+        let by_beat = text_effect("123", F3x5, Sequential, |p| {
+            p.beat_step = Some(true);
+            p.looping = true;
+        });
+        // 120 bpm, 1.25 s into the clip at beat 10.5: the clip began on beat 8, two beats ago → "3".
+        let three = text_effect("3", F3x5, Static, |_| {});
+        assert_eq!(alpha_grid(&by_beat, 1_250_000, Some(BeatState::new(10.5, 120.0))), alpha_grid(&three, 0, None));
     }
     #[test]
     fn hold_draws_while_held_and_release_fires_on_release() {
@@ -2485,7 +2830,7 @@ mod tests {
         let keyed = [Some(cross)];
         let paint = |age: i64| {
             let mut l = LayerFrame::default();
-            paint_instances_sampled(&[ce], &keyed, 0, &[(0.0, 0.0, age)], 1.0, &mut l);
+            paint_instances_sampled(std::slice::from_ref(&ce), &keyed, 0, &[(0.0, 0.0, age)], 1.0, &mut l);
             (0..8).filter(|&x| l.px[x].a > 0.0).max()
         };
         // Age 0.5 s: speed 7.5 → head at 3.75 cells; age 1 s: speed 11 → head at 11 (tail off the board).

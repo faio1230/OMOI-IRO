@@ -1,0 +1,228 @@
+//! Built-in bitmap fonts for `builtin.text` (0.1.3, docs/14 §4-7).
+//!
+//! A glyph is a list of columns, left to right; bit `r` of a column is row
+//! `r` counted from the top. 5 × 7 covers printable ASCII (the classic LCD
+//! character shapes); 3 × 5 covers digits, capitals and common
+//! punctuation, shows lowercase as capitals and anything else as `?`.
+
+use crate::model::TextFont;
+
+/// Columns of one glyph (only the first `width` are used).
+pub type Glyph = [u8; 5];
+
+/// Printable ASCII 0x20..=0x7E, 5 columns each, bit 0 = top row of 7.
+const FONT_5X7: [Glyph; 95] = [
+    [0x00, 0x00, 0x00, 0x00, 0x00], // ' '
+    [0x00, 0x00, 0x5F, 0x00, 0x00], // !
+    [0x00, 0x07, 0x00, 0x07, 0x00], // "
+    [0x14, 0x7F, 0x14, 0x7F, 0x14], // #
+    [0x24, 0x2A, 0x7F, 0x2A, 0x12], // $
+    [0x23, 0x13, 0x08, 0x64, 0x62], // %
+    [0x36, 0x49, 0x55, 0x22, 0x50], // &
+    [0x00, 0x05, 0x03, 0x00, 0x00], // '
+    [0x00, 0x1C, 0x22, 0x41, 0x00], // (
+    [0x00, 0x41, 0x22, 0x1C, 0x00], // )
+    [0x14, 0x08, 0x3E, 0x08, 0x14], // *
+    [0x08, 0x08, 0x3E, 0x08, 0x08], // +
+    [0x00, 0x50, 0x30, 0x00, 0x00], // ,
+    [0x08, 0x08, 0x08, 0x08, 0x08], // -
+    [0x00, 0x60, 0x60, 0x00, 0x00], // .
+    [0x20, 0x10, 0x08, 0x04, 0x02], // /
+    [0x3E, 0x51, 0x49, 0x45, 0x3E], // 0
+    [0x00, 0x42, 0x7F, 0x40, 0x00], // 1
+    [0x42, 0x61, 0x51, 0x49, 0x46], // 2
+    [0x21, 0x41, 0x45, 0x4B, 0x31], // 3
+    [0x18, 0x14, 0x12, 0x7F, 0x10], // 4
+    [0x27, 0x45, 0x45, 0x45, 0x39], // 5
+    [0x3C, 0x4A, 0x49, 0x49, 0x30], // 6
+    [0x01, 0x71, 0x09, 0x05, 0x03], // 7
+    [0x36, 0x49, 0x49, 0x49, 0x36], // 8
+    [0x06, 0x49, 0x49, 0x29, 0x1E], // 9
+    [0x00, 0x36, 0x36, 0x00, 0x00], // :
+    [0x00, 0x56, 0x36, 0x00, 0x00], // ;
+    [0x08, 0x14, 0x22, 0x41, 0x00], // <
+    [0x14, 0x14, 0x14, 0x14, 0x14], // =
+    [0x00, 0x41, 0x22, 0x14, 0x08], // >
+    [0x02, 0x01, 0x51, 0x09, 0x06], // ?
+    [0x32, 0x49, 0x79, 0x41, 0x3E], // @
+    [0x7E, 0x11, 0x11, 0x11, 0x7E], // A
+    [0x7F, 0x49, 0x49, 0x49, 0x36], // B
+    [0x3E, 0x41, 0x41, 0x41, 0x22], // C
+    [0x7F, 0x41, 0x41, 0x22, 0x1C], // D
+    [0x7F, 0x49, 0x49, 0x49, 0x41], // E
+    [0x7F, 0x09, 0x09, 0x09, 0x01], // F
+    [0x3E, 0x41, 0x49, 0x49, 0x7A], // G
+    [0x7F, 0x08, 0x08, 0x08, 0x7F], // H
+    [0x00, 0x41, 0x7F, 0x41, 0x00], // I
+    [0x20, 0x40, 0x41, 0x3F, 0x01], // J
+    [0x7F, 0x08, 0x14, 0x22, 0x41], // K
+    [0x7F, 0x40, 0x40, 0x40, 0x40], // L
+    [0x7F, 0x02, 0x0C, 0x02, 0x7F], // M
+    [0x7F, 0x04, 0x08, 0x10, 0x7F], // N
+    [0x3E, 0x41, 0x41, 0x41, 0x3E], // O
+    [0x7F, 0x09, 0x09, 0x09, 0x06], // P
+    [0x3E, 0x41, 0x51, 0x21, 0x5E], // Q
+    [0x7F, 0x09, 0x19, 0x29, 0x46], // R
+    [0x46, 0x49, 0x49, 0x49, 0x31], // S
+    [0x01, 0x01, 0x7F, 0x01, 0x01], // T
+    [0x3F, 0x40, 0x40, 0x40, 0x3F], // U
+    [0x1F, 0x20, 0x40, 0x20, 0x1F], // V
+    [0x3F, 0x40, 0x38, 0x40, 0x3F], // W
+    [0x63, 0x14, 0x08, 0x14, 0x63], // X
+    [0x07, 0x08, 0x70, 0x08, 0x07], // Y
+    [0x61, 0x51, 0x49, 0x45, 0x43], // Z
+    [0x00, 0x7F, 0x41, 0x41, 0x00], // [
+    [0x02, 0x04, 0x08, 0x10, 0x20], // backslash
+    [0x00, 0x41, 0x41, 0x7F, 0x00], // ]
+    [0x04, 0x02, 0x01, 0x02, 0x04], // ^
+    [0x40, 0x40, 0x40, 0x40, 0x40], // _
+    [0x00, 0x01, 0x02, 0x04, 0x00], // `
+    [0x20, 0x54, 0x54, 0x54, 0x78], // a
+    [0x7F, 0x48, 0x44, 0x44, 0x38], // b
+    [0x38, 0x44, 0x44, 0x44, 0x20], // c
+    [0x38, 0x44, 0x44, 0x48, 0x7F], // d
+    [0x38, 0x54, 0x54, 0x54, 0x18], // e
+    [0x08, 0x7E, 0x09, 0x01, 0x02], // f
+    [0x0C, 0x52, 0x52, 0x52, 0x3E], // g
+    [0x7F, 0x08, 0x04, 0x04, 0x78], // h
+    [0x00, 0x44, 0x7D, 0x40, 0x00], // i
+    [0x20, 0x40, 0x44, 0x3D, 0x00], // j
+    [0x7F, 0x10, 0x28, 0x44, 0x00], // k
+    [0x00, 0x41, 0x7F, 0x40, 0x00], // l
+    [0x7C, 0x04, 0x18, 0x04, 0x78], // m
+    [0x7C, 0x08, 0x04, 0x04, 0x78], // n
+    [0x38, 0x44, 0x44, 0x44, 0x38], // o
+    [0x7C, 0x14, 0x14, 0x14, 0x08], // p
+    [0x08, 0x14, 0x14, 0x18, 0x7C], // q
+    [0x7C, 0x08, 0x04, 0x04, 0x08], // r
+    [0x48, 0x54, 0x54, 0x54, 0x20], // s
+    [0x04, 0x3F, 0x44, 0x40, 0x20], // t
+    [0x3C, 0x40, 0x40, 0x20, 0x7C], // u
+    [0x1C, 0x20, 0x40, 0x20, 0x1C], // v
+    [0x3C, 0x40, 0x30, 0x40, 0x3C], // w
+    [0x44, 0x28, 0x10, 0x28, 0x44], // x
+    [0x0C, 0x50, 0x50, 0x50, 0x3C], // y
+    [0x44, 0x64, 0x54, 0x4C, 0x44], // z
+    [0x00, 0x08, 0x36, 0x41, 0x00], // {
+    [0x00, 0x00, 0x7F, 0x00, 0x00], // |
+    [0x00, 0x41, 0x36, 0x08, 0x00], // }
+    [0x08, 0x04, 0x08, 0x10, 0x08], // ~
+];
+
+/// 3 × 5 glyphs as rows, top first (`X` lit).
+const FONT_3X5: &[(char, [&str; 5])] = &[
+    (' ', ["...", "...", "...", "...", "..."]),
+    ('0', ["XXX", "X.X", "X.X", "X.X", "XXX"]),
+    ('1', [".X.", "XX.", ".X.", ".X.", "XXX"]),
+    ('2', ["XXX", "..X", "XXX", "X..", "XXX"]),
+    ('3', ["XXX", "..X", "XXX", "..X", "XXX"]),
+    ('4', ["X.X", "X.X", "XXX", "..X", "..X"]),
+    ('5', ["XXX", "X..", "XXX", "..X", "XXX"]),
+    ('6', ["XXX", "X..", "XXX", "X.X", "XXX"]),
+    ('7', ["XXX", "..X", "..X", ".X.", ".X."]),
+    ('8', ["XXX", "X.X", "XXX", "X.X", "XXX"]),
+    ('9', ["XXX", "X.X", "XXX", "..X", "XXX"]),
+    ('A', [".X.", "X.X", "XXX", "X.X", "X.X"]),
+    ('B', ["XX.", "X.X", "XX.", "X.X", "XX."]),
+    ('C', [".XX", "X..", "X..", "X..", ".XX"]),
+    ('D', ["XX.", "X.X", "X.X", "X.X", "XX."]),
+    ('E', ["XXX", "X..", "XX.", "X..", "XXX"]),
+    ('F', ["XXX", "X..", "XX.", "X..", "X.."]),
+    ('G', [".XX", "X..", "X.X", "X.X", ".XX"]),
+    ('H', ["X.X", "X.X", "XXX", "X.X", "X.X"]),
+    ('I', ["XXX", ".X.", ".X.", ".X.", "XXX"]),
+    ('J', ["..X", "..X", "..X", "X.X", ".X."]),
+    ('K', ["X.X", "X.X", "XX.", "X.X", "X.X"]),
+    ('L', ["X..", "X..", "X..", "X..", "XXX"]),
+    ('M', ["X.X", "XXX", "XXX", "X.X", "X.X"]),
+    ('N', ["XX.", "X.X", "X.X", "X.X", "X.X"]),
+    ('O', [".X.", "X.X", "X.X", "X.X", ".X."]),
+    ('P', ["XX.", "X.X", "XX.", "X..", "X.."]),
+    ('Q', [".X.", "X.X", "X.X", "XX.", ".XX"]),
+    ('R', ["XX.", "X.X", "XX.", "X.X", "X.X"]),
+    ('S', [".XX", "X..", ".X.", "..X", "XX."]),
+    ('T', ["XXX", ".X.", ".X.", ".X.", ".X."]),
+    ('U', ["X.X", "X.X", "X.X", "X.X", "XXX"]),
+    ('V', ["X.X", "X.X", "X.X", "X.X", ".X."]),
+    ('W', ["X.X", "X.X", "XXX", "XXX", "X.X"]),
+    ('X', ["X.X", "X.X", ".X.", "X.X", "X.X"]),
+    ('Y', ["X.X", "X.X", ".X.", ".X.", ".X."]),
+    ('Z', ["XXX", "..X", ".X.", "X..", "XXX"]),
+    ('!', [".X.", ".X.", ".X.", "...", ".X."]),
+    ('"', ["X.X", "X.X", "...", "...", "..."]),
+    ('#', ["X.X", "XXX", "X.X", "XXX", "X.X"]),
+    ('%', ["X..", "..X", ".X.", "X..", "..X"]),
+    ('&', [".X.", "X.X", ".X.", "X.X", ".XX"]),
+    ('\'', [".X.", ".X.", "...", "...", "..."]),
+    ('(', ["..X", ".X.", ".X.", ".X.", "..X"]),
+    (')', ["X..", ".X.", ".X.", ".X.", "X.."]),
+    ('*', ["...", "X.X", ".X.", "X.X", "..."]),
+    ('+', ["...", ".X.", "XXX", ".X.", "..."]),
+    (',', ["...", "...", "...", ".X.", "X.."]),
+    ('-', ["...", "...", "XXX", "...", "..."]),
+    ('.', ["...", "...", "...", "...", ".X."]),
+    ('/', ["..X", "..X", ".X.", "X..", "X.."]),
+    (':', ["...", ".X.", "...", ".X.", "..."]),
+    (';', ["...", ".X.", "...", ".X.", "X.."]),
+    ('<', ["..X", ".X.", "X..", ".X.", "..X"]),
+    ('=', ["...", "XXX", "...", "XXX", "..."]),
+    ('>', ["X..", ".X.", "..X", ".X.", "X.."]),
+    ('?', ["XX.", "..X", ".X.", "...", ".X."]),
+    ('@', [".X.", "X.X", "X.X", "X..", ".XX"]),
+    ('[', ["XX.", "X..", "X..", "X..", "XX."]),
+    (']', [".XX", "..X", "..X", "..X", ".XX"]),
+    ('_', ["...", "...", "...", "...", "XXX"]),
+];
+
+/// (width, height) of the font's glyphs.
+pub fn size(font: TextFont) -> (usize, usize) {
+    match font {
+        TextFont::F5x7 => (5, 7),
+        TextFont::F3x5 => (3, 5),
+    }
+}
+
+/// Columns of `c` (printable ASCII; anything else as `?`).
+pub fn glyph(font: TextFont, c: char) -> Glyph {
+    match font {
+        TextFont::F5x7 => {
+            let i = if (' '..='~').contains(&c) { c as usize - 0x20 } else { '?' as usize - 0x20 };
+            FONT_5X7[i]
+        }
+        TextFont::F3x5 => {
+            let c = c.to_ascii_uppercase();
+            let rows = FONT_3X5.iter().find(|(k, _)| *k == c).or_else(|| FONT_3X5.iter().find(|(k, _)| *k == '?')).expect("? exists").1;
+            let mut cols = [0u8; 5];
+            for (r, row) in rows.iter().enumerate() {
+                for (x, ch) in row.chars().enumerate() {
+                    if ch == 'X' {
+                        cols[x] |= 1 << r;
+                    }
+                }
+            }
+            cols
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Rows of a glyph as text, top first.
+    fn rows(font: TextFont, c: char) -> Vec<String> {
+        let (w, h) = size(font);
+        let g = glyph(font, c);
+        (0..h).map(|r| (0..w).map(|x| if g[x] >> r & 1 == 1 { 'X' } else { '.' }).collect()).collect()
+    }
+
+    #[test]
+    fn glyph_shapes() {
+        assert_eq!(rows(TextFont::F5x7, 'A'), [".XXX.", "X...X", "X...X", "X...X", "XXXXX", "X...X", "X...X"]);
+        assert_eq!(rows(TextFont::F5x7, '1'), ["..X..", ".XX..", "..X..", "..X..", "..X..", "..X..", ".XXX."]);
+        assert_eq!(rows(TextFont::F3x5, '4'), ["X.X", "X.X", "XXX", "..X", "..X"]);
+        assert_eq!(rows(TextFont::F3x5, 'a'), rows(TextFont::F3x5, 'A'), "lowercase as capitals");
+        assert_eq!(rows(TextFont::F3x5, '$'), rows(TextFont::F3x5, '?'));
+        assert_eq!(rows(TextFont::F5x7, 'é'), rows(TextFont::F5x7, '?'));
+    }
+}

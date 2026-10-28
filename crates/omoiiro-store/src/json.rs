@@ -312,6 +312,29 @@ mod tests {
     }
 
     #[test]
+    fn frames_text_fixture_loads_round_trips_and_stamps() {
+        use omoiiro_core::render::{PadEvent, PadInput, Renderer};
+        let text = include_str!("../../../fixtures/shows/frames-text-0.1.3.show.json");
+        let show = load_str(text).unwrap();
+        assert_eq!(to_canonical_string(&show), text, "written in the canonical form");
+        let mut r = Renderer::new(&show).unwrap();
+        let lit = |f: &omoiiro_core::surface::Frame| (0..64).filter(|i| f.leds[*i].r + f.leds[*i].g + f.leds[*i].b > 0.0).collect::<Vec<_>>();
+        // 53: a star where the pad was pressed, gone 0.8 s after its one frame (1 s).
+        let mut input = PadInput::default();
+        input.apply(PadEvent::Press { x: 1, y: 1, velocity: 100, t_us: 0 }, Some(2_000_000));
+        input.advance(500_000);
+        let star = lit(&r.render_input(2_500_000, None, Some(&input)));
+        // The star (rows 0..=6 of the file, its centre at file row 4, column 3) moved by (-2, -2).
+        assert!(star.contains(&(8 + 1)) && star.contains(&(5 * 8 + 1)) && star.iter().all(|i| i % 8 <= 4 && i / 8 <= 5), "around (1, 1): {star:?}");
+        input.advance(1_900_000);
+        assert!(lit(&r.render_input(3_900_000, None, Some(&input))).is_empty());
+        // 55: "4" first, then the white flash; 30: the ring loop repeats every second.
+        assert!(!lit(&r.render(16_500_000, None)).is_empty());
+        assert_eq!(r.render(20_000_000, None).leds[0].to_hex(), "#FFFFFF");
+        assert_eq!(r.render(21_100_000, None), r.render(22_100_000, None));
+    }
+
+    #[test]
     fn triggered_layer_round_trips_and_needs_its_interval() {
         let mut v = demo_value();
         v["layers"][0]["content"] = json!({"kind": "triggered", "clips": [], "trigger": {"on": "interval"}});
@@ -333,7 +356,7 @@ mod tests {
     #[test]
     fn new_0_1_2_presets_round_trip() {
         let mut show = load_str(DEMO).unwrap();
-        for (id, t) in [("pt", "builtin.particles"), ("pa", "builtin.path"), ("sh", "builtin.shape"), ("tg", "builtin.tap_glow"), ("x", "builtin.cross"), ("rg", "builtin.regions"), ("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
+        for (id, t) in [("fr", "builtin.frames"), ("tx", "builtin.text"), ("pt", "builtin.particles"), ("pa", "builtin.path"), ("sh", "builtin.shape"), ("tg", "builtin.tap_glow"), ("x", "builtin.cross"), ("rg", "builtin.regions"), ("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
             let effect = omoiiro_core::edit::default_effect(t).unwrap();
             show.presets.push(omoiiro_core::model::Preset { id: id.into(), name: id.into(), effect });
         }

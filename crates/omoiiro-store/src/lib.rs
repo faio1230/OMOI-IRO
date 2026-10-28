@@ -15,7 +15,11 @@
 //! Presets: a single preset exports to its own file
 //! (`schemas/preset.schema.json`: `{"schema_version", "kind": "omoiiro.preset", "preset"}`) and imports into a
 //! show by copy, with an explicit policy for ID conflicts.
+//!
+//! Assets: external `omoiiro.frames` / `omoiiro.bitmap` files (0.1.3) are
+//! read (at most 8 MB) and parsed for `EditCommand::ImportFrames`.
 
+pub mod assets;
 pub mod json;
 pub mod presets;
 pub mod schema;

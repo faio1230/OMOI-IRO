@@ -33,6 +33,7 @@
     "allow-editor-undo",
     "allow-editor-redo",
     "allow-preset-import",
+    "allow-frames-import",
     "allow-preset-export",
     "allow-editor-save",
     "allow-editor-save-as",

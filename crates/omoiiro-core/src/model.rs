@@ -485,6 +485,88 @@ pub enum Effect {
     /// emission time only, so any time can be drawn (seek).
     #[serde(rename = "builtin.particles")]
     Particles { version: u32, params: ParticlesParams },
+    /// 0.1.3 stage 7: 8 × 8 frames played by time (bitmaps, pixel art).
+    #[serde(rename = "builtin.frames")]
+    Frames { version: u32, params: FramesParams },
+    /// 0.1.3 stage 7: ASCII text in a built-in 5 × 7 or 3 × 5 font.
+    #[serde(rename = "builtin.text")]
+    Text { version: u32, params: TextParams },
+}
+
+/// Frames: frame `floor(local_s × fps)`. Nothing here is keyframed (the
+/// frames are parsed once).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FramesParams {
+    /// 1..=240 frames, each 64 colors as 384 hex digits (RRGGBB, no `#`),
+    /// top row first, left to right (the external `omoiiro.frames` order).
+    pub frames: Vec<String>,
+    /// Frames per second, 1..=30.
+    #[serde(serialize_with = "ser_num")]
+    pub fps: f64,
+    #[serde(rename = "loop")]
+    pub looping: bool,
+    /// Without loop: keep the last frame after the end (else it goes, after `hold_ms`).
+    pub hold_last: bool,
+    /// Without loop: keep the last frame this long after the end (a stamp's life), 0..=60000.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hold_ms: Option<u32>,
+    /// `pad`: on a triggered layer the frame is moved so its cell (3, 3)
+    /// sits on the pressed pad (what leaves the grid is cut).
+    pub anchor: FrameAnchor,
+    /// Lit cells in this color (bitmap frames); absent = the frame colors.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    /// Black (#000000) is transparent (absent = true).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub opacity_key: Option<bool>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FrameAnchor {
+    Board,
+    Pad,
+}
+
+/// Text. Only `color` takes keyframes; the layout follows the time alone.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TextParams {
+    /// 1..=64 printable ASCII characters.
+    pub text: String,
+    pub font: TextFont,
+    pub color: Param<String>,
+    pub mode: TextMode,
+    /// scroll: cells per second 0.5..=16; sequential: characters per second 0.2..=8.
+    #[serde(serialize_with = "ser_num")]
+    pub speed: f64,
+    /// Cells between characters, 0..=2.
+    pub gap: u32,
+    /// sequential: one character per beat (by `speed` while the beat is unknown).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub beat_step: Option<bool>,
+    #[serde(rename = "loop")]
+    pub looping: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TextFont {
+    #[serde(rename = "5x7")]
+    F5x7,
+    #[serde(rename = "3x5")]
+    F3x5,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TextMode {
+    /// As many characters as fit, centred.
+    Static,
+    ScrollLeft,
+    ScrollUp,
+    /// One character at a time.
+    Sequential,
 }
 
 /// Particles. Each particle's start values come from hash(seed, event,
@@ -825,6 +907,8 @@ impl Effect {
             Effect::TapGlow { .. } => "builtin.tap_glow",
             Effect::Cross { .. } => "builtin.cross",
             Effect::Particles { .. } => "builtin.particles",
+            Effect::Frames { .. } => "builtin.frames",
+            Effect::Text { .. } => "builtin.text",
         }
     }
 
@@ -844,14 +928,16 @@ impl Effect {
             | Effect::Shape { version, .. }
             | Effect::TapGlow { version, .. }
             | Effect::Cross { version, .. }
-            | Effect::Particles { version, .. } => *version,
+            | Effect::Particles { version, .. }
+            | Effect::Frames { version, .. }
+            | Effect::Text { version, .. } => *version,
         }
     }
 
     /// Fired by any trigger of a triggered layer (position and age): ripple,
-    /// tap_glow, cross and particles. Others are drawn only on `hold`.
+    /// tap_glow, cross, particles and frames. Others are drawn only on `hold`.
     pub fn takes_instances(&self) -> bool {
-        matches!(self, Effect::Ripple { .. } | Effect::TapGlow { .. } | Effect::Cross { .. } | Effect::Particles { .. })
+        matches!(self, Effect::Ripple { .. } | Effect::TapGlow { .. } | Effect::Cross { .. } | Effect::Particles { .. } | Effect::Frames { .. })
     }
 
     /// Compiled-in effect (`builtin.*`), as opposed to a future graph reference.
@@ -1258,7 +1344,7 @@ pub(crate) fn demo_for_tests() -> Show {
     s
 }
 
-step_only!(Axis, Waveform, StrobeMode, RippleFade, RippleTrigger, RippleShape, RainDirection, OrbMotion, RegionPattern, StepMode, StepOrder, PathKind, Mirror, ShapeKind, ParticleMode, EdgeMode);
+step_only!(Axis, Waveform, StrobeMode, RippleFade, RippleTrigger, RippleShape, RainDirection, OrbMotion, RegionPattern, StepMode, StepOrder, PathKind, Mirror, ShapeKind, ParticleMode, EdgeMode, FrameAnchor, TextFont, TextMode);
 
 #[cfg(test)]
 mod keyframe_tests {

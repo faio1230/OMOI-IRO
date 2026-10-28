@@ -288,6 +288,7 @@ pub fn run() {
             editor::editor_undo,
             editor::editor_redo,
             editor::preset_import,
+            editor::frames_import,
             editor::preset_export,
             editor::editor_save,
             editor::editor_save_as,

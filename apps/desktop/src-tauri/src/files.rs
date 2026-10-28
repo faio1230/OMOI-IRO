@@ -3,6 +3,8 @@
 //!
 //! * Shows: `*.show.json`, at most `omoiiro_store::MAX_FILE_BYTES`.
 //! * Presets: `*.preset.json`, at most `MAX_PRESET_BYTES`.
+//! * Frame assets (`omoiiro.frames` / `omoiiro.bitmap`): `*.json`, at most
+//!   `omoiiro_store::assets::MAX_ASSET_BYTES`.
 //! * Reading needs an existing regular file; writing needs an existing
 //!   parent directory. The dialog plugin only returns a path; it grants no
 //!   file access of its own.
@@ -19,6 +21,7 @@ pub const MAX_PRESET_BYTES: u64 = 1_000_000;
 pub enum Kind {
     Show,
     Preset,
+    FramesAsset,
 }
 
 impl Kind {
@@ -26,6 +29,7 @@ impl Kind {
         match self {
             Kind::Show => SHOW_EXT,
             Kind::Preset => PRESET_EXT,
+            Kind::FramesAsset => ".json",
         }
     }
 
@@ -33,6 +37,7 @@ impl Kind {
         match self {
             Kind::Show => omoiiro_store::json::MAX_FILE_BYTES as u64,
             Kind::Preset => MAX_PRESET_BYTES,
+            Kind::FramesAsset => omoiiro_store::assets::MAX_ASSET_BYTES as u64,
         }
     }
 }

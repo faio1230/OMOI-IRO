@@ -13,7 +13,7 @@
 //!   never reused within a show.
 
 use crate::model::{
-    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Compound, Content, Effect, EdgeMode, Layer, LayerMask, Loss, ParticleMode, ParticlesParams, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
+    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Compound, Content, Effect, EdgeMode, FrameAnchor, FramesParams, Layer, TextFont, TextMode, TextParams, LayerMask, Loss, ParticleMode, ParticlesParams, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
     StopBehavior, StrobeMode, StrobeParams, Sync, TriggerOn, TriggerSpec, Target, TimecodeSettings, TimecodeSource, Waveform, SCHEMA_VERSION,
 };
 use crate::surface::GRID64_PROFILE;
@@ -117,6 +117,9 @@ pub enum EditCommand {
     AddCompoundClip { layer_id: String, compound_id: String, start_us: i64, duration_us: Option<i64> },
     /// Tint ("" = none), time scale (1 = none) and loop of a compound clip.
     SetCompoundClip { clip_id: String, tint: Option<String>, time_scale: Option<f64>, looping: Option<bool> },
+    /// 0.1.3 stage 7: a frames preset from an external asset (the store
+    /// reads the file). An ID conflict is an error or a rename.
+    ImportFrames { asset: crate::assets::FramesAsset, on_conflict: OnConflict },
     /// Copy a compound clip out into independent layers above its layer
     /// (refused unless its time scale is 1: effect speeds cannot be scaled).
     DetachCompoundClip { clip_id: String },
@@ -316,6 +319,24 @@ pub fn default_effect(effect_type: &str) -> Option<Effect> {
                 implode_radius: None,
             },
         },
+        // A white square outline (draw your own frames, or import an asset).
+        "builtin.frames" => Effect::Frames {
+            version: 1,
+            params: FramesParams {
+                frames: vec![(0..64).map(|i| if i / 8 == 0 || i / 8 == 7 || i % 8 == 0 || i % 8 == 7 { "FFFFFF" } else { "000000" }).collect()],
+                fps: 8.0,
+                looping: true,
+                hold_last: false,
+                hold_ms: None,
+                anchor: FrameAnchor::Board,
+                color: None,
+                opacity_key: None,
+            },
+        },
+        "builtin.text" => Effect::Text {
+            version: 1,
+            params: TextParams { text: "OMOI-IRO".into(), font: TextFont::F5x7, color: "#FFFFFF".to_string().into(), mode: TextMode::ScrollLeft, speed: 6.0, gap: 1, beat_step: None, looping: true },
+        },
         "builtin.shape" => Effect::Shape {
             version: 1,
             params: ShapeParams {
@@ -429,6 +450,7 @@ impl EditCommand {
             EditCommand::AddCompoundClip { .. } => "素材を置く",
             EditCommand::SetCompoundClip { .. } => "素材の色と速さ",
             EditCommand::DetachCompoundClip { .. } => "素材を展開して独立",
+            EditCommand::ImportFrames { .. } => "フレーム列を読み込み",
         }
     }
 }
@@ -908,6 +930,19 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             }
             out.compound_id = Some(cid);
         }
+        EditCommand::ImportFrames { asset, on_conflict } => {
+            let params = asset.to_params().map_err(|e| EditError::Invalid(format!("フレーム列 {:?} を読み込めない：{e}", asset.id())))?;
+            let mut id = asset.id().to_string();
+            if s.presets.iter().any(|p| p.id == id) {
+                match on_conflict {
+                    OnConflict::Error => return Err(EditError::Invalid(format!("プリセット ID {id:?} は既にある（名前を変えて読み込むか、既存を削除する）"))),
+                    OnConflict::Rename => id = rename_on_conflict(&id, s.presets.iter().map(|x| x.id.as_str())),
+                }
+            }
+            let name = if asset.name().trim().is_empty() { id.clone() } else { asset.name().trim().to_string() };
+            s.presets.push(Preset { id: id.clone(), name, effect: Effect::Frames { version: 1, params } });
+            out.preset_id = Some(id);
+        }
         EditCommand::SetSync { beat_source, mtc_output_enabled } => {
             if let Some(b) = beat_source {
                 s.sync.beat_source = *b;
@@ -1263,6 +1298,23 @@ mod tests {
         assert!(d.presets.iter().any(|p| p.id.starts_with("sweep-cyan-tint")), "tinted copy");
         // Unused now: the compound can go.
         assert!(apply(&d, &EditCommand::DeleteCompound { compound_id: cp }, Snap::None).is_ok());
+    }
+
+    #[test]
+    fn frame_assets_import_as_presets() {
+        use crate::assets::FramesAsset;
+        let bitmap = |id: &str| FramesAsset::Bitmap { version: 1, id: id.into(), name: "星".into(), width: 8, height: 8, rows: vec!["...XX...".into(); 8] };
+        let (s, o) = apply(&demo(), &EditCommand::ImportFrames { asset: bitmap("star"), on_conflict: OnConflict::Error }, Snap::None).unwrap();
+        assert_eq!(o.preset_id.as_deref(), Some("star"));
+        let Effect::Frames { params, .. } = &s.presets.iter().find(|p| p.id == "star").unwrap().effect else { panic!() };
+        assert_eq!((params.frames.len(), params.hold_last), (1, true));
+        // Same ID again: refused, or renamed on request.
+        assert!(matches!(apply(&s, &EditCommand::ImportFrames { asset: bitmap("star"), on_conflict: OnConflict::Error }, Snap::None), Err(EditError::Invalid(_))));
+        let (_, o) = apply(&s, &EditCommand::ImportFrames { asset: bitmap("star"), on_conflict: OnConflict::Rename }, Snap::None).unwrap();
+        assert_eq!(o.preset_id.as_deref(), Some("star-2"));
+        // A bad asset says why.
+        let bad = FramesAsset::Bitmap { version: 2, id: "x".into(), name: "x".into(), width: 8, height: 8, rows: vec![] };
+        assert!(matches!(apply(&s, &EditCommand::ImportFrames { asset: bad, on_conflict: OnConflict::Error }, Snap::None), Err(EditError::Invalid(m)) if m.contains("version")));
     }
 
     #[test]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-frames-import"
+description = "Enables the frames_import command without any pre-configured scope."
+commands.allow = ["frames_import"]
+
+[[permission]]
+identifier = "deny-frames-import"
+description = "Denies the frames_import command without any pre-configured scope."
+commands.deny = ["frames_import"]

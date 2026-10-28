@@ -7,6 +7,7 @@ pub mod bench_cmd;
 pub mod bridge;
 pub mod follow_cmd;
 pub mod gen;
+pub mod import_frames_cmd;
 pub mod lpx;
 pub mod monitor;
 pub mod mtc_out;

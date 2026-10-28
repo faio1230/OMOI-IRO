@@ -19,7 +19,9 @@
 //! No midir, Tauri, OS clock, files or threads here. Rendering does no JSON
 //! parsing or allocation and is deterministic.
 
+pub mod assets;
 pub mod edit;
+pub mod font;
 pub mod model;
 pub mod particles;
 pub mod render;

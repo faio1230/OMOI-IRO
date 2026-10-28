@@ -25,6 +25,8 @@ pub const MAX_LAYERS: usize = 8;
 /// Inner layers of one compound (0.1.3 stage 6).
 pub const MAX_COMPOUND_LAYERS: usize = 4;
 pub const MAX_COMPOUNDS: usize = 64;
+/// Frames of one `builtin.frames` preset.
+pub const MAX_FRAMES: usize = 240;
 pub const MAX_PRESETS: usize = 256;
 pub const MAX_CLIPS_PER_TIMELINE: usize = 4096;
 pub const MAX_NAME_CHARS: usize = 128;
@@ -465,6 +467,37 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 }
                 for v in params.repeat_decay.values() {
                     c.unit(*v, format!("{e}/params/repeat_decay"));
+                }
+            }
+            Effect::Frames { params, .. } => {
+                if !(1..=MAX_FRAMES).contains(&params.frames.len()) {
+                    c.push(format!("{e}/params/frames"), format!("1..={MAX_FRAMES} frames (got {})", params.frames.len()));
+                }
+                for (i, f) in params.frames.iter().enumerate() {
+                    if f.len() != 384 || !f.bytes().all(|b| b.is_ascii_hexdigit()) {
+                        c.push(format!("{e}/params/frames/{i}"), "a frame is 64 colors as 384 hex digits (RRGGBB, top row first)");
+                    }
+                }
+                c.range(params.fps, 1.0, 30.0, format!("{e}/params/fps"));
+                if params.hold_ms.is_some_and(|h| h > 60_000) {
+                    c.push(format!("{e}/params/hold_ms"), "hold_ms must be within 0..=60000");
+                }
+                if let Some(col) = &params.color {
+                    c.color(col, format!("{e}/params/color"));
+                }
+            }
+            Effect::Text { params, .. } => {
+                let n = params.text.chars().count();
+                if !(1..=64).contains(&n) || !params.text.chars().all(|ch| (' '..='~').contains(&ch)) {
+                    c.push(format!("{e}/params/text"), "1..=64 printable ASCII characters");
+                }
+                for v in params.color.values() {
+                    c.color(v, format!("{e}/params/color"));
+                }
+                let (lo, hi) = if params.mode == crate::model::TextMode::Sequential { (0.2, 8.0) } else { (0.5, 16.0) };
+                c.range(params.speed, lo, hi, format!("{e}/params/speed"));
+                if params.gap > 2 {
+                    c.push(format!("{e}/params/gap"), "gap must be within 0..=2");
                 }
             }
             Effect::Particles { params, .. } => {
@@ -981,6 +1014,28 @@ mod tests {
         let mut s = demo();
         s.compounds.push(Compound { id: "e".into(), name: "e".into(), duration_us: None, layers: vec![inner("in", Content::Timeline { clips: vec![] })] });
         assert_eq!(pointers(&s), vec!["/compounds/0/duration_us".to_string()]);
+    }
+
+    #[test]
+    fn frames_and_text_rules() {
+        use crate::model::Preset;
+        let mut s = demo();
+        let mut f = crate::edit::default_effect("builtin.frames").unwrap();
+        let Effect::Frames { params, .. } = &mut f else { unreachable!() };
+        params.frames.push("00".into());
+        params.fps = 60.0;
+        params.color = Some("white".into());
+        let mut t = crate::edit::default_effect("builtin.text").unwrap();
+        let Effect::Text { params, .. } = &mut t else { unreachable!() };
+        params.text = "おもいいろ".into();
+        params.speed = 20.0;
+        params.gap = 3;
+        s.presets.push(Preset { id: "f".into(), name: "f".into(), effect: f });
+        s.presets.push(Preset { id: "t".into(), name: "t".into(), effect: t });
+        let p = pointers(&s);
+        for want in ["/presets/3/effect/params/frames/1", "/presets/3/effect/params/fps", "/presets/3/effect/params/color", "/presets/4/effect/params/text", "/presets/4/effect/params/speed", "/presets/4/effect/params/gap"] {
+            assert!(p.contains(&want.to_string()), "{want} in {p:?}");
+        }
     }
 
     #[test]

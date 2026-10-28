@@ -88,6 +88,10 @@ pub enum FlashSource {
     Step { hz: f64 },
     /// Regions stepping on the beat (depends on the tempo).
     StepBeat { beats_per_step: f64 },
+    /// Frames at 6 fps or more: up to fps / 2 per cell. A warning only.
+    Frames { hz: f64 },
+    /// Scrolling text: `speed × 2` per cell. A warning only.
+    Text { hz: f64 },
 }
 
 impl FlashSource {
@@ -96,7 +100,7 @@ impl FlashSource {
             FlashSource::Pulse { beats_per_cycle } | FlashSource::StrobeBeat { beats_per_cycle } => tempo_bpm / 60.0 / beats_per_cycle,
             FlashSource::StepBeat { beats_per_step } => tempo_bpm / 60.0 / beats_per_step,
             FlashSource::Step { hz } => *hz,
-            FlashSource::Chase { hz } | FlashSource::Strobe { hz } | FlashSource::Noise { hz } | FlashSource::Grain { hz } | FlashSource::Wave { hz } | FlashSource::Path { hz } => *hz,
+            FlashSource::Chase { hz } | FlashSource::Strobe { hz } | FlashSource::Noise { hz } | FlashSource::Grain { hz } | FlashSource::Wave { hz } | FlashSource::Path { hz } | FlashSource::Frames { hz } | FlashSource::Text { hz } => *hz,
         }
     }
 
@@ -111,6 +115,8 @@ impl FlashSource {
             FlashSource::Wave { hz } => FlashSource::Wave { hz: hz * k },
             FlashSource::Path { hz } => FlashSource::Path { hz: hz * k },
             FlashSource::Step { hz } => FlashSource::Step { hz: hz * k },
+            FlashSource::Frames { hz } => FlashSource::Frames { hz: hz * k },
+            FlashSource::Text { hz } => FlashSource::Text { hz: hz * k },
             beat => beat,
         }
     }
@@ -159,6 +165,9 @@ pub fn effect_flash(e: &Effect) -> Option<FlashSource> {
         Effect::Shape { .. } => None,
         // Continuous motion, not a flash (docs/14 §4-5).
         Effect::Particles { .. } => None,
+        // Checking every cell between frames is costly: fast frames are warned about only.
+        Effect::Frames { params, .. } => (params.fps >= 6.0).then_some(FlashSource::Frames { hz: params.fps / 2.0 }),
+        Effect::Text { params, .. } => matches!(params.mode, crate::model::TextMode::ScrollLeft | crate::model::TextMode::ScrollUp).then_some(FlashSource::Text { hz: params.speed * 2.0 }),
         // A spot passing a cell: (cells per second) / (spot diameter). A warning only.
         Effect::Path { params, .. } => {
             let length = |k: &crate::model::PathKind| match k {
@@ -244,7 +253,7 @@ impl FlashProfile {
     /// Highest flashing rate of each layer at `tempo_bpm` (0 = none). No allocation.
     pub fn layer_hz(&self, index: usize, tempo_bpm: f64) -> f64 {
         // Wave is continuous motion: warned about, never muted.
-        self.layers.get(index).map(|(_, _, e)| e.iter().filter(|x| !matches!(x.source, FlashSource::Wave { .. } | FlashSource::Path { .. })).map(|x| x.source.hz(tempo_bpm)).fold(0.0, f64::max)).unwrap_or(0.0)
+        self.layers.get(index).map(|(_, _, e)| e.iter().filter(|x| !matches!(x.source, FlashSource::Wave { .. } | FlashSource::Path { .. } | FlashSource::Frames { .. } | FlashSource::Text { .. })).map(|x| x.source.hz(tempo_bpm)).fold(0.0, f64::max)).unwrap_or(0.0)
     }
 
     pub fn warnings(&self, tempo_bpm: f64, max_hz: f64) -> Vec<FlashWarning> {
@@ -263,6 +272,8 @@ impl FlashProfile {
                         FlashSource::StepBeat { beats_per_step } => ("regions", format!("領域ステップ {beats_per_step} 拍ごと × {tempo_bpm:.1} bpm = {hz:.2} Hz（上限 {max_hz} Hz）")),
                         FlashSource::Grain { .. } => ("grain", format!("粒の揺らぎ {hz:.2} Hz（上限 {max_hz} Hz）")),
                         FlashSource::Path { .. } => ("path", format!("経路の光点がセルを通る {hz:.2} Hz（警告のみ、消灯の対象外。上限 {max_hz} Hz）")),
+                        FlashSource::Frames { .. } => ("frames", format!("フレーム列の切り替えでセルが最大 {hz:.2} Hz で変わる（警告のみ、消灯の対象外。上限 {max_hz} Hz）")),
+                        FlashSource::Text { .. } => ("text", format!("文字のスクロールでセルが {hz:.2} Hz で変わる（警告のみ、消灯の対象外。上限 {max_hz} Hz）")),
                         FlashSource::Wave { .. } => ("wave", format!("Wave のセルから見た明滅 {hz:.2} Hz（警告のみ、消灯の対象外。上限 {max_hz} Hz）")),
                     };
                     out.push(FlashWarning {
@@ -470,6 +481,25 @@ mod tests {
         }
         let p = FlashProfile::of(&s);
         assert_eq!(p.layer_hz(0, 120.0), 4.0, "2 Hz played twice as fast");
+    }
+
+    #[test]
+    fn fast_frames_and_scrolling_text_warn_only() {
+        let Effect::Frames { version, mut params } = crate::edit::default_effect("builtin.frames").unwrap() else { unreachable!() };
+        assert_eq!(effect_flash(&Effect::Frames { version, params: params.clone() }), Some(FlashSource::Frames { hz: 4.0 }));
+        params.fps = 4.0;
+        assert_eq!(effect_flash(&Effect::Frames { version, params }), None, "under 6 fps");
+        let Effect::Text { version, mut params } = crate::edit::default_effect("builtin.text").unwrap() else { unreachable!() };
+        assert_eq!(effect_flash(&Effect::Text { version, params: params.clone() }), Some(FlashSource::Text { hz: 12.0 }));
+        params.mode = crate::model::TextMode::Sequential;
+        assert_eq!(effect_flash(&Effect::Text { version, params }), None);
+        let mut s = demo();
+        s.presets.push(Preset { id: "f".into(), name: "f".into(), effect: crate::edit::default_effect("builtin.text").unwrap() });
+        if let Content::Timeline { clips } = &mut s.layers[0].content {
+            clips[0].preset_id = "f".into();
+        }
+        let p = FlashProfile::of(&s);
+        assert_eq!((p.warnings(120.0, 3.0)[0].kind, p.layer_hz(0, 120.0)), ("text", 0.0), "warned, not muted");
     }
 
     #[test]

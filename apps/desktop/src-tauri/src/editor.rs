@@ -151,6 +151,13 @@ fn color_of(e: &Effect) -> String {
         Effect::TapGlow { params, .. } => params.color_mid.value().clone(),
         Effect::Cross { params, .. } => params.color.value().clone(),
         Effect::Particles { params, .. } => params.color.value().clone(),
+        // The first lit cell of the first frame.
+        Effect::Frames { params, .. } => params
+            .color
+            .clone()
+            .or_else(|| params.frames.first().and_then(|f| f.as_bytes().chunks(6).find(|c| *c != b"000000").map(|c| format!("#{}", String::from_utf8_lossy(c)))))
+            .unwrap_or_else(|| "#FFFFFF".into()),
+        Effect::Text { params, .. } => params.color.value().clone(),
     }
 }
 
@@ -393,6 +400,15 @@ pub fn preset_import(ed: State<'_, EditorState>, app: State<'_, AppState>, ps: S
     let text = std::fs::read_to_string(&p).map_err(|e| CommandError::new("import", format!("{}: {e}", p.display())))?;
     let preset = omoiiro_store::presets::parse_preset_file(&text).map_err(|e| files::load_error(&p, e))?;
     editor_apply(ed, app, ps, EditCommand::InsertPreset { preset, on_conflict }, Snap::None)
+}
+
+/// Read a frame asset (`omoiiro.frames` / `omoiiro.bitmap`) and add it as a
+/// frames preset through the history.
+#[tauri::command(async)]
+pub fn frames_import(ed: State<'_, EditorState>, app: State<'_, AppState>, ps: State<'_, Arc<PreviewState>>, path: String, on_conflict: OnConflict) -> CmdResult<EditorView> {
+    let p = files::for_read(&path, Kind::FramesAsset)?;
+    let asset = omoiiro_store::assets::read_frames_asset(&p).map_err(|e| files::load_error(&p, e))?;
+    editor_apply(ed, app, ps, EditCommand::ImportFrames { asset, on_conflict }, Snap::None)
 }
 
 /// Write one preset of the edited show to a preset file (temporary file, then replace).

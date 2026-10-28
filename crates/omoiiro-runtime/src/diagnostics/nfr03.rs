@@ -66,7 +66,8 @@ pub fn load_show(minutes: u32) -> Show {
 
 /// The particle load (0.1.3 stage 5): 8 continuous layers, each a fountain
 /// at the per-layer cap (64 per second × 6 s lifetime = 384 alive, 256
-/// drawn) with the largest spot and tail, bouncing so every particle stays.
+/// drawn; 768 over the show) with the largest spot and tail, bouncing so
+/// every particle stays.
 pub fn load_show_particles() -> Show {
     let layers: Vec<Value> = (0..8)
         .map(|l| {
