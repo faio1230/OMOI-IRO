@@ -1,0 +1,1179 @@
+{
+  "$schema": "../schemas/show.schema.json",
+  "schema_version": "0.1.4",
+  "id": "omoi-iro-library-machine-room",
+  "name": "機械室｜18プリセット＋2複合｜4秒比較・タップは常時層を1枚ON",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 128
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "機械室",
+          "緑",
+          "流れる",
+          "中強度",
+          "背景ループ"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-01-drift",
+      "name": "落ちるデータ",
+      "effect": {
+        "type": "builtin.rain",
+        "version": 1,
+        "params": {
+          "color": "#00C040",
+          "head_color": "#FFC040",
+          "direction": "down",
+          "speed": 4,
+          "density": 0.45,
+          "tail": 5,
+          "seed": 225,
+          "flicker": 0
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "機械室",
+          "緑",
+          "うねる",
+          "中強度",
+          "イントロ",
+          "重ね用"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-02-ribbon",
+      "name": "計測波形",
+      "effect": {
+        "type": "builtin.wave",
+        "version": 1,
+        "params": {
+          "color": "#00C040",
+          "axis": "y",
+          "wavelength": 4,
+          "amplitude": 2,
+          "center": 3.5,
+          "speed": 0.5,
+          "thickness": 0.7,
+          "beat_amplitude": false,
+          "phase": 0.5
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "機械室",
+          "緑",
+          "跳ねる",
+          "柔らかい",
+          "ブレイク"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-03-satellite",
+      "name": "往復する走査球",
+      "effect": {
+        "type": "builtin.orb",
+        "version": 1,
+        "params": {
+          "color": "#00C040",
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "radius": 1.5,
+          "edge": 0.7,
+          "light_angle": 180,
+          "shading": 0.65,
+          "dither": 0,
+          "dither_rate_hz": 1,
+          "seed": 225,
+          "motion": "bounce",
+          "speed": 2,
+          "orbit_radius": 1.2,
+          "bounce_angle": 93
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "機械室",
+          "緑",
+          "色粒",
+          "ゆっくり",
+          "控えめ",
+          "背景ループ"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-04-grain",
+      "name": "信号のノイズ",
+      "effect": {
+        "type": "builtin.noise",
+        "version": 1,
+        "params": {
+          "base_color": "#00C040",
+          "highlight_color": "#FFFFFF",
+          "density": 0.34,
+          "rate_hz": 1.6,
+          "seed": 225,
+          "smooth": true,
+          "depth": 0.75
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "タップ",
+        "tags": [
+          "機械室",
+          "緑",
+          "手動タップ",
+          "広がる",
+          "中強度",
+          "フィル"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-05-ripple",
+      "name": "矩形の応答",
+      "effect": {
+        "type": "builtin.ripple",
+        "version": 1,
+        "params": {
+          "color": "#00C040",
+          "speed": 7,
+          "ring_width": 0.7,
+          "lifetime_ms": 1200,
+          "fade": "linear",
+          "max_concurrent": 8,
+          "trigger": "any_pad",
+          "shape": "square"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "タップ",
+        "tags": [
+          "機械室",
+          "緑",
+          "手動タップ",
+          "余韻",
+          "柔らかい",
+          "重ね用"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-06-afterglow",
+      "name": "端子の残光",
+      "effect": {
+        "type": "builtin.tap_glow",
+        "version": 1,
+        "params": {
+          "color_start": "#FFC040",
+          "color_mid": "#FFFFFF",
+          "color_end": "#00C040",
+          "lifetime_ms": 2200,
+          "radius": 2,
+          "repeats": 1,
+          "repeat_interval_ms": 650,
+          "repeat_decay": 0.5,
+          "charge": false
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "タップ",
+        "tags": [
+          "機械室",
+          "緑",
+          "手動タップ",
+          "蓄積",
+          "中強度",
+          "即興"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-07-pad-state",
+      "name": "蓄積する信号",
+      "effect": {
+        "type": "builtin.pads",
+        "version": 1,
+        "params": {
+          "mode": "heat",
+          "color_low": "#00C040",
+          "color_high": "#FFC040",
+          "gain": 0.35,
+          "decay_ms": 3600
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "タップ",
+        "tags": [
+          "機械室",
+          "緑",
+          "手動タップ",
+          "線で結ぶ",
+          "繊細",
+          "即興"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-08-constellation",
+      "name": "配線を結ぶ",
+      "effect": {
+        "type": "builtin.constellation",
+        "version": 1,
+        "params": {
+          "color": "#FFC040",
+          "stroke": 0.7,
+          "lifetime_ms": 5200,
+          "fade": "linear",
+          "max_segments": 9,
+          "dots": true
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "アクセント",
+        "tags": [
+          "機械室",
+          "緑",
+          "粒子",
+          "噴き上がる",
+          "強い",
+          "サビ"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-09-particles",
+      "name": "排気の粒子",
+      "effect": {
+        "type": "builtin.particles",
+        "version": 1,
+        "params": {
+          "mode": "fountain",
+          "count": 24,
+          "rate": 18,
+          "color": "#00C040",
+          "color_end": "#FFFFFF",
+          "speed_min": 0.8,
+          "speed_max": 4.5,
+          "angle": 90,
+          "spread": 60,
+          "gravity": -1,
+          "drag": 0.3,
+          "lifetime_ms": 4500,
+          "size": 0.6,
+          "tail": 0.5,
+          "edge_mode": "vanish",
+          "origin_x": 3.5,
+          "origin_y": 1,
+          "seed": 225,
+          "implode_radius": 4
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "アクセント",
+        "tags": [
+          "機械室",
+          "緑",
+          "走査",
+          "加速と減速",
+          "強い",
+          "フィル"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-10-scan",
+      "name": "搬送ライン",
+      "effect": {
+        "type": "builtin.chase",
+        "version": 1,
+        "params": {
+          "color": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": "#00C040",
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": "#FFFFFF",
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": "#00C040",
+                "ease": "linear"
+              }
+            ]
+          },
+          "period_us": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 2400000,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": 1400000,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": 2400000,
+                "ease": "linear"
+              }
+            ]
+          },
+          "width": 2,
+          "axis": "y",
+          "reverse": false
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "アクセント",
+        "tags": [
+          "機械室",
+          "緑",
+          "回転",
+          "伸縮",
+          "強い",
+          "サビ"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-11-rotor",
+      "name": "回転する歯車枠",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "rect",
+          "color": "#FFFFFF",
+          "fill": false,
+          "stroke": 0.65,
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "size": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 1.6,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": 3.3,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": 1.6,
+                "ease": "linear"
+              }
+            ]
+          },
+          "size_y": 1.8,
+          "angle": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 0,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": 180,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": 360,
+                "ease": "linear"
+              }
+            ]
+          },
+          "edge": 0.4
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "トランジション",
+        "tags": [
+          "機械室",
+          "緑",
+          "往復ワイプ",
+          "色替え",
+          "強い",
+          "場面転換",
+          "4秒"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-12-wipe",
+      "name": "走査の切り替え",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "wipe",
+          "color": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": "#00C040",
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": "#FFFFFF",
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": "#FFC040",
+                "ease": "linear"
+              }
+            ]
+          },
+          "fill": true,
+          "stroke": 1,
+          "center_x": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 8,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": -1,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": 8,
+                "ease": "linear"
+              }
+            ]
+          },
+          "center_y": 3.5,
+          "size": 3,
+          "angle": 0,
+          "edge": 1
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "トランジション",
+        "tags": [
+          "機械室",
+          "緑",
+          "開閉",
+          "輪郭",
+          "中強度",
+          "場面転換",
+          "4秒"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-13-iris",
+      "name": "開く点検窓",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "rect",
+          "color": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": "#FFFFFF",
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": "#00C040",
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": "#FFC040",
+                "ease": "linear"
+              }
+            ]
+          },
+          "fill": false,
+          "stroke": 1.2,
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "size": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 0.8,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": 4.5,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": 0.8,
+                "ease": "linear"
+              }
+            ]
+          },
+          "angle": 0,
+          "edge": 0.5
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "グラフィック",
+        "tags": [
+          "機械室",
+          "緑",
+          "ピクセルアニメ",
+          "2コマ毎秒",
+          "くっきり",
+          "背景ループ"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-14-pixel-loop",
+      "name": "動く回路",
+      "effect": {
+        "type": "builtin.frames",
+        "version": 1,
+        "params": {
+          "frames": [
+            "00000000000000000000000000000000000000000000000000000000C040FFFFFF00C04000C04000C040FFFFFF00000000000000C040000000FFFFFF00000000000000C04000000000000000C04000000000C04000000000000000C040000000000000FFFFFF00000000C04000000000000000C04000000000000000C04000000000C040000000000000FFFFFF00000000000000C04000C040FFFFFF00C04000C04000C040000000000000000000000000000000000000000000000000000000",
+            "00000000000000000000000000000000000000000000000000000000C04000C040FFFFFF00C04000C04000C04000000000000000C04000000000C04000000000000000C040000000000000FFFFFF00000000C04000000000000000C04000000000000000C04000000000C040000000000000FFFFFF00000000000000C040000000FFFFFF00000000000000C04000000000000000C04000C04000C040FFFFFF00C04000C040000000000000000000000000000000000000000000000000000000",
+            "00000000000000000000000000000000000000000000000000000000C04000C04000C040FFFFFF00C04000C040000000000000FFFFFF00000000C04000000000000000C04000000000000000C04000000000C040000000000000FFFFFF00000000000000C040000000FFFFFF00000000000000C04000000000000000C04000000000C04000000000000000C040000000000000FFFFFF00C04000C04000C040FFFFFF00C040000000000000000000000000000000000000000000000000000000",
+            "000000000000000000000000000000000000000000000000000000FFFFFF00C04000C04000C040FFFFFF00C04000000000000000C04000000000C040000000000000FFFFFF00000000000000C040000000FFFFFF00000000000000C04000000000000000C04000000000C04000000000000000C040000000000000FFFFFF00000000C04000000000000000C04000000000000000C040FFFFFF00C04000C04000C040FFFFFF000000000000000000000000000000000000000000000000000000",
+            "00000000000000000000000000000000000000000000000000000000C040FFFFFF00C04000C04000C040FFFFFF00000000000000C040000000FFFFFF00000000000000C04000000000000000C04000000000C04000000000000000C040000000000000FFFFFF00000000C04000000000000000C04000000000000000C04000000000C040000000000000FFFFFF00000000000000C04000C040FFFFFF00C04000C04000C040000000000000000000000000000000000000000000000000000000",
+            "00000000000000000000000000000000000000000000000000000000C04000C040FFFFFF00C04000C04000C04000000000000000C04000000000C04000000000000000C040000000000000FFFFFF00000000C04000000000000000C04000000000000000C04000000000C040000000000000FFFFFF00000000000000C040000000FFFFFF00000000000000C04000000000000000C04000C04000C040FFFFFF00C04000C040000000000000000000000000000000000000000000000000000000",
+            "00000000000000000000000000000000000000000000000000000000C04000C04000C040FFFFFF00C04000C040000000000000FFFFFF00000000C04000000000000000C04000000000000000C04000000000C040000000000000FFFFFF00000000000000C040000000FFFFFF00000000000000C04000000000000000C04000000000C04000000000000000C040000000000000FFFFFF00C04000C04000C040FFFFFF00C040000000000000000000000000000000000000000000000000000000",
+            "000000000000000000000000000000000000000000000000000000FFFFFF00C04000C04000C040FFFFFF00C04000000000000000C04000000000C040000000000000FFFFFF00000000000000C040000000FFFFFF00000000000000C04000000000000000C04000000000C04000000000000000C040000000000000FFFFFF00000000C04000000000000000C04000000000000000C040FFFFFF00C04000C04000C040FFFFFF000000000000000000000000000000000000000000000000000000"
+          ],
+          "fps": 2,
+          "loop": true,
+          "hold_last": false,
+          "hold_ms": 0,
+          "anchor": "board",
+          "opacity_key": true
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "グラフィック",
+        "tags": [
+          "機械室",
+          "緑",
+          "文字",
+          "横スクロール",
+          "くっきり",
+          "曲名演出"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-15-word",
+      "name": "流れる機械文字",
+      "effect": {
+        "type": "builtin.text",
+        "version": 1,
+        "params": {
+          "text": "SYNC",
+          "font": "3x5",
+          "color": "#00C040",
+          "mode": "scroll_left",
+          "speed": 5.75,
+          "gap": 1,
+          "beat_step": false,
+          "loop": true
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "機械室",
+          "緑",
+          "領域切替",
+          "ゆっくり",
+          "中強度",
+          "照明チェイス"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-16-zones",
+      "name": "機器の順次点灯",
+      "effect": {
+        "type": "builtin.regions",
+        "version": 1,
+        "params": {
+          "pattern": "columns",
+          "color": "#00C040",
+          "color_b": "#FFC040",
+          "step_mode": "seconds",
+          "step_beats": 1,
+          "step_ms": 1000,
+          "order": "forward",
+          "soft": 0.65,
+          "duty": 1
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "機械室",
+          "緑",
+          "左右対称",
+          "移動光",
+          "中強度",
+          "照明チェイス"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-17-paired-path",
+      "name": "対向スキャナー",
+      "effect": {
+        "type": "builtin.path",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF",
+          "path": "line",
+          "from_x": 0.5,
+          "from_y": 0.5,
+          "to_x": 2.5,
+          "to_y": 6.5,
+          "speed": 2,
+          "size": 1,
+          "tail": 3,
+          "loop": true,
+          "phase": 0.05,
+          "mirror": "x"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "機械室",
+          "緑",
+          "音量入力",
+          "音に反応",
+          "中強度",
+          "サビ",
+          "マスター音量"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-18-audio",
+      "name": "音量の計器",
+      "effect": {
+        "type": "builtin.meter",
+        "version": 1,
+        "params": {
+          "source": "master",
+          "channel": "mix",
+          "mode": "bar",
+          "color_low": "#00C040",
+          "color_high": "#FFC040",
+          "gain": 1.2,
+          "floor": 0.08,
+          "attack_ms": 25,
+          "release_ms": 350,
+          "columns": [
+            0,
+            2,
+            5,
+            7
+          ],
+          "peak_hold_ms": 500
+        }
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "機械室",
+          "緑",
+          "複合",
+          "中強度",
+          "背景ループ",
+          "4秒"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-compound-01",
+      "name": "機械室：光の地景",
+      "duration_us": 4000000,
+      "layers": [
+        {
+          "id": "machine-room-compound-01-layer-0",
+          "name": "地",
+          "enabled": true,
+          "opacity": 0.35,
+          "blend": "over",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "machine-room-compound-01-clip-0",
+                "preset_id": "machine-room-04-grain",
+                "start_us": 0,
+                "duration_us": 4000000,
+                "fade_in_us": 0,
+                "fade_out_us": 0
+              }
+            ]
+          }
+        },
+        {
+          "id": "machine-room-compound-01-layer-1",
+          "name": "模様",
+          "enabled": true,
+          "opacity": 0.8,
+          "blend": "add",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "machine-room-compound-01-clip-1",
+                "preset_id": "machine-room-02-ribbon",
+                "start_us": 0,
+                "duration_us": 4000000,
+                "fade_in_us": 0,
+                "fade_out_us": 0
+              }
+            ]
+          }
+        },
+        {
+          "id": "machine-room-compound-01-layer-2",
+          "name": "光",
+          "enabled": true,
+          "opacity": 0.8,
+          "blend": "add",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "machine-room-compound-01-clip-2",
+                "preset_id": "machine-room-17-paired-path",
+                "start_us": 0,
+                "duration_us": 4000000,
+                "fade_in_us": 0,
+                "fade_out_us": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "category": "トランジション",
+        "tags": [
+          "機械室",
+          "緑",
+          "複合",
+          "中強度",
+          "場面転換",
+          "4秒"
+        ],
+        "favorite": false
+      },
+      "id": "machine-room-compound-02",
+      "name": "機械室：窓から現れる光",
+      "duration_us": 4000000,
+      "layers": [
+        {
+          "id": "machine-room-compound-02-layer-0",
+          "name": "地",
+          "enabled": true,
+          "opacity": 0.35,
+          "blend": "over",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "machine-room-compound-02-clip-0",
+                "preset_id": "machine-room-01-drift",
+                "start_us": 0,
+                "duration_us": 4000000,
+                "fade_in_us": 0,
+                "fade_out_us": 0
+              }
+            ]
+          },
+          "mask": {
+            "shape": "circle",
+            "center_x": 3.5,
+            "center_y": 3.5,
+            "size": {
+              "keyframes": [
+                {
+                  "t_us": 0,
+                  "v": 0.8,
+                  "ease": "ease_in_out"
+                },
+                {
+                  "t_us": 2000000,
+                  "v": 5,
+                  "ease": "ease_in_out"
+                },
+                {
+                  "t_us": 4000000,
+                  "v": 0.8,
+                  "ease": "linear"
+                }
+              ]
+            },
+            "angle": 0,
+            "edge": 0.7,
+            "invert": false
+          }
+        },
+        {
+          "id": "machine-room-compound-02-layer-1",
+          "name": "模様",
+          "enabled": true,
+          "opacity": 0.8,
+          "blend": "add",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "machine-room-compound-02-clip-1",
+                "preset_id": "machine-room-03-satellite",
+                "start_us": 0,
+                "duration_us": 4000000,
+                "fade_in_us": 0,
+                "fade_out_us": 0
+              }
+            ]
+          },
+          "mask": {
+            "shape": "circle",
+            "center_x": 3.5,
+            "center_y": 3.5,
+            "size": {
+              "keyframes": [
+                {
+                  "t_us": 0,
+                  "v": 0.8,
+                  "ease": "ease_in_out"
+                },
+                {
+                  "t_us": 2000000,
+                  "v": 5,
+                  "ease": "ease_in_out"
+                },
+                {
+                  "t_us": 4000000,
+                  "v": 0.8,
+                  "ease": "linear"
+                }
+              ]
+            },
+            "angle": 0,
+            "edge": 0.7,
+            "invert": false
+          }
+        },
+        {
+          "id": "machine-room-compound-02-layer-2",
+          "name": "光",
+          "enabled": true,
+          "opacity": 0.8,
+          "blend": "add",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "machine-room-compound-02-clip-2",
+                "preset_id": "machine-room-13-iris",
+                "start_us": 0,
+                "duration_us": 4000000,
+                "fade_in_us": 0,
+                "fade_out_us": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "id": "machine-room-preview",
+      "name": "基本比較：4秒ずつ／最後の4秒は音量入力が必要",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "machine-room-preview-02",
+            "preset_id": "machine-room-02-ribbon",
+            "start_us": 0,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-01",
+            "preset_id": "machine-room-01-drift",
+            "start_us": 4000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-03",
+            "preset_id": "machine-room-03-satellite",
+            "start_us": 8000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-04",
+            "preset_id": "machine-room-04-grain",
+            "start_us": 12000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-09",
+            "preset_id": "machine-room-09-particles",
+            "start_us": 16000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-10",
+            "preset_id": "machine-room-10-scan",
+            "start_us": 20000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-11",
+            "preset_id": "machine-room-11-rotor",
+            "start_us": 24000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-12",
+            "preset_id": "machine-room-12-wipe",
+            "start_us": 28000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-13",
+            "preset_id": "machine-room-13-iris",
+            "start_us": 32000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-14",
+            "preset_id": "machine-room-14-pixel-loop",
+            "start_us": 36000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-15",
+            "preset_id": "machine-room-15-word",
+            "start_us": 40000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-16",
+            "preset_id": "machine-room-16-zones",
+            "start_us": 44000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-17",
+            "preset_id": "machine-room-17-paired-path",
+            "start_us": 48000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-preview-18",
+            "preset_id": "machine-room-18-audio",
+            "start_us": 52000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "machine-room-05-ripple-tap",
+      "name": "パッドを押す：矩形の応答（比較本線をOFF・この層だけON）",
+      "target_id": "main-pad",
+      "enabled": false,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "machine-room-05-ripple"
+      }
+    },
+    {
+      "id": "machine-room-06-afterglow-tap",
+      "name": "パッドを押す：端子の残光（比較本線をOFF・この層だけON）",
+      "target_id": "main-pad",
+      "enabled": false,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "machine-room-06-afterglow"
+      }
+    },
+    {
+      "id": "machine-room-07-pad-state-tap",
+      "name": "パッドを押す：蓄積する信号（比較本線をOFF・この層だけON）",
+      "target_id": "main-pad",
+      "enabled": false,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "machine-room-07-pad-state"
+      }
+    },
+    {
+      "id": "machine-room-08-constellation-tap",
+      "name": "パッドを押す：配線を結ぶ（比較本線をOFF・この層だけON）",
+      "target_id": "main-pad",
+      "enabled": false,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "machine-room-08-constellation"
+      }
+    },
+    {
+      "id": "machine-room-compound-preview",
+      "name": "複合比較：56秒から4秒ずつ",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "machine-room-compound-01-preview",
+            "compound_id": "machine-room-compound-01",
+            "start_us": 56000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "machine-room-compound-02-preview",
+            "compound_id": "machine-room-compound-02",
+            "start_us": 60000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    }
+  ]
+}

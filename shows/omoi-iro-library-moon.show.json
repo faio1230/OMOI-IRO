@@ -1,0 +1,1172 @@
+{
+  "$schema": "../schemas/show.schema.json",
+  "schema_version": "0.1.4",
+  "id": "omoi-iro-library-moon",
+  "name": "月面｜18プリセット＋2複合｜4秒比較・タップは常時層を1枚ON",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 128
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "月面",
+          "寒色",
+          "流れる",
+          "穏やか",
+          "背景ループ"
+        ],
+        "favorite": false
+      },
+      "id": "moon-01-drift",
+      "name": "静かな星の漂い",
+      "effect": {
+        "type": "builtin.rain",
+        "version": 1,
+        "params": {
+          "color": "#B0A0E0",
+          "head_color": "#FFFFFF",
+          "direction": "down",
+          "speed": 0.8,
+          "density": 0.18,
+          "tail": 1,
+          "seed": 194,
+          "flicker": 0
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "月面",
+          "寒色",
+          "うねる",
+          "中強度",
+          "イントロ",
+          "重ね用"
+        ],
+        "favorite": false
+      },
+      "id": "moon-02-ribbon",
+      "name": "月の地平線",
+      "effect": {
+        "type": "builtin.wave",
+        "version": 1,
+        "params": {
+          "color": "#B0A0E0",
+          "axis": "x",
+          "wavelength": 14,
+          "amplitude": 0.7,
+          "center": 3.5,
+          "speed": 0.1,
+          "thickness": 0.8,
+          "beat_amplitude": false,
+          "phase": 0.375
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "月面",
+          "寒色",
+          "周回",
+          "柔らかい",
+          "ブレイク"
+        ],
+        "favorite": false
+      },
+      "id": "moon-03-satellite",
+      "name": "公転する月",
+      "effect": {
+        "type": "builtin.orb",
+        "version": 1,
+        "params": {
+          "color": "#B0A0E0",
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "radius": 2.7,
+          "edge": 0.7,
+          "light_angle": 135,
+          "shading": 0.65,
+          "dither": 0,
+          "dither_rate_hz": 1,
+          "seed": 194,
+          "motion": "orbit",
+          "speed": 0.15,
+          "orbit_radius": 1.2,
+          "bounce_angle": 76
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "月面",
+          "寒色",
+          "色粒",
+          "ゆっくり",
+          "控えめ",
+          "背景ループ"
+        ],
+        "favorite": false
+      },
+      "id": "moon-04-grain",
+      "name": "月塵のきらめき",
+      "effect": {
+        "type": "builtin.noise",
+        "version": 1,
+        "params": {
+          "base_color": "#1A2060",
+          "highlight_color": "#FFFFFF",
+          "density": 0.30500000000000005,
+          "rate_hz": 1.45,
+          "seed": 194,
+          "smooth": true,
+          "depth": 0.75
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "タップ",
+        "tags": [
+          "月面",
+          "寒色",
+          "手動タップ",
+          "広がる",
+          "中強度",
+          "フィル"
+        ],
+        "favorite": false
+      },
+      "id": "moon-05-ripple",
+      "name": "着陸の波紋",
+      "effect": {
+        "type": "builtin.ripple",
+        "version": 1,
+        "params": {
+          "color": "#B0A0E0",
+          "speed": 2.5,
+          "ring_width": 1.6,
+          "lifetime_ms": 2800,
+          "fade": "linear",
+          "max_concurrent": 8,
+          "trigger": "any_pad",
+          "shape": "circle"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "タップ",
+        "tags": [
+          "月面",
+          "寒色",
+          "手動タップ",
+          "余韻",
+          "柔らかい",
+          "長押し"
+        ],
+        "favorite": false
+      },
+      "id": "moon-06-afterglow",
+      "name": "月光の余韻",
+      "effect": {
+        "type": "builtin.tap_glow",
+        "version": 1,
+        "params": {
+          "color_start": "#FFFFFF",
+          "color_mid": "#B0A0E0",
+          "color_end": "#1A2060",
+          "lifetime_ms": 2100,
+          "radius": 1,
+          "repeats": 1,
+          "repeat_interval_ms": 650,
+          "repeat_decay": 0.5,
+          "charge": true
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "タップ",
+        "tags": [
+          "月面",
+          "寒色",
+          "手動タップ",
+          "育つ",
+          "中強度",
+          "即興"
+        ],
+        "favorite": false
+      },
+      "id": "moon-07-pad-state",
+      "name": "育つ月の芽",
+      "effect": {
+        "type": "builtin.pads",
+        "version": 1,
+        "params": {
+          "mode": "plant",
+          "color": "#B0A0E0",
+          "attack_ms": 450,
+          "sustain_ms": 800,
+          "release_ms": 1800,
+          "size": 1.5
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "タップ",
+        "tags": [
+          "月面",
+          "寒色",
+          "手動タップ",
+          "線で結ぶ",
+          "繊細",
+          "即興"
+        ],
+        "favorite": false
+      },
+      "id": "moon-08-constellation",
+      "name": "星座を結ぶ",
+      "effect": {
+        "type": "builtin.constellation",
+        "version": 1,
+        "params": {
+          "color": "#B0A0E0",
+          "stroke": 0.7,
+          "lifetime_ms": 4900,
+          "fade": "linear",
+          "max_segments": 8,
+          "dots": true
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "アクセント",
+        "tags": [
+          "月面",
+          "寒色",
+          "粒子",
+          "吸い込む",
+          "強い",
+          "サビ"
+        ],
+        "favorite": false
+      },
+      "id": "moon-09-particles",
+      "name": "集まる星屑",
+      "effect": {
+        "type": "builtin.particles",
+        "version": 1,
+        "params": {
+          "mode": "implode",
+          "count": 24,
+          "rate": 16,
+          "color": "#FFFFFF",
+          "color_end": "#B0A0E0",
+          "speed_min": 0.8,
+          "speed_max": 2.8,
+          "angle": 90,
+          "spread": 360,
+          "gravity": 0,
+          "drag": 0.3,
+          "lifetime_ms": 4500,
+          "size": 0.6,
+          "tail": 0.5,
+          "edge_mode": "vanish",
+          "origin_x": 3.5,
+          "origin_y": 3.5,
+          "seed": 194,
+          "implode_radius": 4
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "アクセント",
+        "tags": [
+          "月面",
+          "寒色",
+          "走査",
+          "加速と減速",
+          "強い",
+          "フィル"
+        ],
+        "favorite": false
+      },
+      "id": "moon-10-scan",
+      "name": "走る月影",
+      "effect": {
+        "type": "builtin.chase",
+        "version": 1,
+        "params": {
+          "color": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": "#1A2060",
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": "#B0A0E0",
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": "#1A2060",
+                "ease": "linear"
+              }
+            ]
+          },
+          "period_us": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 2400000,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": 1400000,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": 2400000,
+                "ease": "linear"
+              }
+            ]
+          },
+          "width": 1,
+          "axis": "x",
+          "reverse": false
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "アクセント",
+        "tags": [
+          "月面",
+          "寒色",
+          "回転",
+          "伸縮",
+          "強い",
+          "サビ"
+        ],
+        "favorite": false
+      },
+      "id": "moon-11-rotor",
+      "name": "回転する衛星",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "line",
+          "color": "#FFFFFF",
+          "fill": false,
+          "stroke": 1.2,
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "size": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 1.6,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": 3.3,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": 1.6,
+                "ease": "linear"
+              }
+            ]
+          },
+          "size_y": 1.8,
+          "angle": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 0,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": 180,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": 360,
+                "ease": "linear"
+              }
+            ]
+          },
+          "edge": 0.5
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "トランジション",
+        "tags": [
+          "月面",
+          "寒色",
+          "往復ワイプ",
+          "色替え",
+          "強い",
+          "場面転換",
+          "4秒"
+        ],
+        "favorite": false
+      },
+      "id": "moon-12-wipe",
+      "name": "月影の横断",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "wipe",
+          "color": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": "#1A2060",
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": "#B0A0E0",
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": "#FFFFFF",
+                "ease": "linear"
+              }
+            ]
+          },
+          "fill": true,
+          "stroke": 1,
+          "center_x": 3.5,
+          "center_y": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 8,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": -1,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": 8,
+                "ease": "linear"
+              }
+            ]
+          },
+          "size": 3,
+          "angle": 90,
+          "edge": 0.9
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "トランジション",
+        "tags": [
+          "月面",
+          "寒色",
+          "開閉",
+          "輪郭",
+          "中強度",
+          "場面転換",
+          "4秒"
+        ],
+        "favorite": false
+      },
+      "id": "moon-13-iris",
+      "name": "満ちる月輪",
+      "effect": {
+        "type": "builtin.shape",
+        "version": 1,
+        "params": {
+          "shape": "circle",
+          "color": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": "#B0A0E0",
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": "#1A2060",
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": "#FFFFFF",
+                "ease": "linear"
+              }
+            ]
+          },
+          "fill": false,
+          "stroke": 1.2,
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "size": {
+            "keyframes": [
+              {
+                "t_us": 0,
+                "v": 0.8,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 2000000,
+                "v": 4.5,
+                "ease": "ease_in_out"
+              },
+              {
+                "t_us": 4000000,
+                "v": 0.8,
+                "ease": "linear"
+              }
+            ]
+          },
+          "angle": 0,
+          "edge": 0.5
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "グラフィック",
+        "tags": [
+          "月面",
+          "寒色",
+          "ピクセルアニメ",
+          "2コマ毎秒",
+          "くっきり",
+          "背景ループ"
+        ],
+        "favorite": false
+      },
+      "id": "moon-14-pixel-loop",
+      "name": "満ち欠けの月",
+      "effect": {
+        "type": "builtin.frames",
+        "version": 1,
+        "params": {
+          "frames": [
+            "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFF000000000000000000000000000000000000000000FFFFFF000000000000000000000000000000000000000000FFFFFF000000000000000000000000000000000000000000FFFFFF000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFFFFFF000000000000000000000000000000000000B0A0E0B0A0E0FFFFFF000000000000000000000000000000B0A0E0B0A0E0FFFFFF000000000000000000000000000000B0A0E0B0A0E0FFFFFF000000000000000000000000000000B0A0E0B0A0E0FFFFFF000000000000000000000000000000FFFFFFFFFFFF000000000000000000000000000000000000000000000000000000000000",
+            "000000000000000000000000000000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000B0A0E0B0A0E0B0A0E0B0A0E0FFFFFF000000000000000000B0A0E0B0A0E0B0A0E0B0A0E0FFFFFF000000000000000000B0A0E0B0A0E0B0A0E0B0A0E0FFFFFF000000000000000000B0A0E0B0A0E0B0A0E0B0A0E0FFFFFF000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000000000000000000000000000000000000000",
+            "000000000000000000000000000000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF000000000000000000FFFFFFB0A0E0B0A0E0B0A0E0B0A0E0FFFFFF000000000000FFFFFFB0A0E0B0A0E0B0A0E0B0A0E0FFFFFF000000000000FFFFFFB0A0E0B0A0E0B0A0E0B0A0E0FFFFFF000000000000FFFFFFB0A0E0B0A0E0B0A0E0B0A0E0FFFFFF000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000000000000000000000000000000000000000",
+            "000000000000000000000000000000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000B0A0E0B0A0E0B0A0E0B0A0E0FFFFFF000000000000000000B0A0E0B0A0E0B0A0E0B0A0E0FFFFFF000000000000000000B0A0E0B0A0E0B0A0E0B0A0E0FFFFFF000000000000000000B0A0E0B0A0E0B0A0E0B0A0E0FFFFFF000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000000000000000000000000000000000000000",
+            "000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFFFFFF000000000000000000000000000000000000B0A0E0B0A0E0FFFFFF000000000000000000000000000000B0A0E0B0A0E0FFFFFF000000000000000000000000000000B0A0E0B0A0E0FFFFFF000000000000000000000000000000B0A0E0B0A0E0FFFFFF000000000000000000000000000000FFFFFFFFFFFF000000000000000000000000000000000000000000000000000000000000",
+            "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFF000000000000000000000000000000000000000000FFFFFF000000000000000000000000000000000000000000FFFFFF000000000000000000000000000000000000000000FFFFFF000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "fps": 2,
+          "loop": true,
+          "hold_last": false,
+          "hold_ms": 0,
+          "anchor": "board",
+          "opacity_key": true
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "グラフィック",
+        "tags": [
+          "月面",
+          "寒色",
+          "文字",
+          "横スクロール",
+          "くっきり",
+          "曲名演出"
+        ],
+        "favorite": false
+      },
+      "id": "moon-15-word",
+      "name": "流れる月面文字",
+      "effect": {
+        "type": "builtin.text",
+        "version": 1,
+        "params": {
+          "text": "MOON",
+          "font": "5x7",
+          "color": "#B0A0E0",
+          "mode": "scroll_left",
+          "speed": 7.75,
+          "gap": 1,
+          "beat_step": false,
+          "loop": true
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "月面",
+          "寒色",
+          "領域切替",
+          "ゆっくり",
+          "中強度",
+          "照明チェイス"
+        ],
+        "favorite": false
+      },
+      "id": "moon-16-zones",
+      "name": "月面の境界",
+      "effect": {
+        "type": "builtin.regions",
+        "version": 1,
+        "params": {
+          "pattern": "perimeter",
+          "color": "#B0A0E0",
+          "color_b": "#FFFFFF",
+          "step_mode": "seconds",
+          "step_beats": 1,
+          "step_ms": 925,
+          "order": "pingpong",
+          "soft": 0.65,
+          "duty": 1
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "月面",
+          "寒色",
+          "左右対称",
+          "移動光",
+          "中強度",
+          "照明チェイス"
+        ],
+        "favorite": false
+      },
+      "id": "moon-17-paired-path",
+      "name": "衛星の軌道",
+      "effect": {
+        "type": "builtin.path",
+        "version": 1,
+        "params": {
+          "color": "#FFFFFF",
+          "path": "orbit",
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "orbit_radius": 2.5,
+          "speed": 0.195,
+          "size": 1,
+          "tail": 3,
+          "loop": true,
+          "phase": 0.05,
+          "mirror": "x"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "月面",
+          "寒色",
+          "音量入力",
+          "音に反応",
+          "中強度",
+          "サビ",
+          "マスター音量"
+        ],
+        "favorite": false
+      },
+      "id": "moon-18-audio",
+      "name": "音に膨らむ月",
+      "effect": {
+        "type": "builtin.meter",
+        "version": 1,
+        "params": {
+          "source": "master",
+          "channel": "mix",
+          "mode": "orb",
+          "color_low": "#B0A0E0",
+          "color_high": "#FFFFFF",
+          "gain": 1.2,
+          "floor": 0.08,
+          "attack_ms": 25,
+          "release_ms": 350
+        }
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "月面",
+          "寒色",
+          "複合",
+          "中強度",
+          "背景ループ",
+          "4秒"
+        ],
+        "favorite": false
+      },
+      "id": "moon-compound-01",
+      "name": "月面：光の地景",
+      "duration_us": 4000000,
+      "layers": [
+        {
+          "id": "moon-compound-01-layer-0",
+          "name": "地",
+          "enabled": true,
+          "opacity": 0.35,
+          "blend": "over",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "moon-compound-01-clip-0",
+                "preset_id": "moon-04-grain",
+                "start_us": 0,
+                "duration_us": 4000000,
+                "fade_in_us": 0,
+                "fade_out_us": 0
+              }
+            ]
+          }
+        },
+        {
+          "id": "moon-compound-01-layer-1",
+          "name": "模様",
+          "enabled": true,
+          "opacity": 0.8,
+          "blend": "add",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "moon-compound-01-clip-1",
+                "preset_id": "moon-02-ribbon",
+                "start_us": 0,
+                "duration_us": 4000000,
+                "fade_in_us": 0,
+                "fade_out_us": 0
+              }
+            ]
+          }
+        },
+        {
+          "id": "moon-compound-01-layer-2",
+          "name": "光",
+          "enabled": true,
+          "opacity": 0.8,
+          "blend": "add",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "moon-compound-01-clip-2",
+                "preset_id": "moon-17-paired-path",
+                "start_us": 0,
+                "duration_us": 4000000,
+                "fade_in_us": 0,
+                "fade_out_us": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "category": "トランジション",
+        "tags": [
+          "月面",
+          "寒色",
+          "複合",
+          "中強度",
+          "場面転換",
+          "4秒"
+        ],
+        "favorite": false
+      },
+      "id": "moon-compound-02",
+      "name": "月面：窓から現れる光",
+      "duration_us": 4000000,
+      "layers": [
+        {
+          "id": "moon-compound-02-layer-0",
+          "name": "地",
+          "enabled": true,
+          "opacity": 0.35,
+          "blend": "over",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "moon-compound-02-clip-0",
+                "preset_id": "moon-01-drift",
+                "start_us": 0,
+                "duration_us": 4000000,
+                "fade_in_us": 0,
+                "fade_out_us": 0
+              }
+            ]
+          },
+          "mask": {
+            "shape": "diamond",
+            "center_x": 3.5,
+            "center_y": 3.5,
+            "size": {
+              "keyframes": [
+                {
+                  "t_us": 0,
+                  "v": 0.8,
+                  "ease": "ease_in_out"
+                },
+                {
+                  "t_us": 2000000,
+                  "v": 5,
+                  "ease": "ease_in_out"
+                },
+                {
+                  "t_us": 4000000,
+                  "v": 0.8,
+                  "ease": "linear"
+                }
+              ]
+            },
+            "angle": 0,
+            "edge": 0.7,
+            "invert": false
+          }
+        },
+        {
+          "id": "moon-compound-02-layer-1",
+          "name": "模様",
+          "enabled": true,
+          "opacity": 0.8,
+          "blend": "add",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "moon-compound-02-clip-1",
+                "preset_id": "moon-03-satellite",
+                "start_us": 0,
+                "duration_us": 4000000,
+                "fade_in_us": 0,
+                "fade_out_us": 0
+              }
+            ]
+          },
+          "mask": {
+            "shape": "diamond",
+            "center_x": 3.5,
+            "center_y": 3.5,
+            "size": {
+              "keyframes": [
+                {
+                  "t_us": 0,
+                  "v": 0.8,
+                  "ease": "ease_in_out"
+                },
+                {
+                  "t_us": 2000000,
+                  "v": 5,
+                  "ease": "ease_in_out"
+                },
+                {
+                  "t_us": 4000000,
+                  "v": 0.8,
+                  "ease": "linear"
+                }
+              ]
+            },
+            "angle": 0,
+            "edge": 0.7,
+            "invert": false
+          }
+        },
+        {
+          "id": "moon-compound-02-layer-2",
+          "name": "光",
+          "enabled": true,
+          "opacity": 0.8,
+          "blend": "add",
+          "content": {
+            "kind": "timeline",
+            "clips": [
+              {
+                "id": "moon-compound-02-clip-2",
+                "preset_id": "moon-13-iris",
+                "start_us": 0,
+                "duration_us": 4000000,
+                "fade_in_us": 0,
+                "fade_out_us": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "id": "moon-preview",
+      "name": "基本比較：4秒ずつ／最後の4秒は音量入力が必要",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "moon-preview-02",
+            "preset_id": "moon-02-ribbon",
+            "start_us": 0,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-01",
+            "preset_id": "moon-01-drift",
+            "start_us": 4000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-03",
+            "preset_id": "moon-03-satellite",
+            "start_us": 8000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-04",
+            "preset_id": "moon-04-grain",
+            "start_us": 12000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-09",
+            "preset_id": "moon-09-particles",
+            "start_us": 16000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-10",
+            "preset_id": "moon-10-scan",
+            "start_us": 20000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-11",
+            "preset_id": "moon-11-rotor",
+            "start_us": 24000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-12",
+            "preset_id": "moon-12-wipe",
+            "start_us": 28000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-13",
+            "preset_id": "moon-13-iris",
+            "start_us": 32000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-14",
+            "preset_id": "moon-14-pixel-loop",
+            "start_us": 36000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-15",
+            "preset_id": "moon-15-word",
+            "start_us": 40000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-16",
+            "preset_id": "moon-16-zones",
+            "start_us": 44000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-17",
+            "preset_id": "moon-17-paired-path",
+            "start_us": 48000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-preview-18",
+            "preset_id": "moon-18-audio",
+            "start_us": 52000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "moon-05-ripple-tap",
+      "name": "パッドを押す：着陸の波紋（比較本線をOFF・この層だけON）",
+      "target_id": "main-pad",
+      "enabled": false,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "moon-05-ripple"
+      }
+    },
+    {
+      "id": "moon-06-afterglow-tap",
+      "name": "パッドを押す：月光の余韻（比較本線をOFF・この層だけON）",
+      "target_id": "main-pad",
+      "enabled": false,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "moon-06-afterglow"
+      }
+    },
+    {
+      "id": "moon-07-pad-state-tap",
+      "name": "パッドを押す：育つ月の芽（比較本線をOFF・この層だけON）",
+      "target_id": "main-pad",
+      "enabled": false,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "moon-07-pad-state"
+      }
+    },
+    {
+      "id": "moon-08-constellation-tap",
+      "name": "パッドを押す：星座を結ぶ（比較本線をOFF・この層だけON）",
+      "target_id": "main-pad",
+      "enabled": false,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "moon-08-constellation"
+      }
+    },
+    {
+      "id": "moon-compound-preview",
+      "name": "複合比較：56秒から4秒ずつ",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "moon-compound-01-preview",
+            "compound_id": "moon-compound-01",
+            "start_us": 56000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          },
+          {
+            "id": "moon-compound-02-preview",
+            "compound_id": "moon-compound-02",
+            "start_us": 60000000,
+            "duration_us": 4000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    }
+  ]
+}
