@@ -2,8 +2,9 @@
 //! (heat / plant / paint), cycle and constellation, and the charge of
 //! tap_glow. Their picture depends on what was pressed since the last
 //! input reset, so a seek does not reproduce it (recorded clips do: their
-//! presses come from the clip's time). Nothing is stored between frames:
-//! every frame is computed from the presses handed in.
+//! presses come from the clip's time). Paint and cycle retain fixed-size
+//! counts and last presses independently of the bounded transient history.
+//! Recorded counts are computed arithmetically on every seek.
 //!
 //! Also here: the input of one triggered clip, on the clip's own clock,
 //! with its recording played in (`clip_input`).
@@ -13,6 +14,40 @@ use crate::render::{PadHit, PadInput};
 use crate::surface::{LayerFrame, Rgb, Rgba, GRID_H, GRID_LEDS, GRID_W};
 use crate::timeline::ClipSpan;
 use std::sync::Arc;
+use std::collections::BinaryHeap;
+
+/// Fixed-size persistent state, independent of the expiring event window.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PadState {
+    pub total: u64,
+    pub counts: [u64; GRID_LEDS],
+    pub last: [Option<PadHit>; GRID_LEDS],
+}
+
+impl Default for PadState {
+    fn default() -> Self {
+        Self { total: 0, counts: [0; GRID_LEDS], last: [None; GRID_LEDS] }
+    }
+}
+
+impl PadState {
+    pub fn observe(&mut self, h: PadHit, count: u64) {
+        let i = cell(&h);
+        self.total += count;
+        self.counts[i] += count;
+        if self.last[i].is_none_or(|old| (old.t_us, old.serial) <= (h.t_us, h.serial)) {
+            self.last[i] = Some(h);
+        }
+    }
+}
+
+/// One clip's live state; timestamps stay on the monotonic input clock.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ScopedPads {
+    pub(crate) generation: u64,
+    pub(crate) serial: u64,
+    pub(crate) state: PadState,
+}
 
 fn hex(s: &Option<String>, default: &str) -> Option<Rgb> {
     Rgb::from_hex(s.as_deref().unwrap_or(default))
@@ -117,8 +152,9 @@ fn disc(h: &PadHit, r: f64, mut f: impl FnMut(usize, f64)) {
     }
 }
 
-/// `presses`: oldest first, at most the history, all on one clock with `now`.
-pub fn paint_pads(look: &PadsLook, presses: &[PadHit], now: i64, alpha: f64, layer: &mut LayerFrame) {
+/// Short-lived effects use the bounded history; paint uses persistent state.
+pub fn paint_pads(look: &PadsLook, input: &PadInput, alpha: f64, layer: &mut LayerFrame) {
+    let (presses, now) = (&input.history, input.now_us);
     match look.mode {
         PadsMode::Heat => {
             let mut v = [0.0f64; GRID_LEDS];
@@ -151,20 +187,12 @@ pub fn paint_pads(look: &PadsLook, presses: &[PadHit], now: i64, alpha: f64, lay
             }
         }
         PadsMode::Paint => {
-            // The newest press of a pad decides its color; the palette advances per pad.
-            let mut count = [0usize; GRID_LEDS];
-            let mut last: [Option<(Rgb, i64)>; GRID_LEDS] = [None; GRID_LEDS];
-            for h in presses {
-                let i = cell(h);
-                let c = look.palette.as_ref().map_or(look.color, |p| p[count[i] % p.len()]);
-                count[i] += 1;
-                last[i] = Some((c, now - h.t_us));
-            }
-            for (i, l) in last.iter().enumerate() {
-                if let Some((c, age)) = l {
-                    let a = if look.decay_us == 0 { 1.0 } else { 1.0 - *age as f64 / look.decay_us as f64 };
+            for (i, h) in input.state.last.iter().enumerate() {
+                if let Some(h) = h {
+                    let c = look.palette.as_ref().map_or(look.color, |p| p[((input.state.counts[i] - 1) % p.len() as u64) as usize]);
+                    let a = if look.decay_us == 0 { 1.0 } else { 1.0 - (now - h.t_us) as f64 / look.decay_us as f64 };
                     if a > 0.0 {
-                        put(layer, i, *c, alpha * a);
+                        put(layer, i, c, alpha * a);
                     }
                 }
             }
@@ -172,30 +200,34 @@ pub fn paint_pads(look: &PadsLook, presses: &[PadHit], now: i64, alpha: f64, lay
     }
 }
 
-pub fn paint_cycle(look: &CycleLook, presses: &[PadHit], now: i64, alpha: f64, layer: &mut LayerFrame) {
-    // Last press of each pad (for "until the next press" without a quadratic scan).
-    let mut last_on = [usize::MAX; GRID_LEDS];
-    for (n, h) in presses.iter().enumerate() {
-        last_on[cell(h)] = n;
-    }
-    let mut count = [0usize; GRID_LEDS];
-    for (n, h) in presses.iter().enumerate() {
-        let k = if look.per_pad { count[cell(h)] } else { n };
-        count[cell(h)] += 1;
-        let lit = if look.lifetime_us > 0 {
-            now - h.t_us < look.lifetime_us
-        } else {
-            // Until the next press (anywhere, or on this pad).
-            if look.per_pad {
-                last_on[cell(h)] == n
-            } else {
-                n + 1 == presses.len()
+pub fn paint_cycle(look: &CycleLook, input: &PadInput, alpha: f64, layer: &mut LayerFrame) {
+    let paint = |h: &PadHit, k: u64, layer: &mut LayerFrame| {
+        let c = look.palette[(k % look.palette.len() as u64) as usize];
+        let s = Rgba::from_color(c, alpha as f32);
+        disc(h, look.radius, |i, _| layer.px[i] = s);
+    };
+    if look.lifetime_us == 0 {
+        if look.per_pad {
+            // Apply oldest first when neighbouring discs overlap.
+            let mut last = input.state.last;
+            last.sort_by_key(|h| h.map(|h| (h.t_us, h.serial)));
+            for h in last.iter().flatten() {
+                paint(h, input.state.counts[cell(h)] - 1, layer);
             }
-        };
-        if lit {
-            let c = look.palette[k % look.palette.len()];
-            let s = Rgba::from_color(c, alpha as f32);
-            disc(h, look.radius, |i, _| layer.px[i] = s);
+        } else if let Some(h) = input.state.last.iter().flatten().max_by_key(|h| (h.t_us, h.serial)) {
+            paint(h, input.state.total - 1, layer);
+        }
+        return;
+    }
+    let (presses, now) = (&input.history, input.now_us);
+    let mut count = input.state.counts;
+    for h in presses { count[cell(h)] -= 1; }
+    let base = input.state.total - presses.len() as u64;
+    for (n, h) in presses.iter().enumerate() {
+        let k = if look.per_pad { count[cell(h)] } else { base + n as u64 };
+        count[cell(h)] += 1;
+        if now - h.t_us < look.lifetime_us {
+            paint(h, k, layer);
         }
     }
 }
@@ -235,45 +267,75 @@ pub fn clip_input(real: Option<&PadInput>, span: &ClipSpan, local: i64, recordin
     out.now_us = local;
     out.hits.clear();
     out.history.clear();
+    out.state = Default::default();
     let shift = |t: i64, real_now: i64| local - (real_now - t);
     if let Some(r) = real {
-        for (src, dst) in [(&r.hits, &mut out.hits), (&r.history, &mut out.history)] {
-            dst.extend(src.iter().filter(|h| h.show_us.is_some_and(|s| span.contains(s))).map(|h| PadHit {
-                t_us: shift(h.t_us, r.now_us),
-                release_us: h.release_us.map(|t| shift(t, r.now_us)),
-                ..*h
-            }));
+        let window = (span.start as i64, span.end as i64);
+        if r.windows.binary_search(&window).is_ok() {
+            // Runtime/preview count every arrival, before history eviction.
+            out.state = r.scopes.get(&window).map(|s| s.state.clone()).unwrap_or_default();
+        } else {
+            // Headless callers may supply unregistered input. Accumulate the
+            // available window across calls instead of losing it after 60 s.
+            let scope = out.scopes.entry(window).or_default();
+            if scope.generation != r.generation || scope.serial > r.serial {
+                *scope = ScopedPads { generation: r.generation, ..Default::default() };
+            }
+            for h in &r.history {
+                if h.serial > scope.serial && h.show_us.is_some_and(|s| span.contains(s)) {
+                    scope.state.observe(*h, 1);
+                }
+            }
+            scope.serial = r.serial;
+            out.state = scope.state.clone();
         }
+        let shifted = |h: PadHit| PadHit {
+            t_us: shift(h.t_us, r.now_us),
+            release_us: h.release_us.map(|t| shift(t, r.now_us)),
+            ..h
+        };
+        for h in out.state.last.iter_mut().flatten() { *h = shifted(*h); }
+        out.history.extend(r.history.iter().filter(|h| h.show_us.is_some_and(|s| span.contains(s))).map(|h| shifted(*h)));
     }
     if let Some((rec, looping)) = recording {
         let period = rec.length() as i64;
-        let mut played = Vec::new();
-        for e in &rec.events {
+        // One cursor per recorded event; merge the newest occurrences first.
+        // Work is O((events + HISTORY_CAPACITY) * log(events)), independent of
+        // the loop period and elapsed show time. Never expand all repetitions.
+        let mut newest = BinaryHeap::with_capacity(rec.events.len());
+        let hit = |i: usize, t: i64| {
+            let e = &rec.events[i];
+            let release = t + e.duration_us.unwrap_or(0) as i64;
+            PadHit { serial: u64::MAX - rec.events.len() as u64 + i as u64, x: e.x, y: e.y, velocity: e.velocity, t_us: t, release_us: (release <= local).then_some(release), show_us: Some(span.start as i64 + t) }
+        };
+        for (i, e) in rec.events.iter().enumerate() {
             let t0 = e.t_us as i64;
             if t0 > local {
                 continue;
             }
-            // Passes from the newest back, while within the history window.
-            let mut k = if looping { (local - t0) / period } else { 0 };
-            while k >= 0 {
-                let t = t0 + k * period;
-                if local - t > PadInput::HISTORY_AGE_US {
-                    break;
-                }
-                let release = t + e.duration_us.unwrap_or(0) as i64;
-                played.push(PadHit { x: e.x, y: e.y, velocity: e.velocity, t_us: t, release_us: (release <= local).then_some(release), show_us: Some(span.start as i64 + t) });
-                k -= 1;
+            let k = if looping { (local - t0) / period } else { 0 };
+            let t = t0 + k * period;
+            // Accumulate old repetitions arithmetically, including those outside
+            // the short history. Persistent paint/cycle must survive that window.
+            out.state.observe(hit(i, t), k as u64 + 1);
+            if local - t <= PadInput::HISTORY_AGE_US {
+                newest.push((t, i, k));
             }
         }
-        out.hits.extend(played.iter().filter(|h| local - h.t_us <= PadInput::MAX_AGE_US));
-        out.history.extend(played);
-    }
-    for (list, cap) in [(&mut out.hits, PadInput::CAPACITY), (&mut out.history, PadInput::HISTORY_CAPACITY)] {
-        list.sort_by_key(|h| h.t_us);
-        if list.len() > cap {
-            list.drain(..list.len() - cap);
+        for _ in 0..PadInput::HISTORY_CAPACITY {
+            let Some((t, i, k)) = newest.pop() else { break };
+            out.history.push(hit(i, t));
+            if k > 0 && local - (t - period) <= PadInput::HISTORY_AGE_US {
+                newest.push((t - period, i, k - 1));
+            }
         }
     }
+    out.history.sort_by_key(|h| (h.t_us, h.serial));
+    if out.history.len() > PadInput::HISTORY_CAPACITY {
+        out.history.drain(..out.history.len() - PadInput::HISTORY_CAPACITY);
+    }
+    out.hits.extend(out.history.iter().rev().take(PadInput::CAPACITY).filter(|h| local - h.t_us <= PadInput::MAX_AGE_US).copied());
+    out.hits.reverse();
 }
 
 /// A recording from pad events stamped with the show time they arrived at
@@ -281,11 +343,22 @@ pub fn clip_input(real: Option<&PadInput>, span: &ClipSpan, local: i64, recordin
 /// (a press never released is held to the last event). At most
 /// `MAX_RECORDED` presses; none before `start_us`.
 pub fn recording_from(events: &[(i64, crate::render::PadEvent)], start_us: i64) -> Recording {
+    let end_us = events.last().map_or(start_us, |e| e.0);
+    let mut recording = recording_until(events, start_us, end_us);
+    // Legacy CLI import without an explicit stop time keeps its inferred length.
+    recording.length_us = None;
+    recording
+}
+
+/// Capture the entire recording interval, including silence after the last
+/// event. Held pads are released at the stop, not at the last input event.
+pub fn recording_until(events: &[(i64, crate::render::PadEvent)], start_us: i64, end_us: i64) -> Recording {
     use crate::render::PadEvent;
     let mut out: Vec<crate::model::RecordedPad> = Vec::new();
     let mut held: Vec<(u8, u8, usize)> = Vec::new();
-    let end = events.last().map_or(start_us, |e| e.0);
+    let end = end_us.max(start_us);
     for &(show_us, ev) in events {
+        if show_us < start_us || show_us > end { continue; }
         let t = show_us - start_us;
         match ev {
             PadEvent::Press { x, y, velocity, .. } if t >= 0 && out.len() < crate::validation::MAX_RECORDED => {
@@ -313,7 +386,7 @@ pub fn recording_from(events: &[(i64, crate::render::PadEvent)], start_us: i64) 
     for e in &mut out {
         e.duration_us = e.duration_us.filter(|d| *d > 0);
     }
-    Recording { events: out, length_us: None }
+    Recording { events: out, length_us: Some((end - start_us).max(1) as u64) }
 }
 
 /// Grid size check for the painters above.
@@ -325,6 +398,13 @@ mod tests {
 
     fn press(x: u8, y: u8, t_us: i64) -> PadHit {
         PadHit::press(x, y, 100, t_us)
+    }
+
+    fn input(presses: &[PadHit], now: i64) -> PadInput {
+        let mut input = PadInput::default();
+        for h in presses { input.push(*h); }
+        input.advance(now);
+        input
     }
 
     fn lit(l: &LayerFrame) -> Vec<usize> {
@@ -345,7 +425,7 @@ mod tests {
         });
         let paint = |presses: &[PadHit], now| {
             let mut l = LayerFrame::default();
-            paint_pads(&look, presses, now, 1.0, &mut l);
+            paint_pads(&look, &input(presses, now), 1.0, &mut l);
             l.px[0]
         };
         // One press: 0.5; two at once: 1 (the high color); after the decay: nothing.
@@ -365,14 +445,14 @@ mod tests {
         });
         let size = |now| {
             let mut l = LayerFrame::default();
-            paint_pads(&look, &[press(3, 3, 0)], now, 1.0, &mut l);
+            paint_pads(&look, &input(&[press(3, 3, 0)], now), 1.0, &mut l);
             lit(&l).len()
         };
         assert!(size(100_000) < size(1_500_000), "grows");
         assert_eq!(size(3_100_000), 0, "gone after attack + sustain + release");
         let paint = pads(PadsMode::Paint, |p| p.palette = Some(vec!["#FF0000".into(), "#00FF00".into()]));
         let mut l = LayerFrame::default();
-        paint_pads(&paint, &[press(1, 0, 0), press(1, 0, 10), press(2, 0, 20)], 30, 1.0, &mut l);
+        paint_pads(&paint, &input(&[press(1, 0, 0), press(1, 0, 10), press(2, 0, 20)], 30), 1.0, &mut l);
         assert_eq!((l.px[1].g, l.px[2].r), (1.0, 1.0), "second press on pad 1 is green; pad 2 starts red");
     }
 
@@ -380,7 +460,7 @@ mod tests {
     fn cycle_counts_and_constellation_links() {
         let cyc = CycleLook::compile(&CycleParams { palette: vec!["#FF0000".into(), "#0000FF".into()], scope: CycleScope::Global, lifetime_ms: 0, radius: 0.0 }).unwrap();
         let mut l = LayerFrame::default();
-        paint_cycle(&cyc, &[press(0, 0, 0), press(5, 5, 10)], 20, 1.0, &mut l);
+        paint_cycle(&cyc, &input(&[press(0, 0, 0), press(5, 5, 10)], 20), 1.0, &mut l);
         assert_eq!(lit(&l), vec![45], "until the next press: only the newest");
         assert_eq!(l.px[45].b, 1.0, "second press: second color");
         let con = ConstellationLook::compile(&ConstellationParams { color: "#FFFFFF".into(), stroke: 1.0, lifetime_ms: 1000, fade: RippleFade::Linear, max_segments: 4, dots: true }).unwrap();
@@ -424,5 +504,135 @@ mod tests {
         real.advance(105_000);
         clip_input(Some(&real), &span, 2_600_000, Some((&rec, false)), &mut out);
         assert_eq!(out.history.iter().map(|h| (h.x, h.t_us)).collect::<Vec<_>>(), vec![(1, 0), (2, 500_000), (7, 2_500_000)]);
+    }
+
+    #[test]
+    fn microsecond_recording_loop_has_bounded_buffers_and_exact_counts() {
+        let span = ClipSpan { start: 0, end: 1_000_000_000, fade_in: 0, fade_out: 0, order: 0 };
+        let rec = Recording { events: vec![crate::model::RecordedPad { t_us: 0, x: 0, y: 0, velocity: 100, duration_us: None }], length_us: Some(1) };
+        let mut out = PadInput::default();
+        clip_input(None, &span, 120_000_000, Some((&rec, true)), &mut out);
+        assert_eq!(out.history.len(), PadInput::HISTORY_CAPACITY);
+        assert_eq!(out.hits.len(), PadInput::CAPACITY);
+        assert!(out.history.capacity() <= 2 * PadInput::HISTORY_CAPACITY);
+        assert!(out.hits.capacity() <= PadInput::CAPACITY);
+        assert_eq!(out.history.first().unwrap().t_us, 120_000_000 - 1023);
+        assert_eq!(out.state.total, 120_000_001);
+        // A backwards seek recomputes the state, rather than accumulating it.
+        clip_input(None, &span, 4, Some((&rec, true)), &mut out);
+        assert_eq!(out.state.total, 5);
+        assert_eq!(out.history.len(), 5);
+    }
+
+    #[test]
+    fn bounded_recording_merge_matches_expansion_with_live_input_and_ties() {
+        let span = ClipSpan { start: 0, end: 1_000_000, fade_in: 0, fade_out: 0, order: 0 };
+        let rec = Recording { events: vec![
+            crate::model::RecordedPad { t_us: 0, x: 0, y: 0, velocity: 100, duration_us: Some(7) },
+            crate::model::RecordedPad { t_us: 4, x: 1, y: 0, velocity: 90, duration_us: None },
+            crate::model::RecordedPad { t_us: 4, x: 2, y: 0, velocity: 80, duration_us: None },
+        ], length_us: Some(10) };
+        let mut real = PadInput::default();
+        real.apply(crate::render::PadEvent::Press { x: 7, y: 7, velocity: 127, t_us: 24 }, Some(24));
+        let mut out = PadInput::default();
+        for now in [24, 40_004, 11, 40_004] {
+            real.advance(now.max(24));
+            clip_input(Some(&real), &span, now, Some((&rec, true)), &mut out);
+            let mut expected = vec![(now - (real.now_us - 24), 7, 7)];
+            for e in &rec.events {
+                let mut t = e.t_us as i64;
+                while t <= now {
+                    expected.push((t, e.x, e.y));
+                    t += 10;
+                }
+            }
+            expected.sort_by_key(|e| e.0);
+            let count = expected.len();
+            if count > 1024 { expected.drain(..count - 1024); }
+            assert_eq!(out.history.iter().map(|h| (h.t_us, h.x, h.y)).collect::<Vec<_>>(), expected);
+            assert_eq!(out.state.total, count as u64);
+            assert!(out.history.capacity() <= 2 * PadInput::HISTORY_CAPACITY);
+        }
+    }
+
+    #[test]
+    fn persistent_paint_and_cycle_survive_age_capacity_and_reset() {
+        let paint = pads(PadsMode::Paint, |_| {});
+        let cycle = CycleLook::compile(&CycleParams { palette: vec!["#FF0000".into(), "#00FF00".into(), "#0000FF".into()], scope: CycleScope::Global, lifetime_ms: 0, radius: 0.0 }).unwrap();
+        let mut src = input(&[press(7, 7, 0)], 0);
+        for n in 1..=1024 { src.push(press(0, 0, n)); }
+        src.advance(61_000_000);
+        assert!(src.history.is_empty());
+        let mut frame = LayerFrame::default();
+        paint_pads(&paint, &src, 1.0, &mut frame);
+        assert_eq!(lit(&frame), vec![0, 63]);
+        frame.clear();
+        paint_cycle(&cycle, &src, 1.0, &mut frame);
+        assert_eq!(frame.px[0].g, 1.0, "1025th input still uses the second colour");
+        // A new finite-duration cycle also keeps its ordinal after expiration.
+        src.push(press(0, 0, 61_000_000));
+        frame.clear();
+        let mut finite = cycle.clone(); finite.lifetime_us = 1_000_000;
+        paint_cycle(&finite, &src, 1.0, &mut frame);
+        assert_eq!(frame.px[0].b, 1.0);
+        src.apply(crate::render::PadEvent::Reset, None);
+        frame.clear();
+        paint_pads(&paint, &src, 1.0, &mut frame);
+        paint_cycle(&cycle, &src, 1.0, &mut frame);
+        assert!(lit(&frame).is_empty());
+        assert_eq!(src.state.total, 0);
+    }
+
+    #[test]
+    fn live_clip_state_is_scoped_persistent_and_resettable() {
+        let a = ClipSpan { start: 1_000_000, end: 200_000_000, fade_in: 0, fade_out: 0, order: 0 };
+        let b = ClipSpan { start: 3_000_000, ..a };
+        let mut real = PadInput::default();
+        let mut out = PadInput::default();
+        for (n, show) in [500_000, 2_000_000, 4_000_000].into_iter().enumerate() {
+            real.apply(crate::render::PadEvent::Press { x: n as u8, y: 0, velocity: 100, t_us: n as i64 * 1000 }, Some(show));
+        }
+        real.advance(3000);
+        clip_input(Some(&real), &a, 4_000_000, None, &mut out);
+        assert_eq!(out.state.total, 2);
+        clip_input(Some(&real), &b, 2_000_000, None, &mut out);
+        assert_eq!(out.state.total, 1);
+        real.advance(70_000_000);
+        assert!(real.history.is_empty());
+        clip_input(Some(&real), &a, 80_000_000, None, &mut out);
+        assert_eq!(out.state.total, 2);
+        assert!(out.state.last[1].is_some());
+        clip_input(Some(&real), &b, 78_000_000, None, &mut out);
+        assert_eq!(out.state.total, 1);
+        real.apply(crate::render::PadEvent::Reset, None);
+        clip_input(Some(&real), &a, 80_000_000, None, &mut out);
+        assert_eq!(out.state.total, 0);
+    }
+
+    #[test]
+    fn recorded_paint_persists_without_replaying_expired_events() {
+        let span = ClipSpan { start: 0, end: 200_000_000, fade_in: 0, fade_out: 0, order: 0 };
+        let rec = Recording { events: vec![crate::model::RecordedPad { t_us: 0, x: 2, y: 3, velocity: 100, duration_us: None }], length_us: Some(100_000_000) };
+        let mut out = PadInput::default();
+        clip_input(None, &span, 70_000_000, Some((&rec, false)), &mut out);
+        assert!(out.history.is_empty());
+        let mut frame = LayerFrame::default();
+        paint_pads(&pads(PadsMode::Paint, |_| {}), &out, 1.0, &mut frame);
+        assert_eq!(lit(&frame), vec![26]);
+    }
+
+    #[test]
+    fn recording_stop_keeps_trailing_silence_and_releases_held_pads() {
+        use crate::render::PadEvent;
+        let events = vec![
+            (10_000_000, PadEvent::Press { x: 0, y: 0, velocity: 100, t_us: 0 }),
+            (11_000_000, PadEvent::Release { x: 0, y: 0, t_us: 1_000_000 }),
+        ];
+        let rec = recording_until(&events, 10_000_000, 14_000_000);
+        assert_eq!(rec.length_us, Some(4_000_000));
+        assert_eq!(rec.events[0].duration_us, Some(1_000_000));
+        let held = recording_until(&events[..1], 10_000_000, 14_000_000);
+        assert_eq!(held.events[0].duration_us, Some(4_000_000));
+        assert_eq!(recording_from(&events, 10_000_000).length(), 1_000_000, "old import semantics stay intact");
     }
 }

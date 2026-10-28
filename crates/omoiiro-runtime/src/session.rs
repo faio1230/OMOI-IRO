@@ -326,9 +326,14 @@ impl FollowSession {
         Ok(t)
     }
 
-    /// Stop recording: the start show time and the events (None if not recording).
-    pub fn stop_recording(&self) -> Option<(i64, Vec<(i64, omoiiro_core::render::PadEvent)>)> {
-        self.shared.pad_log.lock().unwrap().recording.take()
+    /// Stop recording: start, stop show time, and events (None if not recording).
+    pub fn stop_recording(&self) -> Option<(i64, i64, Vec<(i64, omoiiro_core::render::PadEvent)>)> {
+        let stop = self.shared.status.lock().unwrap().show_time_us;
+        let (start, events) = self.shared.pad_log.lock().unwrap().recording.take()?;
+        // If sync was lost or the transport rewound, retain at least every
+        // recorded event. Never make the capture shorter than its contents.
+        let last = events.iter().map(|e| e.0).max().unwrap_or(start);
+        Some((start, stop.unwrap_or(last).max(last).max(start), events))
     }
 
     /// Latest bridge meters and their age (µs), if any arrived (0.1.3).

@@ -198,7 +198,7 @@ mod tests {
     fn keyframed_show_round_trips_byte_for_byte() {
         let text = include_str!("../../../fixtures/shows/keyframes-0.1.3.show.json");
         let show = load_str(text).unwrap();
-        assert_eq!(to_canonical_string(&show), text);
+        assert_eq!(to_canonical_string(&show), text.replace("\"schema_version\": \"0.1.3\"", &format!("\"schema_version\": \"{SCHEMA_VERSION}\"")));
         // A keyframe value out of range is a semantic error with the parameter's pointer.
         let mut v: Value = serde_json::from_str(text).unwrap();
         v["presets"][0]["effect"]["params"]["density"]["keyframes"][1]["v"] = json!(1.5);
@@ -217,7 +217,7 @@ mod tests {
         let text = include_str!("../../../fixtures/shows/paths-shapes-0.1.3.show.json");
         let show = load_str(text).unwrap();
         let saved = to_canonical_string(&show);
-        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), serde_json::from_str::<Value>(text).unwrap());
+        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), migrate(serde_json::from_str::<Value>(text).unwrap()));
         let mut a = omoiiro_core::render::Renderer::new(&show).unwrap();
         let mut b = omoiiro_core::render::Renderer::new(&load_str(&saved).unwrap()).unwrap();
         for t in [0, 3_100_000, 9_000_000, 17_500_000, 26_000_000, 33_000_000, 38_700_000] {
@@ -230,7 +230,7 @@ mod tests {
         v["presets"][1]["effect"]["params"]["points"] = json!([[0, 0], [7, 0.5], [3, 7]]);
         v["presets"][1]["effect"]["params"]["speed"] = json!(4);
         let saved = to_canonical_string(&load_str(&v.to_string()).unwrap());
-        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), v);
+        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), migrate(v));
         // A layer mask and an inverted wipe round-trip; files without them are unchanged.
         let mut v: Value = serde_json::from_str(text).unwrap();
         v["layers"][0]["mask"] = json!({"shape": "circle", "center_x": 3.5, "center_y": 3.5, "size": {"keyframes": [{"t_us": 0, "v": 0, "ease": "linear"}, {"t_us": 2000000, "v": 6, "ease": "linear"}]}, "edge": 0.5, "invert": false});
@@ -238,7 +238,7 @@ mod tests {
         v["presets"][3]["effect"]["params"]["invert"] = json!(true);
         v["presets"][3]["effect"]["params"]["center_x"] = json!(-2);
         let saved = to_canonical_string(&load_str(&v.to_string()).unwrap());
-        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), v);
+        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), migrate(v));
         // Custom groups: offset count must match the groups.
         let mut v: Value = serde_json::from_str(text).unwrap();
         v["presets"][4]["effect"]["params"]["offset"] = json!([0, 0.5]);
@@ -250,7 +250,7 @@ mod tests {
         let text = include_str!("../../../fixtures/shows/transitions-0.1.3.show.json");
         let show = load_str(text).unwrap();
         let saved = to_canonical_string(&show);
-        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), serde_json::from_str::<Value>(text).unwrap());
+        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), migrate(serde_json::from_str::<Value>(text).unwrap()));
         let mut a = omoiiro_core::render::Renderer::new(&show).unwrap();
         let mut b = omoiiro_core::render::Renderer::new(&load_str(&saved).unwrap()).unwrap();
         for t in [2_000_000, 8_100_000, 10_000_000, 13_000_000, 17_000_000, 20_000_000, 25_500_000, 31_000_000] {
@@ -269,7 +269,7 @@ mod tests {
         let text = include_str!("../../../fixtures/shows/particles-0.1.3.show.json");
         let show = load_str(text).unwrap();
         let saved = to_canonical_string(&show);
-        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), serde_json::from_str::<Value>(text).unwrap());
+        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), migrate(serde_json::from_str::<Value>(text).unwrap()));
         let mut a = Renderer::new(&show).unwrap();
         let mut b = Renderer::new(&load_str(&saved).unwrap()).unwrap();
         let lit = |f: &omoiiro_core::surface::Frame| f.leds.iter().filter(|c| c.r + c.g + c.b > 0.0).count();
@@ -295,7 +295,7 @@ mod tests {
         let text = include_str!("../../../fixtures/shows/compounds-0.1.3.show.json");
         let show = load_str(text).unwrap();
         let saved = to_canonical_string(&show);
-        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), serde_json::from_str::<Value>(text).unwrap());
+        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), migrate(serde_json::from_str::<Value>(text).unwrap()));
         let mut a = Renderer::new(&show).unwrap();
         let mut b = Renderer::new(&load_str(&saved).unwrap()).unwrap();
         for t in [1_000_000, 5_000_000, 12_500_000, 16_500_000, 20_000_000, 25_000_000, 33_000_000, 41_000_000] {
@@ -316,7 +316,7 @@ mod tests {
         use omoiiro_core::render::{PadEvent, PadInput, Renderer};
         let text = include_str!("../../../fixtures/shows/frames-text-0.1.3.show.json");
         let show = load_str(text).unwrap();
-        assert_eq!(to_canonical_string(&show), text, "written in the canonical form");
+        assert_eq!(to_canonical_string(&show), text.replace("\"schema_version\": \"0.1.3\"", &format!("\"schema_version\": \"{SCHEMA_VERSION}\"")), "written in the canonical form");
         let mut r = Renderer::new(&show).unwrap();
         let lit = |f: &omoiiro_core::surface::Frame| (0..64).filter(|i| f.leds[*i].r + f.leds[*i].g + f.leds[*i].b > 0.0).collect::<Vec<_>>();
         // 53: a star where the pad was pressed, gone 0.8 s after its one frame (1 s).
@@ -339,7 +339,7 @@ mod tests {
         use omoiiro_core::render::{PadEvent, PadInput, Renderer};
         let text = include_str!("../../../fixtures/shows/input-states-0.1.3.show.json");
         let show = load_str(text).unwrap();
-        assert_eq!(serde_json::from_str::<Value>(&to_canonical_string(&show)).unwrap(), serde_json::from_str::<Value>(text).unwrap());
+        assert_eq!(serde_json::from_str::<Value>(&to_canonical_string(&show)).unwrap(), migrate(serde_json::from_str::<Value>(text).unwrap()));
         let mut r = Renderer::new(&show).unwrap();
         let lit = |f: &omoiiro_core::surface::Frame| (0..64).filter(|i| f.leds[*i].r + f.leds[*i].g + f.leds[*i].b > 0.0).count();
         // 60: the recording alone (no input); from the second bar on (the glow of the
@@ -363,7 +363,7 @@ mod tests {
         use omoiiro_core::render::{AudioInput, Renderer};
         let text = include_str!("../../../fixtures/shows/audio-meter-0.1.3.show.json");
         let show = load_str(text).unwrap();
-        assert_eq!(to_canonical_string(&show), text, "written in the canonical form");
+        assert_eq!(to_canonical_string(&show), text.replace("\"schema_version\": \"0.1.3\"", &format!("\"schema_version\": \"{SCHEMA_VERSION}\"")), "written in the canonical form");
         let mut r = Renderer::new(&show).unwrap();
         let lit = |f: &omoiiro_core::surface::Frame| (0..64).filter(|i| f.leds[*i].r + f.leds[*i].g + f.leds[*i].b > 0.0).count();
         let quiet = AudioInput { now_us: 0, master: [0.0, 0.0], tracks: vec![("Kick".into(), [0.0, 0.0])] };
@@ -408,7 +408,7 @@ mod tests {
         let mut show = load_str(DEMO).unwrap();
         for (id, t) in [("me", "builtin.meter"), ("pd", "builtin.pads"), ("cy", "builtin.cycle"), ("cn", "builtin.constellation"), ("fr", "builtin.frames"), ("tx", "builtin.text"), ("pt", "builtin.particles"), ("pa", "builtin.path"), ("sh", "builtin.shape"), ("tg", "builtin.tap_glow"), ("x", "builtin.cross"), ("rg", "builtin.regions"), ("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
             let effect = omoiiro_core::edit::default_effect(t).unwrap();
-            show.presets.push(omoiiro_core::model::Preset { id: id.into(), name: id.into(), effect });
+            show.presets.push(omoiiro_core::model::Preset { metadata: Default::default(), id: id.into(), name: id.into(), effect });
         }
         let text = to_canonical_string(&show);
         assert!(validate_show(&serde_json::from_str(&text).unwrap()).is_empty());
@@ -534,5 +534,21 @@ mod tests {
         assert!(save_atomic(&bad, &show).is_err());
         assert_eq!(load_path(&path).unwrap().name, "変更後");
         fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn explicit_recording_period_survives_schema_and_canonical_round_trip() {
+        use omoiiro_core::model::Content;
+        let mut show = load_str(include_str!("../../../fixtures/shows/input-states-0.1.3.show.json")).unwrap();
+        let clip = show.layers.iter_mut().filter_map(|l| match &mut l.content {
+            Content::Triggered { clips, .. } => Some(clips.iter_mut()),
+            _ => None,
+        }).flatten().find(|c| c.recording.is_some()).unwrap();
+        clip.recording.as_mut().unwrap().length_us = Some(4_000_000);
+        clip.looping = Some(true);
+        let saved = to_canonical_string(&show);
+        let loaded = load_str(&saved).unwrap();
+        assert_eq!(loaded, show);
+        assert_eq!(to_canonical_string(&loaded), saved);
     }
 }

@@ -299,6 +299,7 @@ pub fn run() {
             settings::settings_listen,
             editor::editor_open,
             editor::editor_view,
+            editor::material_preview,
             editor::editor_apply,
             editor::editor_undo,
             editor::editor_redo,

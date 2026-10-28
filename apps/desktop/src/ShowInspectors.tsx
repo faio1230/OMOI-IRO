@@ -1150,17 +1150,8 @@ export function PresetPanel(props: {
   };
 
   return (
-    <section className="panel">
-      <h2>プリセット</h2>
-      <div className="preset-list">
-        {view.presets.map((p) => (
-          <button key={p.id} className={mode?.presetId === p.id ? "preset on" : "preset"} onClick={() => setMode({ kind: "shared", presetId: p.id })}>
-            <span className="swatch" style={{ background: p.color }} />
-            <span className="pname">{p.name}</span>
-            <span className="hint">{TYPE_JA[p.effect_type]} · 使用 {p.used_by_clips.length + p.used_by_layers.length}</span>
-          </button>
-        ))}
-      </div>
+    <section id="preset-editor" className="panel">
+      <h2>PRESET EDITOR · プリセット編集</h2>
       <div className="actions">
         <select value={newType} onChange={(e) => setNewType(e.target.value as EffectType)}>
           {Object.entries(TYPE_JA).map(([t, l]) => <option key={t} value={t}>{l}</option>)}

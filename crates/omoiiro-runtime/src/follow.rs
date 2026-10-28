@@ -751,7 +751,7 @@ mod tests {
         let shared = FollowShared::new(transport());
         let mut show = omoiiro_store::load_str(DEMO).unwrap();
         show.layers.truncate(0);
-        show.presets.push(omoiiro_core::model::Preset { id: "ripple".into(), name: "波紋".into(), effect: omoiiro_core::edit::default_effect("builtin.ripple").unwrap() });
+        show.presets.push(omoiiro_core::model::Preset { metadata: Default::default(), id: "ripple".into(), name: "波紋".into(), effect: omoiiro_core::edit::default_effect("builtin.ripple").unwrap() });
         let edit = omoiiro_core::edit::EditCommand::AddContinuousLayer { name: "r".into(), preset_id: "ripple".into(), index: None };
         let (show, _) = omoiiro_core::edit::apply(&show, &edit, omoiiro_core::edit::Snap::None).unwrap();
         shared.exchange.submit(&show).unwrap();

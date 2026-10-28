@@ -43,7 +43,7 @@ pub fn parse_preset_file(text: &str) -> Result<Preset, LoadError> {
         .map_err(|e| LoadError::Json { line: e.line(), column: e.column(), message: e.to_string() })?;
     match v.get("schema_version").and_then(Value::as_str) {
         // 0.1.1 / 0.1.2 preset files are valid current ones (additive changes).
-        Some(v) if v == SCHEMA_VERSION || v == "0.1.1" || v == "0.1.2" => {}
+        Some(v) if v == SCHEMA_VERSION || v == "0.1.1" || v == "0.1.2" || v == "0.1.3" => {}
         Some(other) => return Err(LoadError::UnsupportedVersion { found: other.to_string() }),
         None => return Err(LoadError::Schema(vec![Issue { pointer: "/schema_version".into(), message: "missing".into() }])),
     }
@@ -93,10 +93,29 @@ mod tests {
     }
 
     #[test]
+    fn metadata_roundtrips_show_export_import_and_old_versions() {
+        let mut s = demo();
+        assert!(s.presets.iter().all(|p| p.metadata.is_empty()));
+        s.presets[1].metadata = omoiiro_core::model::MaterialMetadata { category: "照明".into(), tags: vec!["青".into(), "静か".into()], favorite: true };
+        let saved = crate::json::to_canonical_string(&s);
+        assert_eq!(load_str(&saved).unwrap(), s);
+        let text = export_preset(&s, "sweep-cyan").unwrap();
+        let id = import_preset(&mut s, &text, OnConflict::Rename).unwrap();
+        assert_eq!(s.presets.iter().find(|p| p.id == id).unwrap().metadata, s.presets[1].metadata);
+        for version in ["0.1.1", "0.1.2", "0.1.3"] {
+            let old = text.replace("0.1.4", version);
+            assert!(parse_preset_file(&old).is_ok());
+        }
+        let mut bad: serde_json::Value = serde_json::from_str(&text).unwrap();
+        bad["preset"]["metadata"]["tags"] = serde_json::json!(["same", "same"]);
+        assert!(parse_preset_file(&bad.to_string()).is_err());
+    }
+
+    #[test]
     fn export_then_import_with_conflict_policies() {
         let mut show = demo();
         let text = export_preset(&show, "sweep-cyan").unwrap();
-        assert!(text.starts_with("{\n  \"schema_version\": \"0.1.3\",\n  \"kind\": \"omoiiro.preset\","));
+        assert!(text.starts_with("{\n  \"schema_version\": \"0.1.4\",\n  \"kind\": \"omoiiro.preset\","));
         // The exported file passes the preset schema.
         assert!(crate::schema::validate_preset_file(&serde_json::from_str(&text).unwrap()).is_empty());
         // Same ID already present.

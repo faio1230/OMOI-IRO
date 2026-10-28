@@ -1,0 +1,171 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import * as ipc from "./ipc/commands";
+import type { EditCommand, EditorView, MaterialKind, MaterialMetadata } from "./ipc/types";
+
+const CATEGORIES = ["タップ", "背景", "アクセント", "トランジション", "照明", "グラフィック"];
+const PAGE_SIZE = 12;
+type Material = { id: string; kind: MaterialKind; name: string; metadata: MaterialMetadata; label: string; used: number; signature: string; durationMs: number };
+const keyOf = (m: Material) => `${m.kind}:${m.id}`;
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+
+/** Follows the OS setting; the thumbnail cannot animate while it is on. */
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(() => matchMedia(REDUCED_MOTION).matches);
+  useEffect(() => {
+    const q = matchMedia(REDUCED_MOTION);
+    const onChange = () => setReduced(q.matches);
+    q.addEventListener("change", onChange);
+    return () => q.removeEventListener("change", onChange);
+  }, []);
+  return reduced;
+}
+
+/** Draw only Rust-rendered pixels; y=0 is the bottom row on the device. */
+function MiniPreview({ frames, animate, name, durationMs = 2000 }: { frames?: number[][]; animate: boolean; name: string; durationMs?: number }) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const ctx = canvas.current?.getContext("2d");
+    if (!ctx) return;
+    let index = frames ? Math.min(4, frames.length - 1) : 0;
+    const paint = () => {
+      ctx.fillStyle = "#050505"; ctx.fillRect(0, 0, 96, 96);
+      const f = frames?.[index];
+      for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+        const k = (y * 8 + x) * 3;
+        ctx.fillStyle = f ? `rgb(${f[k]},${f[k + 1]},${f[k + 2]})` : "#161616";
+        ctx.fillRect(x * 12 + 1, (7 - y) * 12 + 1, 10, 10);
+      }
+      index = (index + 1) % (frames?.length || 1);
+    };
+    paint();
+    if (!animate || !frames || matchMedia(REDUCED_MOTION).matches) return;
+    const timer = window.setInterval(() => { if (!document.hidden) paint(); }, Math.max(16, durationMs / frames.length));
+    return () => clearInterval(timer);
+  }, [frames, animate, durationMs]);
+  return <canvas ref={canvas} width={96} height={96} role="img" aria-label={`${name}のLEDプレビュー`} />;
+}
+
+function Classification({ material, categories, apply }: { material: Material; categories: string[]; apply: (c: EditCommand) => void }) {
+  const [category, setCategory] = useState(material.metadata.category);
+  const [tags, setTags] = useState(material.metadata.tags.join(", "));
+  useEffect(() => { setCategory(material.metadata.category); setTags(material.metadata.tags.join(", ")); }, [material.id, material.kind, JSON.stringify(material.metadata)]);
+  const parsed = [...new Map(tags.split(/[,、]/).map(t => t.trim()).filter(Boolean).map(t => [t.toLocaleLowerCase(), t])).values()];
+  const valid = [...category.trim()].length <= 48 && parsed.length <= 24 && parsed.every(t => [...t].length <= 32);
+  const changed = category.trim() !== material.metadata.category || JSON.stringify(parsed) !== JSON.stringify(material.metadata.tags);
+  return <div className="classification">
+    <label className="field"><span>カテゴリ</span><input list="material-categories" value={category} onChange={e => setCategory(e.target.value)} placeholder="未分類" maxLength={48} /></label>
+    <datalist id="material-categories">{categories.map(c => <option key={c} value={c} />)}</datalist>
+    <label className="field tag-entry"><span>タグ · カンマ区切り</span><input value={tags} onChange={e => setTags(e.target.value)} placeholder="暖色, ゆっくり, サビ" /></label>
+    <button disabled={!valid || !changed} onClick={() => apply({ op: "set_material_metadata", material_kind: material.kind, material_id: material.id, metadata: { ...material.metadata, category: category.trim(), tags: parsed } })}>分類を保存</button>
+    {!valid && <p className="error">カテゴリは48文字、タグは各32文字・24個までです。</p>}
+  </div>;
+}
+
+export default function MaterialBrowser({ view, apply, onEdit, onPick, targetName, canPlace, onPlace }: {
+  view: EditorView; apply: (c: EditCommand) => void;
+  onEdit: (kind: MaterialKind, id: string) => void;
+  onPick: (kind: MaterialKind, id: string) => void;
+  targetName: string | null; canPlace: (kind: MaterialKind) => boolean;
+  onPlace: (kind: MaterialKind, id: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<string | null>(null);
+  const [kind, setKind] = useState<"all" | MaterialKind>("all");
+  const [favorite, setFavorite] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [page, setPage] = useState(0);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [moving, setMoving] = useState(false);
+  const reducedMotion = useReducedMotion();
+  const [previews, setPreviews] = useState<Record<string, number[][]>>({});
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const cache = useRef(new Map<string, number[][]>());
+  // Metadata never invalidates pixels; nested preset edits invalidate compound previews.
+  const materials: Material[] = useMemo(() => [
+    ...view.presets.map(p => ({ ...p, kind: "preset" as const, durationMs: 2000, label: p.effect_type.replace("builtin.", "").toUpperCase(), used: p.used_by_clips.length + p.used_by_layers.length, signature: JSON.stringify(p.effect) })),
+    ...view.compounds.map(c => ({ ...c, kind: "compound" as const, durationMs: Math.max(1, Math.min(30000, c.length_us / 1000)), label: `COMPOUND · ${(c.length_us / 1e6).toFixed(1)}s`, used: c.used_by_clips.length, signature: JSON.stringify([c.layers, c.length_us, view.presets.map(p => [p.id, p.effect])]) })),
+  ], [view]);
+  const categories = [...new Set([...CATEGORIES, ...materials.map(m => m.metadata.category).filter(Boolean)])];
+  const allTags = [...new Set(materials.flatMap(m => m.metadata.tags))].sort((a, b) => a.localeCompare(b, "ja"));
+  const terms = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
+  const filtered = materials.filter(m => {
+    const text = [m.name, m.id, m.label, m.metadata.category, ...m.metadata.tags].join(" ").toLocaleLowerCase();
+    return (kind === "all" || kind === m.kind) && (category === null || category === m.metadata.category) && (!favorite || m.metadata.favorite) && tags.every(t => m.metadata.tags.includes(t)) && terms.every(t => text.includes(t));
+  });
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pages - 1);
+  const visible = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+  const selected = materials.find(m => keyOf(m) === selectedKey);
+  const previewKey = (m: Material) => JSON.stringify([view.path, view.preview_bpm, m.kind, m.id, m.signature]);
+  const previewTargets = selected && !visible.some(m => keyOf(m) === selectedKey) ? [...visible, selected] : visible;
+  const requestKey = JSON.stringify(previewTargets.map(previewKey));
+  useEffect(() => { setPage(0); }, [query, category, kind, favorite, JSON.stringify(tags)]);
+  useEffect(() => {
+    let cancelled = false;
+    setPreviewError(null);
+    setPreviews(Object.fromEntries(previewTargets.flatMap(m => {
+      const frames = cache.current.get(previewKey(m));
+      return frames ? [[keyOf(m), frames]] : [];
+    })));
+    // One request at a time. Only the current page is sampled, cache stays bounded.
+    (async () => {
+      for (const m of previewTargets) {
+        if (cancelled) return;
+        const k = previewKey(m);
+        try {
+          let f = cache.current.get(k);
+          if (!f) {
+            f = await ipc.materialPreview(m.kind, m.id);
+            if (cancelled) return;
+            if (cache.current.size >= 96) cache.current.delete(cache.current.keys().next().value!);
+            cache.current.set(k, f);
+          }
+          setPreviews(prev => ({ ...prev, [keyOf(m)]: f! }));
+        } catch (e) { if (!cancelled) setPreviewError(ipc.errorText(e)); }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [requestKey]);
+  const reset = () => { setQuery(""); setCategory(null); setKind("all"); setFavorite(false); setTags([]); setPage(0); };
+  return <section className="panel material-bank" aria-label="素材バンク">
+    <div className="bank-heading"><div><span className="eyebrow">MATERIAL BANK</span><h2>素材ライブラリー</h2></div><span className="bank-count mono">{String(filtered.length).padStart(2, "0")} <small>/ {materials.length}</small></span></div>
+    <div className="bank-tools">
+      <input className="material-search" aria-label="素材を検索" type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="名前・タグ・エフェクトを検索" />
+      <select aria-label="素材の種類" value={kind} onChange={e => setKind(e.target.value as typeof kind)}><option value="all">すべての素材</option><option value="preset">プリセット</option><option value="compound">複合素材</option></select>
+      <button className={favorite ? "on" : ""} aria-pressed={favorite} onClick={() => setFavorite(!favorite)}>お気に入り</button>
+    </div>
+    <div className="bank-body">
+      <nav className="bank-categories" aria-label="素材カテゴリ">
+        <span className="eyebrow">CATEGORY</span>
+        {[null, ...categories, ""].map(c => <button key={c ?? "all"} className={category === c ? "on" : ""} aria-pressed={category === c} onClick={() => setCategory(c)}><span>{c === null ? "すべて" : c || "未分類"}</span><small className="mono">{materials.filter(m => c === null || m.metadata.category === c).length}</small></button>)}
+      </nav>
+      <div className="bank-results">
+        {allTags.length > 0 && <div className="bank-tags" aria-label="タグ絞り込み"><span>TAG</span>{allTags.map(t => <button key={t} className={tags.includes(t) ? "on" : ""} aria-pressed={tags.includes(t)} onClick={() => setTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}>{t}</button>)}</div>}
+        <div className="material-grid">
+          {visible.map((m, i) => <div key={keyOf(m)} className={`material-card ${selectedKey === keyOf(m) ? "selected" : ""}`}>
+            <button className="material-select" aria-pressed={selectedKey === keyOf(m)} onClick={() => { setSelectedKey(keyOf(m)); setMoving(false); onPick(m.kind, m.id); }}>
+              <span className="material-number mono">{String(safePage * PAGE_SIZE + i + 1).padStart(2, "0")} <span>{m.kind === "compound" ? "CP" : "FX"}</span></span>
+              <MiniPreview frames={previews[keyOf(m)]} name={m.name} animate={false} />
+              <span className="material-name" title={m.name}>{m.name}</span><span className="material-type mono">{m.label}</span>
+            </button>
+            <div className="material-footer"><span>{m.metadata.category || "未分類"}</span><button className={m.metadata.favorite ? "favorite on" : "favorite"} aria-label={`${m.name}のお気に入り`} aria-pressed={m.metadata.favorite} onClick={() => apply({ op: "set_material_metadata", material_kind: m.kind, material_id: m.id, metadata: { ...m.metadata, favorite: !m.metadata.favorite } })}>FAV</button></div>
+          </div>)}
+        </div>
+        {filtered.length === 0 && <div className="bank-empty"><p>条件に合う素材がありません</p><button onClick={reset}>絞り込みを解除</button></div>}
+        <div className="bank-pagination"><span role="status">{filtered.length} 件 · タグはすべて一致</span><button disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>前へ</button><span className="mono">{safePage + 1} / {pages}</span><button disabled={safePage + 1 === pages} onClick={() => setPage(safePage + 1)}>次へ</button><button onClick={reset}>クリア</button></div>
+      </div>
+    </div>
+    {selected ? <div className="material-detail">
+      <div className="material-detail-title"><MiniPreview frames={previews[keyOf(selected)]} name={selected.name} animate={moving} durationMs={selected.durationMs} /><div className="selected-material-name"><span className="eyebrow">SELECTED MATERIAL</span><h3>{selected.name}</h3><span className="hint">{selected.label} · 使用 {selected.used} 箇所</span></div><div className="actions">
+        <button aria-pressed={moving && !reducedMotion} className={moving && !reducedMotion ? "on" : ""} disabled={reducedMotion} onClick={() => setMoving(!moving)}>{moving && !reducedMotion ? "サムネイル停止" : "サムネイルを動かす"}</button>
+        <button onClick={() => onEdit(selected.kind, selected.id)}>効果を編集</button>
+        <button className="primary" disabled={!canPlace(selected.kind)} onClick={() => onPlace(selected.kind, selected.id)}>レイヤーに配置</button>
+      </div></div>
+      <p className="hint">{reducedMotion ? "OS の設定でアニメーション効果が無効のため動かせません" : "24コマのコマ送り（サンプル入力）。実際の再生は「レイヤーに配置」→ LEDプレビューの「手元で再生」で確認"}</p>
+      <Classification material={selected} categories={categories} apply={apply} />
+      <p className="hint">{targetName ? `配置先：${targetName}。再生位置、停止中は末尾に追加。` : "配置先は下のタイムラインでレイヤーを選択。"} 複合素材はショーのタイムラインに配置できます。</p>
+    </div> : <p className="bank-select-hint">素材を選ぶと、分類の編集・動きの確認・レイヤーへの配置ができます。</p>}
+    <p className="bank-footnote">プレビューはサンプル入力・ショーのBPMによる参考表示。音量連動素材は音声入力が必要です。</p>
+    {previewError && <p role="alert" className="error">素材プレビュー：{previewError}</p>}
+  </section>;
+}

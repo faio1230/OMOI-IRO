@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/show.schema.json",
-  "schema_version": "0.1.3",
+  "schema_version": "0.1.4",
   "id": "omoi-iro-live-template",
   "name": "OMOI-IRO 本番用の雛形（赤 #FF2A1A・白・橙、地 #2A0808）",
   "seed": 1,
@@ -38,6 +38,13 @@
   ],
   "presets": [
     {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "solid"
+        ],
+        "favorite": false
+      },
       "id": "ground",
       "name": "地（暗い赤）",
       "effect": {
@@ -49,6 +56,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "solid"
+        ],
+        "favorite": false
+      },
       "id": "solid-red",
       "name": "単色：赤",
       "effect": {
@@ -60,6 +74,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "solid"
+        ],
+        "favorite": false
+      },
       "id": "solid-orange",
       "name": "単色：橙",
       "effect": {
@@ -71,6 +92,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "solid"
+        ],
+        "favorite": false
+      },
       "id": "solid-white",
       "name": "単色：白",
       "effect": {
@@ -82,6 +110,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "chase"
+        ],
+        "favorite": false
+      },
       "id": "chase-x",
       "name": "流れ：横（赤）",
       "effect": {
@@ -96,6 +131,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "chase"
+        ],
+        "favorite": false
+      },
       "id": "chase-y",
       "name": "流れ：縦（橙）",
       "effect": {
@@ -110,6 +152,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "chase"
+        ],
+        "favorite": false
+      },
       "id": "chase-rev",
       "name": "流れ：横・逆向き（白）",
       "effect": {
@@ -125,6 +174,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "pulse"
+        ],
+        "favorite": false
+      },
       "id": "pulse-red",
       "name": "拍の明滅：赤",
       "effect": {
@@ -139,6 +195,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "strobe"
+        ],
+        "favorite": false
+      },
       "id": "strobe-white",
       "name": "点滅：白（1拍、25%）",
       "effect": {
@@ -155,6 +218,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "noise"
+        ],
+        "favorite": false
+      },
       "id": "noise-ember",
       "name": "ノイズ：赤×橙",
       "effect": {
@@ -172,6 +242,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "タップ",
+        "tags": [
+          "ripple"
+        ],
+        "favorite": false
+      },
       "id": "ripple-drop",
       "name": "波紋：水滴（タップ）",
       "effect": {
@@ -190,6 +267,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "タップ",
+        "tags": [
+          "ripple"
+        ],
+        "favorite": false
+      },
       "id": "ripple-shock",
       "name": "波紋：衝撃波",
       "effect": {
@@ -208,6 +292,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "タップ",
+        "tags": [
+          "ripple"
+        ],
+        "favorite": false
+      },
       "id": "ripple-bleed",
       "name": "波紋：にじみ",
       "effect": {
@@ -226,6 +317,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "rain"
+        ],
+        "favorite": false
+      },
       "id": "rain-sparks",
       "name": "雨：上向きの火の粉",
       "effect": {
@@ -244,6 +342,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "wave"
+        ],
+        "favorite": false
+      },
       "id": "wave-red",
       "name": "波形：赤",
       "effect": {
@@ -262,6 +367,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "背景",
+        "tags": [
+          "orb"
+        ],
+        "favorite": false
+      },
       "id": "orb-orange",
       "name": "球：橙（周回）",
       "effect": {
@@ -286,6 +398,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "regions"
+        ],
+        "favorite": false
+      },
       "id": "beat-halves",
       "name": "領域：左右（拍）",
       "effect": {
@@ -305,6 +424,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "regions"
+        ],
+        "favorite": false
+      },
       "id": "regions-tb",
       "name": "領域：上下（拍）",
       "effect": {
@@ -324,6 +450,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "regions"
+        ],
+        "favorite": false
+      },
       "id": "regions-checker",
       "name": "領域：市松（拍）",
       "effect": {
@@ -343,6 +476,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "regions"
+        ],
+        "favorite": false
+      },
       "id": "regions-perimeter",
       "name": "領域：外周（0.25拍）",
       "effect": {
@@ -362,6 +502,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "グラフィック",
+        "tags": [
+          "path"
+        ],
+        "favorite": false
+      },
       "id": "path-perimeter",
       "name": "経路：外周を走る赤",
       "effect": {
@@ -380,6 +527,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "グラフィック",
+        "tags": [
+          "shape"
+        ],
+        "favorite": false
+      },
       "id": "shape-iris",
       "name": "図形：アイリス（黒、開く）",
       "effect": {
@@ -413,6 +567,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "グラフィック",
+        "tags": [
+          "shape"
+        ],
+        "favorite": false
+      },
       "id": "shape-wipe",
       "name": "図形：ワイプ（黒、右へ開く）",
       "effect": {
@@ -445,6 +606,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "アクセント",
+        "tags": [
+          "particles"
+        ],
+        "favorite": false
+      },
       "id": "particles-sparks",
       "name": "粒子：火花",
       "effect": {
@@ -470,6 +638,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "アクセント",
+        "tags": [
+          "particles"
+        ],
+        "favorite": false
+      },
       "id": "particles-firework",
       "name": "粒子：花火",
       "effect": {
@@ -497,6 +672,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "グラフィック",
+        "tags": [
+          "text"
+        ],
+        "favorite": false
+      },
       "id": "text-name",
       "name": "文字：OMOI-IRO（スクロール）",
       "effect": {
@@ -514,6 +696,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "グラフィック",
+        "tags": [
+          "frames"
+        ],
+        "favorite": false
+      },
       "id": "frames-star",
       "name": "フレーム：星スタンプ",
       "effect": {
@@ -533,6 +722,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "meter"
+        ],
+        "favorite": false
+      },
       "id": "meter-glow",
       "name": "音量：全面（マスター）",
       "effect": {
@@ -552,6 +748,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "meter"
+        ],
+        "favorite": false
+      },
       "id": "meter-kick",
       "name": "音量：中央の球（[LED] Kick）",
       "effect": {
@@ -572,6 +775,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "照明",
+        "tags": [
+          "meter"
+        ],
+        "favorite": false
+      },
       "id": "meter-bars",
       "name": "音量：縦棒（マスター）",
       "effect": {
@@ -592,6 +802,13 @@
       }
     },
     {
+      "metadata": {
+        "category": "タップ",
+        "tags": [
+          "tap_glow"
+        ],
+        "favorite": false
+      },
       "id": "tap-glow",
       "name": "余熱：白→橙→暗い赤",
       "effect": {

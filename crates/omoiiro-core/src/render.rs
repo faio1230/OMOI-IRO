@@ -68,7 +68,7 @@ use crate::surface::{Frame, LayerFrame, Rgb, Rgba, GRID_H, GRID_LEDS, GRID_W};
 use crate::time::{BeatState, ShowTimeUs};
 use crate::timeline::{ClipIndex, ClipSpan};
 use crate::validation::{validate, Issue};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::f64::consts::TAU;
 
 /// An effect with its parameters parsed for rendering (cheap to clone:
@@ -150,6 +150,8 @@ pub struct PathLook {
 /// when it arrived (triggered layers accept it only inside a clip).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PadHit {
+    /// Monotonic input serial, assigned by PadInput::push (not saved).
+    pub serial: u64,
     pub x: u8,
     pub y: u8,
     pub velocity: u8,
@@ -160,7 +162,7 @@ pub struct PadHit {
 
 impl PadHit {
     pub fn press(x: u8, y: u8, velocity: u8, t_us: i64) -> PadHit {
-        PadHit { x, y, velocity, t_us, release_us: None, show_us: None }
+        PadHit { serial: 0, x, y, velocity, t_us, release_us: None, show_us: None }
     }
 
     /// Release time, with a hold longer than `PadInput::MAX_HOLD_US` cut there.
@@ -182,13 +184,22 @@ pub enum PadEvent {
 
 /// Pad hits seen by the renderer at monotonic time `now_us` (oldest first).
 /// `hits` is the short window the instance effects use (as in 0.1.2);
-/// `history` is everything since the last reset (bounded) for the effects
-/// that read pad states (pads, cycle, constellation).
+/// `history` is a bounded recent window for transient effects. `state`
+/// retains counts and last presses until reset, even after that window expires.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PadInput {
     pub now_us: i64,
     pub hits: Vec<PadHit>,
     pub history: Vec<PadHit>,
+    pub state: crate::history::PadState,
+    pub generation: u64,
+    pub serial: u64,
+    /// Clip-local live accumulators (registered input or renderer scratch).
+    pub scopes: std::collections::BTreeMap<(i64, i64), crate::history::ScopedPads>,
+    /// Registered show windows, sorted/deduplicated. State is allocated only
+    /// when a press falls in a window; short history eviction cannot lose counts.
+    pub windows: Vec<(i64, i64)>,
+    pub scope_show: Option<String>,
 }
 
 impl PadInput {
@@ -203,7 +214,20 @@ impl PadInput {
     pub const HISTORY_AGE_US: i64 = 60_000_000;
 
     /// Add a hit; drop the oldest beyond `CAPACITY` (and `HISTORY_CAPACITY`).
-    pub fn push(&mut self, hit: PadHit) {
+    pub fn push(&mut self, mut hit: PadHit) {
+        self.serial += 1;
+        hit.serial = self.serial;
+        self.state.observe(hit, 1);
+        if let Some(t) = hit.show_us {
+            for &(start, end) in &self.windows {
+                if start <= t && t < end {
+                    let scope = self.scopes.entry((start, end)).or_default();
+                    scope.state.observe(hit, 1);
+                    scope.serial = self.serial;
+                    scope.generation = self.generation;
+                }
+            }
+        }
         if self.hits.len() == Self::CAPACITY {
             self.hits.remove(0);
         }
@@ -237,6 +261,9 @@ impl PadInput {
             PadEvent::Reset => {
                 self.hits.clear();
                 self.history.clear();
+                self.state = Default::default();
+                self.scopes.clear();
+                self.generation = self.generation.wrapping_add(1);
             }
         }
     }
@@ -689,8 +716,8 @@ impl CompiledEffect {
     pub fn paint_history(&self, input: &PadInput, alpha: f64, layer: &mut LayerFrame) {
         let now = input.now_us;
         match self {
-            CompiledEffect::Pads(l) => crate::history::paint_pads(l, &input.history, now, alpha, layer),
-            CompiledEffect::Cycle(l) => crate::history::paint_cycle(l, &input.history, now, alpha, layer),
+            CompiledEffect::Pads(l) => crate::history::paint_pads(l, input, alpha, layer),
+            CompiledEffect::Cycle(l) => crate::history::paint_cycle(l, input, alpha, layer),
             CompiledEffect::Constellation(l) => crate::history::paint_constellation(l, &input.history, now, alpha, layer),
             &CompiledEffect::TapGlow { start, mid, end, lifetime_us, radius, repeats, repeat_us, decay, charge: true } => {
                 for h in &input.hits {
@@ -1787,6 +1814,8 @@ fn apply_mask(m: &LayerMask, t: u64, layer: &mut LayerFrame) {
 /// Compiled show, ready to render any time.
 #[derive(Clone, Debug)]
 pub struct Renderer {
+    show_id: String,
+    live_windows: HashSet<(i64, i64)>,
     effects: Vec<CompiledEffect>,
     layers: Vec<CompiledLayer>,
     master_brightness: f32,
@@ -1897,6 +1926,9 @@ impl Renderer {
             })
             .collect();
         Ok(Renderer {
+            show_id: show.id.clone(),
+            live_windows: show.layers.iter().filter_map(|l| l.content.clips()).flatten()
+                .map(|c| (c.start_us as i64, c.end_us() as i64)).collect(),
             effects,
             layers,
             master_brightness: show.render.master_brightness as f32,
@@ -1907,7 +1939,7 @@ impl Renderer {
             keyed,
             events: Vec::with_capacity(4 * MAX_EVENTS),
             meter_env: vec![(usize::MAX, Default::default()); show.layers.len()],
-            clip_pads: PadInput { now_us: 0, hits: Vec::with_capacity(PadInput::CAPACITY), history: Vec::with_capacity(PadInput::HISTORY_CAPACITY) },
+            clip_pads: PadInput { hits: Vec::with_capacity(PadInput::CAPACITY), history: Vec::with_capacity(PadInput::HISTORY_CAPACITY), ..Default::default() },
             uses,
             inner_active: Vec::with_capacity(max_inner_clips),
             inner_buf: LayerFrame::default(),
@@ -1925,6 +1957,45 @@ impl Renderer {
 
     pub fn layer_count(&self) -> usize {
         self.layers.len()
+    }
+
+    /// Register the current show's windows before feeding events. Runtime and
+    /// local preview use this to count bursts even above the short history cap.
+    pub fn configure_input(&self, input: &mut PadInput) {
+        if input.scope_show.as_deref() != Some(self.show_id.as_str()) {
+            if input.scope_show.is_some() {
+                input.apply(PadEvent::Reset, None);
+            }
+            input.scopes.clear();
+            input.scope_show = Some(self.show_id.clone());
+        }
+        let old_windows = std::mem::take(&mut input.windows);
+        input.windows = self.live_windows.iter().copied().collect();
+        input.windows.sort_unstable();
+        input.scopes.retain(|window, _| self.live_windows.contains(window));
+        // An added/retimed clip can include recent input from before the edit.
+        // Bootstrap that window once, so its counts agree with the history
+        // handed to finite-duration cycle effects on the very next frame.
+        for &window in &input.windows {
+            if old_windows.binary_search(&window).is_ok() { continue; }
+            for h in &input.history {
+                if h.show_us.is_some_and(|t| window.0 <= t && t < window.1) {
+                    let scope = input.scopes.entry(window).or_default();
+                    scope.state.observe(*h, 1);
+                    scope.serial = input.serial;
+                    scope.generation = input.generation;
+                }
+            }
+        }
+    }
+
+    /// Keep persistent live pad state across edits to the same show. Removed
+    /// or retimed clip windows are dropped, so edits cannot grow this cache.
+    pub fn inherit_live_input(&mut self, previous: &mut Renderer) {
+        if self.show_id == previous.show_id {
+            std::mem::swap(&mut self.clip_pads.scopes, &mut previous.clip_pads.scopes);
+            self.clip_pads.scopes.retain(|window, _| self.live_windows.contains(window));
+        }
     }
 
     /// Render the frame at `t` (show time, song start = 0). No allocation.
@@ -2540,7 +2611,7 @@ mod tests {
     /// A show with one triggered layer: clip 1..5 s of `preset`, firing `on`.
     fn triggered_show(effect: Effect, trigger: crate::model::TriggerSpec) -> Show {
         let mut s = demo();
-        s.presets.push(crate::model::Preset { id: "p".into(), name: "p".into(), effect });
+        s.presets.push(crate::model::Preset { metadata: Default::default(), id: "p".into(), name: "p".into(), effect });
         let clip = crate::model::Clip { id: "w".into(), preset_id: "p".into(), start_us: 1_000_000, duration_us: 4_000_000, ..Default::default() };
         s.layers = vec![crate::model::Layer {
             id: "t".into(),
@@ -2683,7 +2754,7 @@ mod tests {
     #[test]
     fn continuous_bursts_repeat_and_fountains_keep_going() {
         let mut s = demo();
-        s.presets.push(crate::model::Preset { id: "p".into(), name: "p".into(), effect: particles(|_| {}) });
+        s.presets.push(crate::model::Preset { metadata: Default::default(), id: "p".into(), name: "p".into(), effect: particles(|_| {}) });
         s.layers.truncate(1);
         s.layers[0].content = Content::Continuous { preset_id: "p".into() };
         let mut r = Renderer::new(&s).unwrap();
@@ -2742,7 +2813,7 @@ mod tests {
         let mut s = demo();
         let inner = |id: &str, content| Layer { id: id.into(), name: id.into(), target_id: String::new(), enabled: true, opacity: 1.0, blend: Blend::Over, content, mask: None };
         s.compounds.push(Compound {
-            id: "cp".into(),
+            metadata: Default::default(), id: "cp".into(),
             name: "cp".into(),
             duration_us: Some(2_000_000),
             layers: vec![
@@ -2910,7 +2981,7 @@ mod tests {
         let mut e = crate::edit::default_effect("builtin.meter").unwrap();
         let Effect::Meter { params, .. } = &mut e else { unreachable!() };
         params.mode = crate::model::MeterMode::Glow;
-        s.presets.push(crate::model::Preset { id: "m".into(), name: "m".into(), effect: e });
+        s.presets.push(crate::model::Preset { metadata: Default::default(), id: "m".into(), name: "m".into(), effect: e });
         s.layers.truncate(1);
         s.layers[0].content = Content::Continuous { preset_id: "m".into() };
         let mut r = Renderer::new(&s).unwrap();
@@ -2956,6 +3027,76 @@ mod tests {
         // Reset forgets everything.
         input.apply(PadEvent::Reset, None);
         assert_eq!(lit(&r.render_input(2_010_000, None, Some(&input))), 0);
+    }
+
+    #[test]
+    fn painted_clip_survives_history_expiry_and_show_edits() {
+        let mut effect = crate::edit::default_effect("builtin.pads").unwrap();
+        if let Effect::Pads { params, .. } = &mut effect {
+            params.mode = crate::model::PadsMode::Paint;
+            params.decay_ms = Some(0);
+        }
+        let mut show = triggered_show(effect, on(TriggerOn::Press));
+        if let Content::Triggered { clips, .. } = &mut show.layers[0].content {
+            clips[0].duration_us = 200_000_000;
+        }
+        let mut r = Renderer::new(&show).unwrap();
+        let mut input = PadInput::default();
+        input.apply(PadEvent::Press { x: 2, y: 3, velocity: 100, t_us: 0 }, Some(2_000_000));
+        let first = r.render_input(2_000_000, None, Some(&input));
+        assert!(lit(&first) > 0);
+        input.advance(70_000_000);
+        assert!(input.history.is_empty());
+        assert_eq!(r.render_input(72_000_000, None, Some(&input)), first);
+        let mut edited = Renderer::new(&show).unwrap();
+        edited.inherit_live_input(&mut r);
+        assert_eq!(edited.render_input(72_000_000, None, Some(&input)), first);
+        input.apply(PadEvent::Reset, None);
+        assert_eq!(lit(&edited.render_input(72_000_000, None, Some(&input))), 0);
+        show.id = "different-show".into();
+        let mut other = Renderer::new(&show).unwrap();
+        other.inherit_live_input(&mut edited);
+        assert!(other.clip_pads.scopes.is_empty());
+    }
+
+    #[test]
+    fn registered_clip_counts_a_burst_before_the_first_frame() {
+        let mut effect = crate::edit::default_effect("builtin.cycle").unwrap();
+        if let Effect::Cycle { params, .. } = &mut effect {
+            params.palette = vec!["#FF0000".into(), "#00FF00".into(), "#0000FF".into()];
+            params.scope = crate::model::CycleScope::Global;
+            params.lifetime_ms = 0;
+            params.radius = 0.0;
+        }
+        let mut show = triggered_show(effect, on(TriggerOn::Press));
+        if let Content::Triggered { clips, .. } = &mut show.layers[0].content { clips[0].duration_us = 200_000_000; }
+        let mut r = Renderer::new(&show).unwrap();
+        let mut input = PadInput::default();
+        r.configure_input(&mut input);
+        for n in 0..1025 {
+            input.apply(PadEvent::Press { x: 0, y: 0, velocity: 100, t_us: n }, Some(2_000_000));
+        }
+        input.advance(70_000_000);
+        let green = r.render_input(72_000_000, None, Some(&input));
+        assert!(green.leds[0].g > 0.0 && green.leds[0].r == 0.0, "1025 presses, not the retained 1024");
+        let mut edited = Renderer::new(&show).unwrap();
+        edited.configure_input(&mut input);
+        assert_eq!(edited.render_input(72_000_000, None, Some(&input)), green);
+        input.apply(PadEvent::Reset, None);
+        input.apply(PadEvent::Press { x: 0, y: 0, velocity: 100, t_us: 70_000_001 }, Some(72_000_000));
+        let red = edited.render_input(72_000_000, None, Some(&input));
+        assert!(red.leds[0].r > 0.0 && red.leds[0].g == 0.0);
+        // Retiming a clip bootstraps available recent inputs exactly once.
+        if let Content::Triggered { clips, .. } = &mut show.layers[0].content { clips[0].start_us = 2_000_000; }
+        let mut retimed = Renderer::new(&show).unwrap();
+        retimed.configure_input(&mut input);
+        retimed.configure_input(&mut input);
+        assert_eq!(input.scopes[&(2_000_000, 202_000_000)].state.total, 1);
+        assert_eq!(retimed.render_input(72_000_000, None, Some(&input)), red);
+        show.id = "another-show".into();
+        let other = Renderer::new(&show).unwrap();
+        other.configure_input(&mut input);
+        assert!(input.scopes.is_empty(), "different shows don't inherit clip state");
     }
 
     #[test]
@@ -3041,7 +3182,7 @@ mod tests {
                 color: Param::Keyframes(vec![Keyframe { t_us: 0, v: "#000000".into(), ease: Ease::Linear }, Keyframe { t_us: 4_000_000, v: "#FFFFFF".into(), ease: Ease::Linear }]),
             },
         };
-        s.presets.push(crate::model::Preset { id: "fade".into(), name: "fade".into(), effect: solid });
+        s.presets.push(crate::model::Preset { metadata: Default::default(), id: "fade".into(), name: "fade".into(), effect: solid });
         s.layers = vec![s.layers[0].clone()];
         if let Content::Timeline { clips } = &mut s.layers[0].content {
             clips.truncate(1);
@@ -3251,7 +3392,7 @@ mod tests {
     #[test]
     fn renderer_passes_pad_input_only_to_ripple() {
         let mut s = demo();
-        s.presets.push(crate::model::Preset { id: "ripple".into(), name: "波紋".into(), effect: crate::edit::default_effect("builtin.ripple").unwrap() });
+        s.presets.push(crate::model::Preset { metadata: Default::default(), id: "ripple".into(), name: "波紋".into(), effect: crate::edit::default_effect("builtin.ripple").unwrap() });
         if let Content::Continuous { preset_id } = &mut s.layers[2].content {
             *preset_id = "ripple".into();
         }

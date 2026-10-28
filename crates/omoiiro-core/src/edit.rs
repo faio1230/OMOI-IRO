@@ -12,6 +12,10 @@
 //! * IDs of new clips and layers are generated (`clip-N`, `layer-N`) and are
 //!   never reused within a show.
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MaterialKind { Preset, Compound }
+
 use crate::model::{
     Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Compound, ConstellationParams, Content, CycleParams, CycleScope, Effect, EdgeMode, PadsMode, PadsParams, Recording, MeterChannel, MeterMode, MeterParams, MeterSource, FrameAnchor, FramesParams, Layer, TextFont, TextMode, TextParams, LayerMask, Loss, ParticleMode, ParticlesParams, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
     StopBehavior, StrobeMode, StrobeParams, Sync, TriggerOn, TriggerSpec, Target, TimecodeSettings, TimecodeSource, Waveform, SCHEMA_VERSION,
@@ -83,6 +87,8 @@ pub enum EditCommand {
     SetLayerPreset { layer_id: String, preset_id: String },
     /// New built-in preset with default parameters.
     AddPreset { name: String, effect_type: String },
+    /// Library metadata on a preset or compound; render output is unaffected.
+    SetMaterialMetadata { material_kind: MaterialKind, material_id: String, metadata: crate::model::MaterialMetadata },
     /// Explicit shared edit: every clip and layer using the preset changes.
     SetPreset { preset_id: String, name: Option<String>, effect: Option<Effect> },
     /// Refused while any clip or layer uses the preset (the reason lists them).
@@ -180,7 +186,7 @@ pub fn new_show(name: &str) -> Show {
         render: RenderSettings { fps: 30, master_brightness: 1.0 },
         preview: Preview { bpm: 120.0 },
         targets: vec![Target { id: "main-pad".into(), name: "Launchpad X".into(), profile: GRID64_PROFILE.into() }],
-        presets: vec![Preset { id: "preset-white".into(), name: "白".into(), effect: default_effect("builtin.solid").expect("solid") }],
+        presets: vec![Preset { metadata: Default::default(), id: "preset-white".into(), name: "白".into(), effect: default_effect("builtin.solid").expect("solid") }],
         compounds: Vec::new(),
         layers: Vec::new(),
     }
@@ -469,6 +475,7 @@ impl EditCommand {
             EditCommand::AddContinuousLayer { .. } => "常時レイヤーを追加",
             EditCommand::SetLayerPreset { .. } => "レイヤーのプリセット",
             EditCommand::AddPreset { .. } => "プリセットを追加",
+            EditCommand::SetMaterialMetadata { .. } => "素材の分類",
             EditCommand::SetPreset { .. } => "プリセットを編集（共有）",
             EditCommand::DeletePreset { .. } => "プリセットを削除",
             EditCommand::InsertPreset { .. } => "プリセットを読み込み",
@@ -752,8 +759,15 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             let effect = default_effect(effect_type).ok_or_else(|| EditError::Invalid(format!("unknown effect type {effect_type:?}")))?;
             let id = fresh_id("preset", s.presets.iter().map(|p| p.id.as_str()));
             let name = if name.trim().is_empty() { id.clone() } else { name.trim().to_string() };
-            s.presets.push(Preset { id: id.clone(), name, effect });
+            s.presets.push(Preset { metadata: Default::default(), id: id.clone(), name, effect });
             out.preset_id = Some(id);
+        }
+        EditCommand::SetMaterialMetadata { material_kind, material_id, metadata } => {
+            let dest = match material_kind {
+                MaterialKind::Preset => &mut s.presets.iter_mut().find(|p| &p.id == material_id).ok_or_else(|| EditError::NotFound(material_id.clone()))?.metadata,
+                MaterialKind::Compound => &mut s.compounds.iter_mut().find(|p| &p.id == material_id).ok_or_else(|| EditError::NotFound(material_id.clone()))?.metadata,
+            };
+            *dest = metadata.clone();
         }
         EditCommand::SetPreset { preset_id, name, effect } => {
             let p = s.presets.iter_mut().find(|p| &p.id == preset_id).ok_or_else(|| EditError::NotFound(format!("preset {preset_id:?}")))?;
@@ -806,7 +820,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
                 // Copy-on-write: only this clip moves to the new preset.
                 let orig = s.presets.iter().find(|p| p.id == pid).ok_or_else(|| EditError::NotFound(format!("preset {pid:?}")))?.clone();
                 let id = fresh_id(&format!("{pid}-clip"), s.presets.iter().map(|p| p.id.as_str()));
-                s.presets.push(Preset { id: id.clone(), name: format!("{}（{}）", orig.name, clip_id), effect: orig.effect });
+                s.presets.push(Preset { metadata: orig.metadata.clone(), id: id.clone(), name: format!("{}（{}）", orig.name, clip_id), effect: orig.effect });
                 clips_mut(&mut s, &lid)?[ci].preset_id = id.clone();
                 id
             } else {
@@ -822,7 +836,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
             let layer_id = fresh_id("layer", all_layer_ids(&s));
             let name = if name.trim().is_empty() { id.clone() } else { name.trim().to_string() };
             let layer = Layer { id: layer_id.clone(), name: "1".into(), target_id: String::new(), enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Timeline { clips: Vec::new() }, mask: None };
-            s.compounds.push(Compound { id: id.clone(), name, duration_us: Some(4_000_000), layers: vec![layer] });
+            s.compounds.push(Compound { metadata: Default::default(), id: id.clone(), name, duration_us: Some(4_000_000), layers: vec![layer] });
             out.compound_id = Some(id);
             out.layer_id = Some(layer_id);
         }
@@ -911,7 +925,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
                 }
                 let Some(orig) = s.presets.iter().find(|p| p.id == pid).cloned() else { return pid.to_string() };
                 let id = fresh_id(&format!("{pid}-tint"), s.presets.iter().map(|p| p.id.as_str()));
-                s.presets.push(Preset { id: id.clone(), name: format!("{}（{tint}）", orig.name), effect: crate::render::tinted(&orig.effect, rgb) });
+                s.presets.push(Preset { metadata: orig.metadata.clone(), id: id.clone(), name: format!("{}（{tint}）", orig.name), effect: crate::render::tinted(&orig.effect, rgb) });
                 copies.insert(pid.to_string(), id.clone());
                 id
             };
@@ -997,7 +1011,7 @@ pub fn apply(show: &Show, cmd: &EditCommand, snap: Snap) -> Result<(Show, EditOu
                 }
             }
             let name = if asset.name().trim().is_empty() { id.clone() } else { asset.name().trim().to_string() };
-            s.presets.push(Preset { id: id.clone(), name, effect: Effect::Frames { version: 1, params } });
+            s.presets.push(Preset { metadata: Default::default(), id: id.clone(), name, effect: Effect::Frames { version: 1, params } });
             out.preset_id = Some(id);
         }
         EditCommand::SetSync { beat_source, mtc_output_enabled } => {
@@ -1128,6 +1142,33 @@ mod tests {
     fn clip<'a>(s: &'a Show, id: &str) -> &'a Clip {
         let (lid, ci) = find_clip(s, id).unwrap();
         &all_layers(s).find(|l| l.id == lid).unwrap().content.clips().unwrap()[ci]
+    }
+
+    #[test]
+    fn material_metadata_history_validation_and_copy() {
+        use crate::model::MaterialMetadata;
+        let mut h = History::new(new_show("Library"));
+        let m = MaterialMetadata { category: "タップ".into(), tags: vec!["暖色".into(), "サビ".into()], favorite: true };
+        let cmd = EditCommand::SetMaterialMetadata { material_kind: MaterialKind::Preset, material_id: "preset-white".into(), metadata: m.clone() };
+        h.apply(&cmd, Snap::None).unwrap();
+        assert_eq!(h.current().presets[0].metadata, m);
+        assert!(h.dirty());
+        h.undo(); assert!(h.current().presets[0].metadata.is_empty());
+        h.redo(); assert_eq!(h.current().presets[0].metadata, m);
+        let cp = h.apply(&EditCommand::AddCompound { name: "複合".into() }, Snap::None).unwrap().compound_id.unwrap();
+        h.apply(&EditCommand::SetMaterialMetadata { material_kind: MaterialKind::Compound, material_id: cp, metadata: m.clone() }, Snap::None).unwrap();
+        assert_eq!(h.current().compounds[0].metadata, m);
+        let before = h.current().clone();
+        for tags in [vec!["same".into(), "SAME".into()], vec![" ".into()], vec!["a".repeat(33)], vec!["x".into(); 25]] {
+            assert!(h.apply(&EditCommand::SetMaterialMetadata { material_kind: MaterialKind::Preset, material_id: "preset-white".into(), metadata: MaterialMetadata { tags, ..m.clone() } }, Snap::None).is_err());
+            assert_eq!(h.current(), &before);
+        }
+        assert!(h.apply(&EditCommand::SetMaterialMetadata { material_kind: MaterialKind::Preset, material_id: "missing".into(), metadata: m.clone() }, Snap::None).is_err());
+        let layer = h.apply(&EditCommand::AddLayer { name: "Timeline".into(), index: None }, Snap::None).unwrap().layer_id.unwrap();
+        let first = h.apply(&EditCommand::AddClip { layer_id: layer.clone(), preset_id: "preset-white".into(), start_us: 0, duration_us: 1_000_000 }, Snap::None).unwrap().clip_id.unwrap();
+        h.apply(&EditCommand::AddClip { layer_id: layer, preset_id: "preset-white".into(), start_us: 1_000_000, duration_us: 1_000_000 }, Snap::None).unwrap();
+        let copy = h.apply(&EditCommand::EditClipEffect { clip_id: first, effect: default_effect("builtin.chase").unwrap() }, Snap::None).unwrap().preset_id.unwrap();
+        assert_eq!(h.current().presets.iter().find(|p| p.id == copy).unwrap().metadata, m);
     }
 
     #[test]
@@ -1367,6 +1408,20 @@ mod tests {
         assert_eq!((clip(&s, &id).start_us, clip(&s, &id).duration_us), (8_000_000, 2_000_000), "as long as the recording");
         let (s, _) = apply(&s, &EditCommand::SetClipRecording { clip_id: id.clone(), recording: Some(rec.clone()), looping: Some(true) }, Snap::None).unwrap();
         assert_eq!(clip(&s, &id).looping, Some(true));
+        let mut history = History::new(s.clone());
+        let mut longer = rec.clone();
+        longer.length_us = Some(4_000_000);
+        history.apply(&EditCommand::SetClipRecording { clip_id: id.clone(), recording: Some(longer), looping: None }, Snap::None).unwrap();
+        assert_eq!(clip(history.current(), &id).recording.as_ref().unwrap().length(), 4_000_000);
+        assert_eq!(clip(history.current(), &id).duration_us, 2_000_000, "loop period editing leaves the placed clip unchanged");
+        assert_eq!(clip(history.current(), &id).looping, Some(true));
+        assert!(history.undo());
+        assert_eq!(clip(history.current(), &id).recording.as_ref().unwrap().length(), 2_000_000);
+        assert!(history.redo());
+        assert_eq!(clip(history.current(), &id).recording.as_ref().unwrap().length(), 4_000_000);
+        let mut invalid = rec.clone(); invalid.length_us = Some(0);
+        assert!(history.apply(&EditCommand::SetClipRecording { clip_id: id.clone(), recording: Some(invalid), looping: None }, Snap::None).is_err());
+        assert_eq!(clip(history.current(), &id).recording.as_ref().unwrap().length(), 4_000_000);
         let (s, _) = apply(&s, &EditCommand::SetClipRecording { clip_id: id.clone(), recording: None, looping: None }, Snap::None).unwrap();
         assert_eq!((clip(&s, &id).recording.is_none(), clip(&s, &id).looping), (true, None), "loop goes with the recording");
         // Not on a timeline layer.

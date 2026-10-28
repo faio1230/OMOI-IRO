@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://omoi-iro.invalid/schemas/show.schema.json",
-  "title": "OMOI-IRO Show 0.1.3",
-  "description": "Show file schema. Cross-reference, ID uniqueness, drop-frame and interval checks require semantic validation. 0.1.0, 0.1.1 and 0.1.2 files are read by migration (version only; 0.1.3 adds the triggered layer, keyframed effect parameters, regions custom, builtin.path, builtin.shape (with wipe and invert) layer masks, builtin.particles, compounds, builtin.frames, builtin.text, builtin.pads / cycle / constellation, recordings and builtin.meter; 0.1.2 adds builtin.strobe, builtin.noise, builtin.ripple, builtin.rain, builtin.wave, builtin.orb, builtin.regions, builtin.tap_glow, builtin.cross and the optional chase reverse, ripple shape / interval trigger, wave phase and orb orbit_phase).",
+  "title": "OMOI-IRO Show 0.1.4",
+  "description": "0.1.4 adds optional material metadata (category, tags, favorite). Earlier versions migrate on load. Show file schema. Cross-reference, ID uniqueness, drop-frame and interval checks require semantic validation. 0.1.0, 0.1.1 and 0.1.2 files are read by migration (version only; 0.1.3 adds the triggered layer, keyframed effect parameters, regions custom, builtin.path, builtin.shape (with wipe and invert) layer masks, builtin.particles, compounds, builtin.frames, builtin.text, builtin.pads / cycle / constellation, recordings and builtin.meter; 0.1.2 adds builtin.strobe, builtin.noise, builtin.ripple, builtin.rain, builtin.wave, builtin.orb, builtin.regions, builtin.tap_glow, builtin.cross and the optional chase reverse, ripple shape / interval trigger, wave phase and orb orbit_phase).",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -24,7 +24,7 @@
       "maxLength": 1024
     },
     "schema_version": {
-      "const": "0.1.3"
+      "const": "0.1.4"
     },
     "id": {
       "$ref": "#/$defs/id"
@@ -3065,6 +3065,9 @@
         },
         "effect": {
           "$ref": "#/$defs/effect"
+        },
+        "metadata": {
+          "$ref": "#/$defs/materialMetadata"
         }
       }
     },
@@ -3520,6 +3523,9 @@
           },
           "minItems": 1,
           "maxItems": 4
+        },
+        "metadata": {
+          "$ref": "#/$defs/materialMetadata"
         }
       }
     },
@@ -3572,6 +3578,29 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 9007199254740991
+        }
+      }
+    },
+    "materialMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "type": "string",
+          "maxLength": 48
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 24,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          }
+        },
+        "favorite": {
+          "type": "boolean"
         }
       }
     }

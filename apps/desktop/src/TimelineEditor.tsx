@@ -4,9 +4,10 @@
 // one command. Nothing here moves the show clock.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as ipc from "./ipc/commands";
-import type { ClipDto, EditCommand, EditorView, LayerDto, Snap } from "./ipc/types";
+import type { ClipDto, EditCommand, EditorView, LayerDto, Recording, Snap } from "./ipc/types";
 import { LayerInspector, PresetPanel, ShowSyncPanel, TRIGGER_JA, type PresetEditMode } from "./ShowInspectors";
 import UnsavedChoice from "./UnsavedChoice";
+import MaterialBrowser from "./MaterialBrowser";
 import { CompoundClipFields, CompoundPanel } from "./Compounds";
 
 const ROW_H = 46;
@@ -25,6 +26,21 @@ function NumField(props: { label: string; value: string; onChange: (v: string) =
       <input value={props.value} onChange={(e) => props.onChange(e.target.value)} inputMode="decimal" />
       {props.hint && <span className="hint">{props.hint}</span>}
     </label>
+  );
+}
+
+function RecordingLength({ clipId, recording, apply }: { clipId: string; recording: Recording; apply: (c: EditCommand) => void }) {
+  const lengthUs = recording.length_us ?? Math.max(1, ...recording.events.map((e) => e.t_us + (e.duration_us ?? 0)));
+  const [seconds, setSeconds] = useState(String(lengthUs / 1e6));
+  useEffect(() => setSeconds(String(lengthUs / 1e6)), [clipId, lengthUs]);
+  const value = Math.round(Number(seconds) * 1e6);
+  const valid = seconds.trim() !== "" && Number.isSafeInteger(value) && value > 0;
+  return (
+    <div className="actions">
+      <NumField label="録音ループ長（秒）" value={seconds} onChange={setSeconds} hint="配置クリップの長さは変わりません。" />
+      <button disabled={!valid || value === lengthUs} onClick={() => apply({ op: "set_clip_recording", clip_id: clipId, recording: { ...recording, length_us: value }, looping: null })}>ループ長を適用</button>
+      {!valid && <span className="error">0より大きい秒数を入力してください。</span>}
+    </div>
   );
 }
 
@@ -239,7 +255,25 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
         onCancel={() => { setPending(null); setError(null); }}
       />
     )}
-    <section className="panel timeline-panel">
+    <MaterialBrowser key={view.path} view={view} apply={apply}
+      onPick={(kind, id) => { if (kind === "preset") setPresetId(id); }}
+      onEdit={(kind, id) => {
+        if (kind === "preset") setPresetMode({ kind: "shared", presetId: id });
+        else { setScope(id); setSelClip(null); setSelLayer(null); }
+        requestAnimationFrame(() => document.getElementById(kind === "preset" ? "preset-editor" : "timeline-editor")?.scrollIntoView({ block: "start", behavior: "instant" }));
+      }}
+      targetName={layers.find(l => l.id === selLayer)?.name ?? null}
+      canPlace={kind => !!layers.find(l => l.id === selLayer && (kind === "compound" ? !scope && l.kind === "timeline" : l.kind !== "continuous"))}
+      onPlace={(kind, id) => {
+        const target = layers.find(l => l.id === selLayer);
+        if (!target) return;
+        const end = target.clips.reduce((n, c) => Math.max(n, c.start_us + c.duration_us), 0);
+        const start_us = Math.max(0, Math.round(playhead ?? end));
+        if (kind === "compound") apply({ op: "add_compound_clip", layer_id: target.id, compound_id: id, start_us, duration_us: null });
+        else apply({ op: "add_clip", layer_id: target.id, preset_id: id, start_us, duration_us: DEFAULT_CLIP_US });
+      }}
+    />
+    <section id="timeline-editor" className="panel timeline-panel">
       <h2>タイムライン：{view.name}{view.path ? "" : "（新規・未保存）"}{compound ? ` ／ 素材「${compound.name}」の中` : ""}</h2>
       <div className="tl-toolbar">
         <button disabled={!view.can_undo} onClick={() => call(() => ipc.editorUndo())} title="Ctrl+Z">元に戻す{view.undo_label ? `（${view.undo_label}）` : ""}</button>
@@ -395,6 +429,7 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
               </select>
             </label>
           </div>
+          {selected.clip.recording && <RecordingLength clipId={selected.clip.id} recording={selected.clip.recording} apply={apply} />}
           <div className="actions">
             <button className="primary" onClick={applyForm}>数値を適用</button>
             {!selected.clip.compound_id && <button onClick={() => setPresetMode({ kind: "clip", clipId: selected.clip.id, presetId: selected.clip.preset_id })}>このクリップだけ効果を編集</button>}

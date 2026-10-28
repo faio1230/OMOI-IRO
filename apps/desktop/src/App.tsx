@@ -312,10 +312,10 @@ export default function App() {
     <div className="app">
       <header>
         <h1>OMOI-IRO</h1>
-        <span className="sub">{info ? `v${info.version}` : ""}</span>
+        <span className="sub mono">LIVE VISUAL CONTROL {info ? ` / v${info.version}` : ""}</span>
         <nav className="tabs">
           <button className={tab === "perform" ? "on" : ""} onClick={() => setTab("perform")}>演奏</button>
-          <button className={tab === "timeline" ? "on" : ""} onClick={() => setTab("timeline")}>タイムライン</button>
+          <button className={tab === "timeline" ? "on" : ""} onClick={() => setTab("timeline")}>素材・タイムライン</button>
           <button className={tab === "connections" ? "on" : ""} onClick={() => setTab("connections")}>接続設定</button>
         </nav>
         {status?.document && (
@@ -358,7 +358,7 @@ export default function App() {
       {tab === "connections" ? (
         <ConnectionSettings running={running} />
       ) : tab === "timeline" ? (
-        <div className="columns">
+        <div className="columns editor-columns">
           <div className="col">
             <TimelineEditor showPath={req.show_path} playheadUs={running ? s?.show_time_us ?? null : null} docKey={`${s?.document?.path ?? ""}|${s?.document?.dirty ?? ""}`} />
           </div>

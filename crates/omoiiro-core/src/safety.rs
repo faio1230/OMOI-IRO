@@ -353,7 +353,7 @@ mod tests {
         assert_eq!((w[0].kind, w[0].hz), ("pulse", 3.33));
         assert!(w[0].reason.contains("200.0 bpm"));
         // A fast chase.
-        s.presets.push(Preset { id: "strobe".into(), name: "速い流れ".into(), effect: Effect::Chase { version: 1, params: ChaseParams { color: "#FFFFFF".to_string().into(), period_us: 500_000.into(), width: 1.into(), axis: crate::model::Axis::X.into(), reverse: None } } });
+        s.presets.push(Preset { metadata: Default::default(), id: "strobe".into(), name: "速い流れ".into(), effect: Effect::Chase { version: 1, params: ChaseParams { color: "#FFFFFF".to_string().into(), period_us: 500_000.into(), width: 1.into(), axis: crate::model::Axis::X.into(), reverse: None } } });
         if let Content::Timeline { clips } = &mut s.layers[0].content {
             clips[0].preset_id = "strobe".into();
         }
@@ -380,7 +380,7 @@ mod tests {
         let Effect::Strobe { version, mut params } = strobe else { unreachable!() };
         params.mode = crate::model::StrobeMode::Hz.into();
         params.rate_hz = 12.0.into();
-        s.presets.push(Preset { id: "fast".into(), name: "速い点滅".into(), effect: Effect::Strobe { version, params } });
+        s.presets.push(Preset { metadata: Default::default(), id: "fast".into(), name: "速い点滅".into(), effect: Effect::Strobe { version, params } });
         if let Content::Timeline { clips } = &mut s.layers[0].content {
             clips[0].preset_id = "fast".into();
         }
@@ -436,7 +436,7 @@ mod tests {
         let Effect::Wave { version, mut params } = default_effect("builtin.wave").unwrap() else { unreachable!() };
         params.speed = (-3.0).into();
         let mut s = demo();
-        s.presets.push(Preset { id: "wave".into(), name: "速い波".into(), effect: Effect::Wave { version, params } });
+        s.presets.push(Preset { metadata: Default::default(), id: "wave".into(), name: "速い波".into(), effect: Effect::Wave { version, params } });
         if let Content::Timeline { clips } = &mut s.layers[0].content {
             clips[0].preset_id = "wave".into();
         }
@@ -456,7 +456,7 @@ mod tests {
         params.speed = 1.0.into();
         assert_eq!(effect_flash(&Effect::Path { version, params: params.clone() }), Some(FlashSource::Path { hz: 14.0 }));
         let mut s = demo();
-        s.presets.push(Preset { id: "path".into(), name: "速い経路".into(), effect: Effect::Path { version, params } });
+        s.presets.push(Preset { metadata: Default::default(), id: "path".into(), name: "速い経路".into(), effect: Effect::Path { version, params } });
         if let Content::Timeline { clips } = &mut s.layers[0].content {
             clips[0].preset_id = "path".into();
         }
@@ -473,9 +473,9 @@ mod tests {
         let Effect::Strobe { version, mut params } = crate::edit::default_effect("builtin.strobe").unwrap() else { unreachable!() };
         params.mode = crate::model::StrobeMode::Hz.into();
         params.rate_hz = 2.0.into();
-        s.presets.push(Preset { id: "st".into(), name: "st".into(), effect: Effect::Strobe { version, params } });
+        s.presets.push(Preset { metadata: Default::default(), id: "st".into(), name: "st".into(), effect: Effect::Strobe { version, params } });
         s.compounds.push(Compound {
-            id: "cp".into(),
+            metadata: Default::default(), id: "cp".into(),
             name: "cp".into(),
             duration_us: Some(1_000_000),
             layers: vec![Layer { id: "in".into(), name: "in".into(), target_id: String::new(), enabled: true, opacity: 1.0, blend: Blend::Over, content: Content::Continuous { preset_id: "st".into() }, mask: None }],
@@ -498,7 +498,7 @@ mod tests {
         params.mode = crate::model::TextMode::Sequential;
         assert_eq!(effect_flash(&Effect::Text { version, params }), None);
         let mut s = demo();
-        s.presets.push(Preset { id: "f".into(), name: "f".into(), effect: crate::edit::default_effect("builtin.text").unwrap() });
+        s.presets.push(Preset { metadata: Default::default(), id: "f".into(), name: "f".into(), effect: crate::edit::default_effect("builtin.text").unwrap() });
         if let Content::Timeline { clips } = &mut s.layers[0].content {
             clips[0].preset_id = "f".into();
         }

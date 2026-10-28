@@ -33,6 +33,7 @@ pub mod follow;
 pub mod link;
 pub mod output;
 pub mod preview;
+pub mod material_preview;
 pub mod scheduler;
 pub mod session;
 pub mod settings;

@@ -270,7 +270,11 @@ export interface ListenResult {
 
 export type Snap = "none" | "second" | "frame30";
 
+export interface MaterialMetadata { category: string; tags: string[]; favorite: boolean }
+export type MaterialKind = "preset" | "compound";
+
 export type EditCommand =
+  | { op: "set_material_metadata"; material_kind: MaterialKind; material_id: string; metadata: MaterialMetadata }
   | { op: "add_clip"; layer_id: string; preset_id: string; start_us: number; duration_us: number }
   | { op: "move_clip"; clip_id: string; start_us: number; to_layer_id: string | null }
   | { op: "resize_clip"; clip_id: string; duration_us: number }
@@ -381,6 +385,7 @@ export interface Recording { events: RecordedPad[]; length_us?: number }
 
 /** A compound: inner layers (no target) and the clips placing it. */
 export interface CompoundDto {
+  metadata: MaterialMetadata;
   id: string;
   name: string;
   duration_us: number | null;
@@ -418,6 +423,7 @@ export interface TriggerSpec {
 }
 
 export interface PresetDto {
+  metadata: MaterialMetadata;
   id: string;
   name: string;
   effect_type: EffectType;

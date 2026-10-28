@@ -10,10 +10,10 @@
 use crate::time::FrameRate;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-pub const SCHEMA_VERSION: &str = "0.1.3";
+pub const SCHEMA_VERSION: &str = "0.1.4";
 /// Older versions the store migrates on load (additive changes: only the
 /// version is rewritten; 0.1.2 adds effect types, 0.1.3 the triggered layer).
-pub const MIGRATABLE_VERSIONS: &[&str] = &["0.1.0", "0.1.1", "0.1.2"];
+pub const MIGRATABLE_VERSIONS: &[&str] = &["0.1.0", "0.1.1", "0.1.2", "0.1.3"];
 
 /// Serialize an `f64` as an integer when it is one (1.0 -> `1`, 0.6 -> `0.6`).
 pub fn ser_num<S: Serializer>(v: &f64, s: S) -> Result<S::Ok, S::Error> {
@@ -327,6 +327,8 @@ pub struct Show {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Compound {
+    #[serde(default, skip_serializing_if = "MaterialMetadata::is_empty")]
+    pub metadata: MaterialMetadata,
     pub id: String,
     pub name: String,
     /// Own length; absent = the latest end of its inner clips.
@@ -426,9 +428,23 @@ pub struct Target {
     pub profile: String,
 }
 
+/// Material organization; ignored by rendering.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct MaterialMetadata {
+    pub category: String,
+    pub tags: Vec<String>,
+    pub favorite: bool,
+}
+impl MaterialMetadata {
+    pub fn is_empty(&self) -> bool { self.category.is_empty() && self.tags.is_empty() && !self.favorite }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Preset {
+    #[serde(default, skip_serializing_if = "MaterialMetadata::is_empty")]
+    pub metadata: MaterialMetadata,
     pub id: String,
     pub name: String,
     pub effect: Effect,

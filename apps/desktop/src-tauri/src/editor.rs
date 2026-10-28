@@ -55,6 +55,7 @@ pub struct ClipDto {
 /// A compound with its inner layers (same shape as the show's layers).
 #[derive(Debug, Serialize)]
 pub struct CompoundDto {
+    pub metadata: omoiiro_core::model::MaterialMetadata,
     pub id: String,
     pub name: String,
     /// Own length, or None = the latest inner clip end.
@@ -86,6 +87,7 @@ pub struct LayerDto {
 
 #[derive(Debug, Serialize)]
 pub struct PresetDto {
+    pub metadata: omoiiro_core::model::MaterialMetadata,
     pub id: String,
     pub name: String,
     pub effect_type: &'static str,
@@ -228,6 +230,7 @@ fn view(doc: &EditorDoc, runtime_revision: Option<u64>, outcome: Option<EditOutc
             .compounds
             .iter()
             .map(|c| CompoundDto {
+                metadata: c.metadata.clone(),
                 id: c.id.clone(),
                 name: c.name.clone(),
                 duration_us: c.duration_us,
@@ -241,7 +244,7 @@ fn view(doc: &EditorDoc, runtime_revision: Option<u64>, outcome: Option<EditOutc
             .iter()
             .map(|p| {
                 let (used_by_clips, used_by_layers) = preset_users(s, &p.id);
-                PresetDto { id: p.id.clone(), name: p.name.clone(), effect_type: p.effect.type_name(), color: color_of(&p.effect), effect: p.effect.clone(), used_by_clips, used_by_layers }
+                PresetDto { metadata: p.metadata.clone(), id: p.id.clone(), name: p.name.clone(), effect_type: p.effect.type_name(), color: color_of(&p.effect), effect: p.effect.clone(), used_by_clips, used_by_layers }
             })
             .collect(),
         dirty: doc.history.dirty(),
@@ -417,8 +420,8 @@ pub fn recording_stop(ed: State<'_, EditorState>, app: State<'_, AppState>, ps: 
         Some(s) => s.stop_recording(),
         None => return Err(CommandError::new("not_running", "the runtime is not running")),
     };
-    let (start, events) = taken.ok_or_else(|| CommandError::new("recording", "録音していない"))?;
-    let recording = omoiiro_core::history::recording_from(&events, start);
+    let (start, stop, events) = taken.ok_or_else(|| CommandError::new("recording", "録音していない"))?;
+    let recording = omoiiro_core::history::recording_until(&events, start, stop);
     if recording.events.is_empty() {
         return Err(CommandError::new("recording", "録音中にパッドが押されなかった（クリップは作らない）"));
     }
@@ -564,4 +567,17 @@ mod tests {
         assert!(p.used_by_clips.is_empty() && p.used_by_layers.is_empty());
         assert_eq!(v.presets.iter().find(|p| p.id == "sweep-cyan").unwrap().used_by_clips, vec!["intro-sweep".to_string()]);
     }
+}
+
+/// Samples run on a worker after taking a snapshot, so browsing never holds
+/// the editor lock during rendering and never changes the output preview.
+#[tauri::command]
+pub async fn material_preview(ed: State<'_, EditorState>, material_kind: omoiiro_core::edit::MaterialKind, material_id: String) -> CmdResult<Vec<Vec<u8>>> {
+    let show = {
+        let guard = ed.doc.lock().unwrap();
+        guard.as_ref().ok_or_else(|| CommandError::new("no_document", "open a show first"))?.history.current().clone()
+    };
+    tauri::async_runtime::spawn_blocking(move || omoiiro_runtime::material_preview::sample(&show, material_kind, &material_id))
+        .await.map_err(|e| CommandError::new("preview", e.to_string()))?
+        .map_err(|e| CommandError::new("preview", e))
 }

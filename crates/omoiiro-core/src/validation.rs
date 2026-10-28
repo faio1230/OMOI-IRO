@@ -62,6 +62,19 @@ impl Ctx {
         }
     }
 
+    fn metadata(&mut self, m: &crate::model::MaterialMetadata, pointer: String) {
+        if m.category.chars().count() > 48 || m.category != m.category.trim() {
+            self.push(format!("{pointer}/category"), "category must be trimmed and at most 48 characters");
+        }
+        if m.tags.len() > 24 { self.push(format!("{pointer}/tags"), "at most 24 tags"); }
+        let mut seen = HashSet::new();
+        for (i, tag) in m.tags.iter().enumerate() {
+            if tag.is_empty() || tag.chars().count() > 32 || tag != tag.trim() || !seen.insert(tag.to_lowercase()) {
+                self.push(format!("{pointer}/tags/{i}"), "tags must be unique, trimmed and 1..32 characters");
+            }
+        }
+    }
+
     fn name(&mut self, s: &str, pointer: String) {
         let n = s.chars().count();
         if n == 0 || n > MAX_NAME_CHARS {
@@ -183,6 +196,7 @@ pub fn validate(show: &Show) -> Vec<Issue> {
             c.push(format!("{p}/id"), format!("duplicate preset id {:?}", pr.id));
         }
         c.name(&pr.name, format!("{p}/name"));
+        c.metadata(&pr.metadata, format!("{p}/metadata"));
         let e = format!("{p}/effect");
         if pr.effect.version() != 1 {
             c.push(format!("{e}/version"), format!("{} supports version 1 (got {})", pr.effect.type_name(), pr.effect.version()));
@@ -703,6 +717,7 @@ pub fn validate(show: &Show) -> Vec<Issue> {
             c.push(format!("{p}/id"), format!("duplicate compound id {:?}", cp.id));
         }
         c.name(&cp.name, format!("{p}/name"));
+        c.metadata(&cp.metadata, format!("{p}/metadata"));
         if !(1..=MAX_COMPOUND_LAYERS).contains(&cp.layers.len()) {
             c.push(format!("{p}/layers"), format!("1..={MAX_COMPOUND_LAYERS} inner layers (got {})", cp.layers.len()));
         }
@@ -883,7 +898,7 @@ mod tests {
             params.radius = Param::Keyframes(vec![Keyframe { t_us: 0, v: 1.0, ease: Ease::Linear }, Keyframe { t_us: 10, v: 9.0, ease: Ease::Linear }]);
             params.repeats = Param::Keyframes(vec![Keyframe { t_us: 0, v: 1, ease: Ease::Linear }, Keyframe { t_us: 10, v: 3, ease: Ease::Linear }]);
         }
-        s.presets.push(crate::model::Preset { id: "tg".into(), name: "tg".into(), effect: tg });
+        s.presets.push(crate::model::Preset { metadata: Default::default(), id: "tg".into(), name: "tg".into(), effect: tg });
         let e = validate(&s);
         assert!(e.iter().any(|i| i.pointer.ends_with("/params/radius")), "the 9.0 keyframe is out of range: {e:?}");
         assert!(e.iter().any(|i| i.pointer.ends_with("/params/repeats") && i.message.contains("step")), "{e:?}");
@@ -893,7 +908,7 @@ mod tests {
     fn triggered_layers_check_their_trigger_and_effects() {
         use crate::model::{Clip, Layer, Preset};
         let mut s = crate::model::demo_for_tests();
-        s.presets.push(Preset { id: "r".into(), name: "r".into(), effect: crate::edit::default_effect("builtin.ripple").unwrap() });
+        s.presets.push(Preset { metadata: Default::default(), id: "r".into(), name: "r".into(), effect: crate::edit::default_effect("builtin.ripple").unwrap() });
         let clip = |p: &str| Clip { id: format!("c-{p}"), preset_id: p.into(), start_us: 0, duration_us: 1_000_000, ..Default::default() };
         let layer = |p: &str, on| Layer {
             id: "trig".into(),
@@ -1011,7 +1026,7 @@ mod tests {
         let mut add = |t: &str, f: &dyn Fn(&mut Effect)| {
             let mut e = crate::edit::default_effect(t).unwrap();
             f(&mut e);
-            s.presets.push(Preset { id: format!("p{}", s.presets.len()), name: "x".into(), effect: e });
+            s.presets.push(Preset { metadata: Default::default(), id: format!("p{}", s.presets.len()), name: "x".into(), effect: e });
         };
         add("builtin.path", &|e| {
             let Effect::Path { params, .. } = e else { unreachable!() };
@@ -1048,7 +1063,7 @@ mod tests {
         // The defaults are valid.
         let mut ok = demo();
         for t in ["builtin.path", "builtin.shape"] {
-            ok.presets.push(Preset { id: t.replace("builtin.", ""), name: t.into(), effect: crate::edit::default_effect(t).unwrap() });
+            ok.presets.push(Preset { metadata: Default::default(), id: t.replace("builtin.", ""), name: t.into(), effect: crate::edit::default_effect(t).unwrap() });
         }
         assert!(pointers(&ok).is_empty(), "{:?}", pointers(&ok));
     }
@@ -1058,7 +1073,7 @@ mod tests {
         use crate::model::{Effect, Preset};
         let mut e = crate::edit::default_effect("builtin.particles").unwrap();
         let mut s = demo();
-        s.presets.push(Preset { id: "pt".into(), name: "x".into(), effect: e.clone() });
+        s.presets.push(Preset { metadata: Default::default(), id: "pt".into(), name: "x".into(), effect: e.clone() });
         assert!(pointers(&s).is_empty(), "defaults are valid: {:?}", pointers(&s));
         let Effect::Particles { params, .. } = &mut e else { unreachable!() };
         params.count = Some(65.into());
@@ -1082,7 +1097,7 @@ mod tests {
         let inner = |id: &str, content| Layer { id: id.into(), name: id.into(), target_id: String::new(), enabled: true, opacity: 1.0, blend: crate::model::Blend::Over, content, mask: None };
         let mut s = demo();
         s.compounds.push(Compound {
-            id: "cp".into(),
+            metadata: Default::default(), id: "cp".into(),
             name: "cp".into(),
             duration_us: None,
             layers: vec![
@@ -1114,7 +1129,7 @@ mod tests {
         }
         // Without clips a compound needs its own length.
         let mut s = demo();
-        s.compounds.push(Compound { id: "e".into(), name: "e".into(), duration_us: None, layers: vec![inner("in", Content::Timeline { clips: vec![] })] });
+        s.compounds.push(Compound { metadata: Default::default(), id: "e".into(), name: "e".into(), duration_us: None, layers: vec![inner("in", Content::Timeline { clips: vec![] })] });
         assert_eq!(pointers(&s), vec!["/compounds/0/duration_us".to_string()]);
     }
 
@@ -1132,8 +1147,8 @@ mod tests {
         params.text = "おもいいろ".into();
         params.speed = 20.0;
         params.gap = 3;
-        s.presets.push(Preset { id: "f".into(), name: "f".into(), effect: f });
-        s.presets.push(Preset { id: "t".into(), name: "t".into(), effect: t });
+        s.presets.push(Preset { metadata: Default::default(), id: "f".into(), name: "f".into(), effect: f });
+        s.presets.push(Preset { metadata: Default::default(), id: "t".into(), name: "t".into(), effect: t });
         let p = pointers(&s);
         for want in ["/presets/3/effect/params/frames/1", "/presets/3/effect/params/fps", "/presets/3/effect/params/color", "/presets/4/effect/params/text", "/presets/4/effect/params/speed", "/presets/4/effect/params/gap"] {
             assert!(p.contains(&want.to_string()), "{want} in {p:?}");
@@ -1145,9 +1160,9 @@ mod tests {
         use crate::model::{CycleParams, CycleScope, ConstellationParams, PadsMode, PadsParams, Preset, RecordedPad, Recording, RippleFade};
         let mut s = demo();
         let pads = PadsParams { mode: PadsMode::Heat, color_low: None, color_high: Some("red".into()), color: None, palette: Some(vec!["#FFFFFF".into()]), gain: Some(2.0), decay_ms: Some(0), attack_ms: None, sustain_ms: None, release_ms: None, size: None };
-        s.presets.push(Preset { id: "p".into(), name: "p".into(), effect: Effect::Pads { version: 1, params: pads } });
-        s.presets.push(Preset { id: "c".into(), name: "c".into(), effect: Effect::Cycle { version: 1, params: CycleParams { palette: vec!["#FFFFFF".into()], scope: CycleScope::Global, lifetime_ms: 20_000, radius: 4.0 } } });
-        s.presets.push(Preset { id: "k".into(), name: "k".into(), effect: Effect::Constellation { version: 1, params: ConstellationParams { color: "#FFFFFF".into(), stroke: 3.0, lifetime_ms: 100, fade: RippleFade::Linear, max_segments: 20, dots: false } } });
+        s.presets.push(Preset { metadata: Default::default(), id: "p".into(), name: "p".into(), effect: Effect::Pads { version: 1, params: pads } });
+        s.presets.push(Preset { metadata: Default::default(), id: "c".into(), name: "c".into(), effect: Effect::Cycle { version: 1, params: CycleParams { palette: vec!["#FFFFFF".into()], scope: CycleScope::Global, lifetime_ms: 20_000, radius: 4.0 } } });
+        s.presets.push(Preset { metadata: Default::default(), id: "k".into(), name: "k".into(), effect: Effect::Constellation { version: 1, params: ConstellationParams { color: "#FFFFFF".into(), stroke: 3.0, lifetime_ms: 100, fade: RippleFade::Linear, max_segments: 20, dots: false } } });
         if let Content::Timeline { clips } = &mut s.layers[0].content {
             clips[0].recording = Some(Recording { events: vec![RecordedPad { t_us: 5, x: 8, y: 0, velocity: 0, duration_us: None }, RecordedPad { t_us: 1, x: 0, y: 0, velocity: 1, duration_us: None }], length_us: Some(0) });
         }

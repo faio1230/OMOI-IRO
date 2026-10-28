@@ -84,3 +84,5 @@ export function errorText(e: unknown): string {
   }
   return String(e);
 }
+
+export const materialPreview = (materialKind: "preset" | "compound", materialId: string) => invoke<number[][]>("material_preview", { materialKind, materialId });

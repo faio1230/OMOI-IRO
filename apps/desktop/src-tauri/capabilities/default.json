@@ -29,6 +29,7 @@
     "allow-settings-listen",
     "allow-editor-open",
     "allow-editor-view",
+    "allow-material-preview",
     "allow-editor-apply",
     "allow-editor-undo",
     "allow-editor-redo",

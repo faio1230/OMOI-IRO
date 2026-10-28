@@ -102,12 +102,17 @@ impl LocalPreview {
     /// Validate and compile `show` (on the caller's thread).
     pub fn new(show: &Show) -> Result<LocalPreview, Vec<Issue>> {
         let renderer = Renderer::new(show)?;
-        Ok(LocalPreview { renderer, clock: LocalClock::new(show_length_us(show)), bpm: show.preview.bpm, show_bpm: show.preview.bpm, pads: PadInput::default() })
+        let mut pads = PadInput::default();
+        renderer.configure_input(&mut pads);
+        Ok(LocalPreview { renderer, clock: LocalClock::new(show_length_us(show)), bpm: show.preview.bpm, show_bpm: show.preview.bpm, pads })
     }
 
     /// Replace the show (after an edit), keeping the clock and the preview tempo.
     pub fn replace_show(&mut self, show: &Show) -> Result<(), Vec<Issue>> {
-        self.renderer = Renderer::new(show)?;
+        let mut renderer = Renderer::new(show)?;
+        renderer.inherit_live_input(&mut self.renderer);
+        renderer.configure_input(&mut self.pads);
+        self.renderer = renderer;
         self.clock.set_length(show_length_us(show));
         self.show_bpm = show.preview.bpm;
         Ok(())

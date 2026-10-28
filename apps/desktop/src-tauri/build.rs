@@ -24,6 +24,7 @@ const COMMANDS: &[&str] = &[
     "settings_listen",
     "editor_open",
     "editor_view",
+    "material_preview",
     "editor_apply",
     "editor_undo",
     "editor_redo",

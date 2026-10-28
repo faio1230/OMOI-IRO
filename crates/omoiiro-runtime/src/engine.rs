@@ -195,7 +195,7 @@ impl Engine {
             warnings: Vec::new(),
             muted_layers: Vec::new(),
             safety_changed: false,
-            pads: PadInput { now_us: 0, hits: Vec::with_capacity(PadInput::CAPACITY), history: Vec::with_capacity(PadInput::HISTORY_CAPACITY) },
+            pads: PadInput { hits: Vec::with_capacity(PadInput::CAPACITY), history: Vec::with_capacity(PadInput::HISTORY_CAPACITY), ..Default::default() },
             audio: Default::default(),
             audio_fresh: false,
             render_panics: 0,
@@ -213,7 +213,11 @@ impl Engine {
     /// Frame boundary: adopt the newest validated show, if any.
     pub fn adopt(&mut self, exchange: &ShowExchange) -> bool {
         match exchange.take() {
-            Some(st) => {
+            Some(mut st) => {
+                if let Some(previous) = self.renderer.as_mut() {
+                    st.renderer.inherit_live_input(previous);
+                }
+                st.renderer.configure_input(&mut self.pads);
                 self.renderer = Some(st.renderer);
                 self.revision = st.rev;
                 self.flash = st.flash;
