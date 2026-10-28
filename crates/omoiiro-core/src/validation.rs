@@ -213,6 +213,9 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 c.range(*params.center.value(), 0.0, 7.0, format!("{e}/params/center"));
                 c.range(*params.speed.value(), -4.0, 4.0, format!("{e}/params/speed"));
                 c.range(*params.thickness.value(), 0.5, 3.0, format!("{e}/params/thickness"));
+                if let Some(p) = &params.phase {
+                    c.unit(*p.value(), format!("{e}/params/phase"));
+                }
             }
             Effect::Orb { params, .. } => {
                 c.color(params.color.value(), format!("{e}/params/color"));
@@ -235,6 +238,47 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 }
                 c.range(*params.orbit_radius.value(), 0.0, 4.0, format!("{e}/params/orbit_radius"));
                 c.range(*params.bounce_angle.value(), 0.0, 360.0, format!("{e}/params/bounce_angle"));
+                if let Some(p) = &params.orbit_phase {
+                    c.unit(*p.value(), format!("{e}/params/orbit_phase"));
+                }
+            }
+            Effect::Regions { params, .. } => {
+                c.color(params.color.value(), format!("{e}/params/color"));
+                if let Some(b) = &params.color_b {
+                    c.color(b.value(), format!("{e}/params/color_b"));
+                }
+                if ![0.25, 0.5, 1.0, 2.0, 4.0].contains(params.step_beats.value()) {
+                    c.push(format!("{e}/params/step_beats"), "step_beats must be 0.25, 0.5, 1, 2 or 4");
+                }
+                if !(50..=5000).contains(params.step_ms.value()) {
+                    c.push(format!("{e}/params/step_ms"), "step_ms must be within 50..=5000");
+                }
+                c.unit(*params.soft.value(), format!("{e}/params/soft"));
+                c.range(*params.duty.value(), 0.05, 1.0, format!("{e}/params/duty"));
+            }
+            Effect::TapGlow { params, .. } => {
+                for (name, v) in [("color_start", &params.color_start), ("color_mid", &params.color_mid), ("color_end", &params.color_end)] {
+                    c.color(v.value(), format!("{e}/params/{name}"));
+                }
+                if !(100..=5000).contains(params.lifetime_ms.value()) {
+                    c.push(format!("{e}/params/lifetime_ms"), "lifetime_ms must be within 100..=5000");
+                }
+                c.range(*params.radius.value(), 0.0, 3.0, format!("{e}/params/radius"));
+                if !(1..=8).contains(params.repeats.value()) {
+                    c.push(format!("{e}/params/repeats"), "repeats must be within 1..=8");
+                }
+                if !(50..=2000).contains(params.repeat_interval_ms.value()) {
+                    c.push(format!("{e}/params/repeat_interval_ms"), "repeat_interval_ms must be within 50..=2000");
+                }
+                c.unit(*params.repeat_decay.value(), format!("{e}/params/repeat_decay"));
+            }
+            Effect::Cross { params, .. } => {
+                c.color(params.color.value(), format!("{e}/params/color"));
+                c.range(*params.speed.value(), 1.0, 32.0, format!("{e}/params/speed"));
+                c.range(*params.length.value(), 0.5, 8.0, format!("{e}/params/length"));
+                if !(100..=3000).contains(params.lifetime_ms.value()) {
+                    c.push(format!("{e}/params/lifetime_ms"), "lifetime_ms must be within 100..=3000");
+                }
             }
             Effect::Ripple { params, .. } => {
                 c.color(params.color.value(), format!("{e}/params/color"));
@@ -245,6 +289,19 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                 }
                 if !(1..=16).contains(params.max_concurrent.value()) {
                     c.push(format!("{e}/params/max_concurrent"), "max_concurrent must be within 1..=16");
+                }
+                let interval = *params.trigger.value() == crate::model::RippleTrigger::Interval;
+                for (name, v) in [("origin_x", &params.origin_x), ("origin_y", &params.origin_y)] {
+                    match v {
+                        Some(v) => c.range(*v.value(), 0.0, 7.0, format!("{e}/params/{name}")),
+                        None if interval => c.push(format!("{e}/params/{name}"), "required when trigger is interval"),
+                        None => {}
+                    }
+                }
+                match &params.interval_ms {
+                    Some(v) if !(100..=10_000).contains(v.value()) => c.push(format!("{e}/params/interval_ms"), "interval_ms must be within 100..=10000"),
+                    None if interval => c.push(format!("{e}/params/interval_ms"), "required when trigger is interval"),
+                    _ => {}
                 }
             }
             Effect::Noise { params, .. } => {

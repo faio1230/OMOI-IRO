@@ -110,7 +110,7 @@ export interface FlashWarning {
   layer_name: string;
   preset_id: string;
   preset_name: string;
-  kind: "pulse" | "chase" | "strobe" | "noise" | "grain" | "wave";
+  kind: "pulse" | "chase" | "strobe" | "noise" | "grain" | "wave" | "regions";
   hz: number;
   limit_hz: number;
   tempo_bpm: number;
@@ -284,7 +284,7 @@ export type EditCommand =
   | { op: "set_sync"; beat_source: BeatSource | null; mtc_output_enabled: boolean | null };
 
 export type Blend = "over" | "add" | "max";
-export type EffectType = "builtin.solid" | "builtin.chase" | "builtin.pulse" | "builtin.strobe" | "builtin.noise" | "builtin.ripple" | "builtin.rain" | "builtin.wave" | "builtin.orb";
+export type EffectType = "builtin.solid" | "builtin.chase" | "builtin.pulse" | "builtin.strobe" | "builtin.noise" | "builtin.ripple" | "builtin.rain" | "builtin.wave" | "builtin.orb" | "builtin.regions" | "builtin.tap_glow" | "builtin.cross";
 export type OnConflict = "error" | "rename";
 
 /** Effect as saved in the show (schemas/show.schema.json `effect`). */
@@ -294,10 +294,15 @@ export type Effect =
   | { type: "builtin.pulse"; version: number; params: { color: string; beats_per_cycle: number; depth: number; waveform: "sine" | "triangle" } }
   | { type: "builtin.strobe"; version: number; params: { color: string; mode: "hz" | "beat"; rate_hz: number; beats_per_cycle: number; duty: number; phase_offset: number } }
   | { type: "builtin.noise"; version: number; params: { base_color: string; highlight_color: string; density: number; rate_hz: number; seed: number; smooth: boolean; depth: number } }
-  | { type: "builtin.ripple"; version: number; params: { color: string; speed: number; ring_width: number; lifetime_ms: number; fade: "linear" | "exp"; max_concurrent: number; trigger: "any_pad" } }
+  | { type: "builtin.ripple"; version: number; params: { color: string; speed: number; ring_width: number; lifetime_ms: number; fade: "linear" | "exp"; max_concurrent: number; trigger: "any_pad" | "interval"; shape?: "circle" | "diamond" | "square"; origin_x?: number; origin_y?: number; interval_ms?: number } }
   | { type: "builtin.rain"; version: number; params: { color: string; head_color?: string; direction: "down" | "up" | "left" | "right"; speed: number; density: number; tail: number; seed: number; flicker: number } }
-  | { type: "builtin.wave"; version: number; params: { color: string; axis: "x" | "y"; wavelength: number; amplitude: number; center: number; speed: number; thickness: number; beat_amplitude: boolean } }
-  | { type: "builtin.orb"; version: number; params: { color: string; center_x: number; center_y: number; radius: number; edge: number; light_angle: number; shading: number; dither: number; dither_rate_hz: number; seed: number; motion: "none" | "orbit" | "bounce"; speed: number; orbit_radius: number; bounce_angle: number } };
+  | { type: "builtin.wave"; version: number; params: { color: string; axis: "x" | "y"; wavelength: number; amplitude: number; center: number; speed: number; thickness: number; beat_amplitude: boolean; phase?: number } }
+  | { type: "builtin.orb"; version: number; params: { color: string; center_x: number; center_y: number; radius: number; edge: number; light_angle: number; shading: number; dither: number; dither_rate_hz: number; seed: number; motion: "none" | "orbit" | "bounce"; speed: number; orbit_radius: number; bounce_angle: number; orbit_phase?: number } }
+  | { type: "builtin.regions"; version: number; params: { pattern: RegionPattern; color: string; color_b?: string; step_mode: "beat" | "seconds"; step_beats: number; step_ms: number; order: "forward" | "reverse" | "pingpong"; soft: number; duty: number } }
+  | { type: "builtin.tap_glow"; version: number; params: { color_start: string; color_mid: string; color_end: string; lifetime_ms: number; radius: number; repeats: number; repeat_interval_ms: number; repeat_decay: number } }
+  | { type: "builtin.cross"; version: number; params: { color: string; speed: number; length: number; lifetime_ms: number } };
+
+export type RegionPattern = "halves_lr" | "halves_tb" | "checker" | "quadrants" | "columns" | "rows" | "perimeter" | "fan";
 
 export interface ClipDto {
   id: string;

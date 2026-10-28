@@ -1,0 +1,181 @@
+{
+  "$schema": "../../schemas/show.schema.json",
+  "schema_version": "0.1.2",
+  "id": "d-effects-0-1-2",
+  "name": "0.1.2 の演出（領域ステップ・余熱・十字・間隔の波紋）",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "regions-quad",
+      "name": "4象限を順に",
+      "effect": {
+        "type": "builtin.regions",
+        "version": 1,
+        "params": {
+          "pattern": "quadrants",
+          "color": "#FFFFFF",
+          "color_b": "#102040",
+          "step_mode": "seconds",
+          "step_beats": 1,
+          "step_ms": 500,
+          "order": "forward",
+          "soft": 0.5,
+          "duty": 1
+        }
+      }
+    },
+    {
+      "id": "ripple-interval",
+      "name": "間隔の波紋",
+      "effect": {
+        "type": "builtin.ripple",
+        "version": 1,
+        "params": {
+          "color": "#00DCC8",
+          "speed": 6,
+          "ring_width": 1,
+          "lifetime_ms": 1200,
+          "fade": "linear",
+          "max_concurrent": 8,
+          "trigger": "interval",
+          "shape": "diamond",
+          "origin_x": 3.5,
+          "origin_y": 3.5,
+          "interval_ms": 600
+        }
+      }
+    },
+    {
+      "id": "tap-glow",
+      "name": "余熱",
+      "effect": {
+        "type": "builtin.tap_glow",
+        "version": 1,
+        "params": {
+          "color_start": "#FFFFFF",
+          "color_mid": "#FFB040",
+          "color_end": "#400000",
+          "lifetime_ms": 1200,
+          "radius": 1.5,
+          "repeats": 2,
+          "repeat_interval_ms": 300,
+          "repeat_decay": 0.6
+        }
+      }
+    },
+    {
+      "id": "cross",
+      "name": "十字",
+      "effect": {
+        "type": "builtin.cross",
+        "version": 1,
+        "params": {
+          "color": "#00DCC8",
+          "speed": 12,
+          "length": 2,
+          "lifetime_ms": 800
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "regions",
+      "name": "領域",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "regions-1",
+            "preset_id": "regions-quad",
+            "start_us": 0,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "ripple",
+      "name": "間隔の波紋",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "ripple-1",
+            "preset_id": "ripple-interval",
+            "start_us": 8000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "glow",
+      "name": "余熱（パッド）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "tap-glow"
+      }
+    },
+    {
+      "id": "cross",
+      "name": "十字（パッド）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "cross"
+      }
+    }
+  ]
+}

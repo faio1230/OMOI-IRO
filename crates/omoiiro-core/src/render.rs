@@ -24,7 +24,7 @@
 //!   function of the time, so preview, device and seek agree.
 //! * `builtin.ripple` (0.1.2): input driven, so outside `render(show, t)`'s
 //!   purity: `render_input` takes the pad hits (`PadInput`) as an extra
-//!   argument and only Ripple reads them. Each hit spreads a ring at
+//!   argument and only the input-driven effects (Ripple, TapGlow, Cross) read them. Each hit spreads a ring at
 //!   `speed` cells/s from the pad: alpha 1 where `|dist - speed × age| <=
 //!   ring_width / 2`, falling linearly to 0 over another half width, times
 //!   the fade over `lifetime_ms`. Overlapping rings take the maximum. The
@@ -43,6 +43,15 @@
 //!   1 on the `light_angle` side down to `1 - shading`, `dither` grain per
 //!   cell and step. `orbit` circles the centre; `bounce` reflects at the
 //!   board edges (a triangle wave of the time, no state).
+//! * `builtin.tap_glow` / `builtin.cross` (0.1.2): input driven like Ripple.
+//!   TapGlow glows at the pad (start → mid → end color, `repeats` times);
+//!   Cross runs four heads along the pad's row and column with tails.
+//! * `builtin.regions` (0.1.2): the cells of `pattern` form groups lit in
+//!   turn. The step position is `beat / step_beats` (transparent without a
+//!   beat phase) or `local_s / step_s`; `order` walks the groups forward,
+//!   reverse or back and forth. Within a step the group is lit for `duty`;
+//!   `soft` ramps in and out over that many steps (1 = a smooth travelling
+//!   peak). `color_b` fills the unlit groups (alternating look).
 //!
 //! Compositing: clips inside a layer are composited `over` in array order
 //! into a premultiplied layer buffer (clip alpha = fade x effect alpha).
@@ -51,7 +60,9 @@
 //! `max` = `max(F, L o)` per channel (L premultiplied). The master
 //! brightness scales the result.
 
-use crate::model::{Axis, Blend, Content, Effect, OrbMotion, RainDirection, RippleFade, Show, StrobeMode, Waveform};
+use crate::model::{
+    Axis, Blend, Content, Effect, OrbMotion, RainDirection, RegionPattern, RippleFade, RippleShape, RippleTrigger, Show, StepMode, StepOrder, StrobeMode, Waveform,
+};
 use crate::surface::{Frame, LayerFrame, Rgb, Rgba, GRID_H, GRID_LEDS, GRID_W};
 use crate::time::{BeatState, ShowTimeUs};
 use crate::timeline::{ClipIndex, ClipSpan};
@@ -67,9 +78,10 @@ pub enum CompiledEffect {
     Pulse { color: Rgb, beats_per_cycle: f64, depth: f64, waveform: Waveform },
     Strobe { color: Rgb, mode: StrobeMode, rate_hz: f64, beats_per_cycle: f64, duty: f64, phase_offset: f64 },
     Noise { base: Rgb, highlight: Rgb, density: f64, rate_hz: f64, seed: u32, smooth: bool, depth: f64 },
-    Ripple { color: Rgb, speed: f64, ring_width: f64, lifetime_us: i64, fade: RippleFade, max_concurrent: usize },
+    /// `interval`: rings at `(x, y)` every `every_us` of local time; None: pad input.
+    Ripple { look: RippleLook, interval: Option<(f64, f64, i64)> },
     Rain { color: Rgb, head: Rgb, direction: RainDirection, speed: f64, density: f64, tail: f64, seed: u32, flicker: f64 },
-    Wave { color: Rgb, axis: Axis, wavelength: f64, amplitude: f64, center: f64, speed: f64, thickness: f64, beat_amplitude: bool },
+    Wave { color: Rgb, axis: Axis, wavelength: f64, amplitude: f64, center: f64, speed: f64, thickness: f64, beat_amplitude: bool, phase: f64 },
     Orb {
         color: Rgb,
         center: (f64, f64),
@@ -84,7 +96,11 @@ pub enum CompiledEffect {
         speed: f64,
         orbit_radius: f64,
         bounce_dir: (f64, f64),
+        orbit_phase: f64,
     },
+    TapGlow { start: Rgb, mid: Rgb, end: Rgb, lifetime_us: i64, radius: f64, repeats: u32, repeat_us: i64, decay: f64 },
+    Cross { color: Rgb, speed: f64, length: f64, lifetime_us: i64 },
+    Regions { pattern: RegionPattern, color: Rgb, color_b: Option<Rgb>, mode: StepMode, step_beats: f64, step_s: f64, order: StepOrder, soft: f64, duty: f64 },
 }
 
 /// One pad press for input-driven effects: grid cell (bottom-left origin)
@@ -107,8 +123,9 @@ pub struct PadInput {
 impl PadInput {
     /// Hits kept at most (the largest `max_concurrent`).
     pub const CAPACITY: usize = 16;
-    /// Hits older than the longest lifetime are dropped.
-    pub const MAX_AGE_US: i64 = 4_000_000;
+    /// Hits older than the longest effect window are dropped (tap_glow:
+    /// 5 s lifetime + 7 repeats × 2 s).
+    pub const MAX_AGE_US: i64 = 20_000_000;
 
     /// Add a hit; drop the oldest beyond `CAPACITY`. No allocation once full.
     pub fn push(&mut self, hit: PadHit) {
@@ -152,12 +169,23 @@ impl CompiledEffect {
                 phase_offset: *params.phase_offset.value(),
             },
             Effect::Ripple { params, .. } => CompiledEffect::Ripple {
-                color: Rgb::from_hex(params.color.value())?,
-                speed: *params.speed.value(),
-                ring_width: *params.ring_width.value(),
-                lifetime_us: *params.lifetime_ms.value() as i64 * 1000,
-                fade: *params.fade.value(),
-                max_concurrent: (*params.max_concurrent.value()).clamp(1, PadInput::CAPACITY as u32) as usize,
+                look: RippleLook {
+                    color: Rgb::from_hex(params.color.value())?,
+                    speed: *params.speed.value(),
+                    ring_width: *params.ring_width.value(),
+                    lifetime_us: *params.lifetime_ms.value() as i64 * 1000,
+                    fade: *params.fade.value(),
+                    max_concurrent: (*params.max_concurrent.value()).clamp(1, PadInput::CAPACITY as u32) as usize,
+                    shape: params.shape.as_ref().map(|s| *s.value()).unwrap_or(RippleShape::Circle),
+                },
+                interval: match params.trigger.value() {
+                    RippleTrigger::AnyPad => None,
+                    RippleTrigger::Interval => Some((
+                        *params.origin_x.as_ref()?.value(),
+                        *params.origin_y.as_ref()?.value(),
+                        (*params.interval_ms.as_ref()?.value()).max(1) as i64 * 1000,
+                    )),
+                },
             },
             Effect::Rain { params, .. } => {
                 let color = Rgb::from_hex(params.color.value())?;
@@ -184,6 +212,7 @@ impl CompiledEffect {
                 speed: *params.speed.value(),
                 thickness: *params.thickness.value(),
                 beat_amplitude: *params.beat_amplitude.value(),
+                phase: params.phase.as_ref().map(|p| *p.value()).unwrap_or(0.0),
             },
             Effect::Orb { params, .. } => {
                 let (la, ba) = (params.light_angle.value().to_radians(), params.bounce_angle.value().to_radians());
@@ -201,8 +230,39 @@ impl CompiledEffect {
                     speed: *params.speed.value(),
                     orbit_radius: *params.orbit_radius.value(),
                     bounce_dir: (ba.cos(), ba.sin()),
+                    orbit_phase: params.orbit_phase.as_ref().map(|p| *p.value()).unwrap_or(0.0),
                 }
             }
+            Effect::TapGlow { params, .. } => CompiledEffect::TapGlow {
+                start: Rgb::from_hex(params.color_start.value())?,
+                mid: Rgb::from_hex(params.color_mid.value())?,
+                end: Rgb::from_hex(params.color_end.value())?,
+                lifetime_us: (*params.lifetime_ms.value()).max(1) as i64 * 1000,
+                radius: *params.radius.value(),
+                repeats: (*params.repeats.value()).clamp(1, 8),
+                repeat_us: *params.repeat_interval_ms.value() as i64 * 1000,
+                decay: *params.repeat_decay.value(),
+            },
+            Effect::Cross { params, .. } => CompiledEffect::Cross {
+                color: Rgb::from_hex(params.color.value())?,
+                speed: *params.speed.value(),
+                length: *params.length.value(),
+                lifetime_us: (*params.lifetime_ms.value()).max(1) as i64 * 1000,
+            },
+            Effect::Regions { params, .. } => CompiledEffect::Regions {
+                pattern: *params.pattern.value(),
+                color: Rgb::from_hex(params.color.value())?,
+                color_b: match &params.color_b {
+                    Some(c) => Some(Rgb::from_hex(c.value())?),
+                    None => None,
+                },
+                mode: *params.step_mode.value(),
+                step_beats: *params.step_beats.value(),
+                step_s: (*params.step_ms.value()).max(1) as f64 / 1000.0,
+                order: *params.order.value(),
+                soft: *params.soft.value(),
+                duty: *params.duty.value(),
+            },
             Effect::Noise { params, .. } => CompiledEffect::Noise {
                 base: Rgb::from_hex(params.base_color.value())?,
                 highlight: Rgb::from_hex(params.highlight_color.value())?,
@@ -280,12 +340,48 @@ impl CompiledEffect {
                     over(px, src);
                 }
             }
-            // Needs the pad input: drawn by `paint_input`.
-            CompiledEffect::Ripple { .. } => {}
-            CompiledEffect::Rain { color, head, direction, speed, density, tail, seed, flicker } => {
+            // Pad-driven rings need the input (`paint_input`); interval rings are a function of the time.
+            CompiledEffect::Ripple { look, interval: Some((x, y, every_us)) } => {
+                let local = local_us as i64;
+                let first = (local - look.lifetime_us) / every_us;
+                let ages = (first.max(0)..=local / every_us).rev().map(|k| (x, y, local - k * every_us));
+                paint_ripple(ages, look, alpha, layer);
+            }
+            CompiledEffect::Ripple { interval: None, .. } => {}
+            // Pad driven: drawn by `paint_input`.
+            CompiledEffect::TapGlow { .. } | CompiledEffect::Cross { .. } => {}
+            CompiledEffect::Regions { pattern, color, color_b, mode, step_beats, step_s, order, soft, duty } => {
+                let pos = match mode {
+                    StepMode::Seconds => local_us as f64 / 1e6 / step_s,
+                    StepMode::Beat => match beat.filter(|b| b.phase_valid && b.beat.is_finite()) {
+                        Some(b) => b.beat / step_beats,
+                        None => return,
+                    },
+                };
+                let n = region_count(pattern);
+                // Brightness of each group: the steps around `pos` that light it.
+                let mut level = [0.0f64; 28];
+                let k0 = pos.floor() as i64;
+                for k in k0 - 2..=k0 + 2 {
+                    let g = step_group(k, n, order);
+                    level[g] = level[g].max(step_level(pos - k as f64, duty, soft));
+                }
+                for (i, px) in layer.px.iter_mut().enumerate() {
+                    let Some(g) = region_of(pattern, i % GRID_W, i / GRID_W) else { continue };
+                    let a = level[g];
+                    match color_b {
+                        Some(b) => {
+                            let c = Rgb::new(b.r + (color.r - b.r) * a as f32, b.g + (color.g - b.g) * a as f32, b.b + (color.b - b.b) * a as f32);
+                            over(px, Rgba::from_color(c, alpha as f32));
+                        }
+                        None if a > 0.0 => over(px, Rgba::from_color(color, (a * alpha) as f32)),
+                        None => {}
+                    }
+                }
+            }            CompiledEffect::Rain { color, head, direction, speed, density, tail, seed, flicker } => {
                 paint_rain(local_us, color, head, direction, speed, density, tail, seed, flicker, alpha, layer);
             }
-            CompiledEffect::Wave { color, axis, wavelength, amplitude, center, speed, thickness, beat_amplitude } => {
+            CompiledEffect::Wave { color, axis, wavelength, amplitude, center, speed, thickness, beat_amplitude, phase } => {
                 let t = local_us as f64 / 1e6;
                 let amp = match beat.filter(|b| beat_amplitude && b.phase_valid && b.beat.is_finite()) {
                     // 1 on the beat, 0.3 half way.
@@ -299,7 +395,7 @@ impl CompiledEffect {
                         Axis::X => (x, y),
                         Axis::Y => (y, x),
                     };
-                    let curve = center + amp * (TAU * (along / wavelength - speed * t)).sin();
+                    let curve = center + amp * (TAU * (along / wavelength - speed * t + phase)).sin();
                     let d = (across - curve).abs();
                     let a = if d <= half { 1.0 } else { (1.0 - (d - half) / half).max(0.0) };
                     if a > 0.0 {
@@ -307,11 +403,14 @@ impl CompiledEffect {
                     }
                 }
             }
-            CompiledEffect::Orb { color, center, radius, edge, light, shading, dither, dither_rate_hz, seed, motion, speed, orbit_radius, bounce_dir } => {
+            CompiledEffect::Orb { color, center, radius, edge, light, shading, dither, dither_rate_hz, seed, motion, speed, orbit_radius, bounce_dir, orbit_phase } => {
                 let t = local_us as f64 / 1e6;
                 let (cx, cy) = match motion {
                     OrbMotion::None => center,
-                    OrbMotion::Orbit => (center.0 + orbit_radius * (TAU * speed * t).cos(), center.1 + orbit_radius * (TAU * speed * t).sin()),
+                    OrbMotion::Orbit => {
+                        let a = TAU * (speed * t + orbit_phase);
+                        (center.0 + orbit_radius * a.cos(), center.1 + orbit_radius * a.sin())
+                    }
                     OrbMotion::Bounce => (bounce(center.0 + bounce_dir.0 * speed * t), bounce(center.1 + bounce_dir.1 * speed * t)),
                 };
                 let step = (t * dither_rate_hz).floor() as u64;
@@ -351,9 +450,21 @@ impl CompiledEffect {
     /// `paint` plus the input-driven effects (Ripple) when `input` is given.
     pub fn paint_input(&self, local_us: u64, beat: Option<BeatState>, input: Option<&PadInput>, alpha: f64, layer: &mut LayerFrame) {
         match *self {
-            CompiledEffect::Ripple { color, speed, ring_width, lifetime_us, fade, max_concurrent } => {
+            CompiledEffect::Ripple { look, interval: None } => {
                 if let Some(input) = input {
-                    paint_ripple(input, color, speed, ring_width, lifetime_us, fade, max_concurrent, alpha, layer);
+                    // Newest first.
+                    let ages = input.hits.iter().rev().map(|h| (h.x as f64, h.y as f64, input.now_us - h.t_us));
+                    paint_ripple(ages, look, alpha, layer);
+                }
+            }
+            CompiledEffect::TapGlow { start, mid, end, lifetime_us, radius, repeats, repeat_us, decay } => {
+                if let Some(input) = input {
+                    paint_tap_glow(input, [start, mid, end], lifetime_us, radius, repeats, repeat_us, decay, alpha, layer);
+                }
+            }
+            CompiledEffect::Cross { color, speed, length, lifetime_us } => {
+                if let Some(input) = input {
+                    paint_cross(input, color, speed, length, lifetime_us, alpha, layer);
                 }
             }
             _ => self.paint(local_us, beat, alpha, layer),
@@ -361,20 +472,106 @@ impl CompiledEffect {
     }
 }
 
+fn lerp_rgb(a: Rgb, b: Rgb, k: f32) -> Rgb {
+    Rgb::new(a.r + (b.r - a.r) * k, a.g + (b.g - a.g) * k, a.b + (b.b - a.b) * k)
+}
+
+/// Each press glows `repeats` times, `repeat_us` apart, each weaker by `decay`;
+/// a glow goes start → mid → end over its lifetime. The strongest wins per cell.
 #[allow(clippy::too_many_arguments)]
-fn paint_ripple(input: &PadInput, color: Rgb, speed: f64, ring_width: f64, lifetime_us: i64, fade: RippleFade, max_concurrent: usize, alpha: f64, layer: &mut LayerFrame) {
+fn paint_tap_glow(input: &PadInput, colors: [Rgb; 3], lifetime_us: i64, radius: f64, repeats: u32, repeat_us: i64, decay: f64, alpha: f64, layer: &mut LayerFrame) {
+    if alpha <= 0.0 {
+        return;
+    }
+    let mut best = [(0.0f64, Rgb::new(0.0, 0.0, 0.0)); GRID_LEDS];
+    for h in &input.hits {
+        let age = input.now_us - h.t_us;
+        for r in 0..repeats {
+            let a = age - r as i64 * repeat_us;
+            if !(0..lifetime_us).contains(&a) {
+                continue;
+            }
+            let life = a as f64 / lifetime_us as f64;
+            let color = if life < 0.5 { lerp_rgb(colors[0], colors[1], (life * 2.0) as f32) } else { lerp_rgb(colors[1], colors[2], ((life - 0.5) * 2.0) as f32) };
+            let strength = decay.powi(r as i32);
+            for (i, b) in best.iter_mut().enumerate() {
+                let (dx, dy) = ((i % GRID_W) as f64 - h.x as f64, (i / GRID_W) as f64 - h.y as f64);
+                let d = (dx * dx + dy * dy).sqrt();
+                let w = if radius > 0.0 { (1.0 - d / radius).max(0.0) } else if d == 0.0 { 1.0 } else { 0.0 };
+                let s = w * strength;
+                if s > b.0 {
+                    *b = (s, color);
+                }
+            }
+        }
+    }
+    for (px, (s, c)) in layer.px.iter_mut().zip(best) {
+        if s > 0.0 {
+            over(px, Rgba::from_color(c, (s * alpha) as f32));
+        }
+    }
+}
+
+/// Heads run `speed` cells/s along the pad's row and column; linear tails of
+/// `length` cells behind them; everything fades over the lifetime.
+fn paint_cross(input: &PadInput, color: Rgb, speed: f64, length: f64, lifetime_us: i64, alpha: f64, layer: &mut LayerFrame) {
+    if alpha <= 0.0 {
+        return;
+    }
+    let mut cell_a = [0.0f64; GRID_LEDS];
+    for h in &input.hits {
+        let age = input.now_us - h.t_us;
+        if !(0..lifetime_us).contains(&age) {
+            continue;
+        }
+        let fade = 1.0 - age as f64 / lifetime_us as f64;
+        let head = speed * age as f64 / 1e6;
+        for (i, a) in cell_a.iter_mut().enumerate() {
+            let (x, y) = (i % GRID_W, i / GRID_W);
+            let d = if y == h.y as usize {
+                (x as f64 - h.x as f64).abs()
+            } else if x == h.x as usize {
+                (y as f64 - h.y as f64).abs()
+            } else {
+                continue;
+            };
+            let behind = head - d; // 0 at the head, growing towards the pad
+            if behind < 0.0 || behind > length {
+                continue;
+            }
+            *a = a.max((1.0 - behind / length) * fade);
+        }
+    }
+    for (px, a) in layer.px.iter_mut().zip(cell_a) {
+        if a > 0.0 {
+            over(px, Rgba::from_color(color, (a * alpha) as f32));
+        }
+    }
+}
+
+/// How ripple rings look (shared by pad and interval triggers).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RippleLook {
+    pub color: Rgb,
+    pub speed: f64,
+    pub ring_width: f64,
+    pub lifetime_us: i64,
+    pub fade: RippleFade,
+    pub max_concurrent: usize,
+    pub shape: RippleShape,
+}
+
+/// Rings from `(x, y, age_us)` sources, newest first; live ones only, at most `max_concurrent`.
+fn paint_ripple(sources: impl Iterator<Item = (f64, f64, i64)>, look: RippleLook, alpha: f64, layer: &mut LayerFrame) {
+    let RippleLook { color, speed, ring_width, lifetime_us, fade, max_concurrent, shape } = look;
     if alpha <= 0.0 {
         return;
     }
     let half = (ring_width / 2.0).max(1e-6);
     let mut cell_a = [0.0f64; GRID_LEDS];
-    // Newest first, live ones only, at most `max_concurrent`.
-    let live = input.hits.iter().rev().filter(|h| {
-        let age = input.now_us - h.t_us;
-        (0..lifetime_us).contains(&age)
-    });
-    for h in live.take(max_concurrent) {
-        let age = (input.now_us - h.t_us) as f64;
+    let live = sources.filter(|&(_, _, age)| (0..lifetime_us).contains(&age));
+    for (x, y, age) in live.take(max_concurrent) {
+        let age = age as f64;
         let life = age / lifetime_us as f64;
         let f = match fade {
             RippleFade::Linear => 1.0 - life,
@@ -382,8 +579,13 @@ fn paint_ripple(input: &PadInput, color: Rgb, speed: f64, ring_width: f64, lifet
         };
         let radius = speed * age / 1e6;
         for (i, a) in cell_a.iter_mut().enumerate() {
-            let (dx, dy) = ((i % GRID_W) as f64 - h.x as f64, (i / GRID_W) as f64 - h.y as f64);
-            let off = ((dx * dx + dy * dy).sqrt() - radius).abs();
+            let (dx, dy) = (((i % GRID_W) as f64 - x).abs(), ((i / GRID_W) as f64 - y).abs());
+            let dist = match shape {
+                RippleShape::Circle => (dx * dx + dy * dy).sqrt(),
+                RippleShape::Diamond => dx + dy,
+                RippleShape::Square => dx.max(dy),
+            };
+            let off = (dist - radius).abs();
             let ring = if off <= half { 1.0 } else { (1.0 - (off - half) / half).max(0.0) };
             *a = a.max(ring * f);
         }
@@ -393,6 +595,72 @@ fn paint_ripple(input: &PadInput, color: Rgb, speed: f64, ring_width: f64, lifet
             over(px, Rgba::from_color(color, (a * alpha) as f32));
         }
     }
+}
+
+/// Number of groups of a region pattern.
+pub fn region_count(p: RegionPattern) -> usize {
+    match p {
+        RegionPattern::HalvesLr | RegionPattern::HalvesTb | RegionPattern::Checker => 2,
+        RegionPattern::Quadrants | RegionPattern::Fan => 4,
+        RegionPattern::Columns | RegionPattern::Rows => 8,
+        RegionPattern::Perimeter => 28,
+    }
+}
+
+/// Group of cell (x, y) (bottom-left origin), or None (perimeter interior).
+pub fn region_of(p: RegionPattern, x: usize, y: usize) -> Option<usize> {
+    Some(match p {
+        RegionPattern::HalvesLr => (x >= 4) as usize,
+        RegionPattern::HalvesTb => (y >= 4) as usize,
+        RegionPattern::Checker => (x + y) % 2,
+        // Bottom-left, bottom-right, top-right, top-left.
+        RegionPattern::Quadrants => match (x >= 4, y >= 4) {
+            (false, false) => 0,
+            (true, false) => 1,
+            (true, true) => 2,
+            (false, true) => 3,
+        },
+        RegionPattern::Columns => x,
+        RegionPattern::Rows => y,
+        // Clockwise from the bottom-left: up the left edge, along the top, down the right, back along the bottom.
+        RegionPattern::Perimeter => match (x, y) {
+            (0, y) => y,
+            (x, 7) => 7 + x,
+            (7, y) => 21 - y,
+            (x, 0) => 28 - x,
+            _ => return None,
+        },
+        // The two middle columns first, then outwards in mirrored pairs.
+        RegionPattern::Fan => if x < 4 { 3 - x } else { x - 4 },
+    })
+}
+
+/// Group lit by step `k` for `n` groups in `order`.
+fn step_group(k: i64, n: usize, order: StepOrder) -> usize {
+    let n = n as i64;
+    (match order {
+        StepOrder::Forward => k.rem_euclid(n),
+        StepOrder::Reverse => n - 1 - k.rem_euclid(n),
+        StepOrder::Pingpong => {
+            let u = k.rem_euclid(2 * n - 2);
+            if u < n {
+                u
+            } else {
+                2 * n - 2 - u
+            }
+        }
+    }) as usize
+}
+
+/// Level of a step at offset `d` steps from its start: lit over `0..duty`,
+/// ramping in and out over `soft` steps (centred on the edges).
+fn step_level(d: f64, duty: f64, soft: f64) -> f64 {
+    if soft <= 0.0 {
+        return if (0.0..duty).contains(&d) { 1.0 } else { 0.0 };
+    }
+    let rise = ((d + soft / 2.0) / soft).clamp(0.0, 1.0);
+    let fall = ((duty + soft / 2.0 - d) / soft).clamp(0.0, 1.0);
+    rise.min(fall)
 }
 
 /// Reflect a coordinate into 0..=7 (triangle wave, period 14).
@@ -805,7 +1073,8 @@ mod tests {
 
     #[test]
     fn ripple_rings_spread_from_pad_hits_and_fade() {
-        let e = CompiledEffect::Ripple { color: Rgb::new(1.0, 1.0, 1.0), speed: 4.0, ring_width: 1.0, lifetime_us: 1_000_000, fade: RippleFade::Linear, max_concurrent: 2 };
+        let look = RippleLook { color: Rgb::new(1.0, 1.0, 1.0), speed: 4.0, ring_width: 1.0, lifetime_us: 1_000_000, fade: RippleFade::Linear, max_concurrent: 2, shape: RippleShape::Circle };
+        let e = CompiledEffect::Ripple { look, interval: None };
         let at = |input: &PadInput| {
             let mut l = LayerFrame::default();
             e.paint_input(0, None, Some(input), 1.0, &mut l);
@@ -839,13 +1108,13 @@ mod tests {
         let l = at(&input);
         assert!(l.px[63].a > 0.9 && l.px[7].a > 0.9, "newest two");
         assert_eq!(l.px[0].a, 0.0, "the oldest is dropped");
-        // Capacity: the buffer keeps the 16 newest; advance drops hits older than 4 s.
+        // Capacity: the buffer keeps the 16 newest; advance drops hits older than MAX_AGE_US.
         let mut input = PadInput::default();
         for k in 0..20 {
             input.push(hit(0, 0, k));
         }
         assert_eq!((input.hits.len(), input.hits[0].t_us), (16, 4));
-        input.advance(5_000_000);
+        input.advance(PadInput::MAX_AGE_US + 100);
         assert!(input.hits.is_empty());
     }
 
@@ -901,7 +1170,7 @@ mod tests {
 
     #[test]
     fn wave_follows_the_sine_curve_and_the_beat() {
-        let w = |beat_amplitude| CompiledEffect::Wave { color: Rgb::new(1.0, 1.0, 1.0), axis: Axis::X, wavelength: 8.0, amplitude: 2.5, center: 3.5, speed: 1.0, thickness: 1.0, beat_amplitude };
+        let w = |beat_amplitude| CompiledEffect::Wave { color: Rgb::new(1.0, 1.0, 1.0), axis: Axis::X, wavelength: 8.0, amplitude: 2.5, center: 3.5, speed: 1.0, thickness: 1.0, beat_amplitude, phase: 0.0 };
         // t = 0: curve(x) = 3.5 + 2.5 sin(2π x / 8): x = 2 → 6.0, x = 6 → 1.0, x = 0 → 3.5.
         let a = alpha_grid(&w(false), 0, None);
         assert_eq!(a[6 * 8 + 2], 1.0);
@@ -935,6 +1204,7 @@ mod tests {
             speed: 0.5,
             orbit_radius: 2.0,
             bounce_dir: (1.0, 0.0),
+            orbit_phase: 0.0,
         };
         let a = alpha_grid(&orb(OrbMotion::None, 0.0), 0, None);
         assert_eq!(a[0], 0.0, "corner outside the disc");
@@ -954,6 +1224,167 @@ mod tests {
         let d = alpha_grid(&orb(OrbMotion::None, 1.0), 100_000, None);
         assert!(d.iter().zip(a.iter()).all(|(d, a)| d <= a));
         assert_eq!(d, alpha_grid(&orb(OrbMotion::None, 1.0), 200_000, None));
+    }
+
+    #[test]
+    fn d1_ripple_shapes_and_interval_wave_phase_orb_orbit_phase() {
+        let look = |shape| RippleLook { color: Rgb::new(1.0, 1.0, 1.0), speed: 4.0, ring_width: 1.0, lifetime_us: 1_000_000, fade: RippleFade::Linear, max_concurrent: 4, shape };
+        // Interval: a ring every 500 ms at (0, 0), no input; radius 2 at 500 ms after each start.
+        let iv = CompiledEffect::Ripple { look: look(RippleShape::Circle), interval: Some((0.0, 0.0, 500_000)) };
+        let a = alpha_grid(&iv, 1_000_000 + 500_000, None);
+        assert!(a[2] > 0.0 && a[2 * 8] > 0.0, "ring of radius 2 from the start at 1.0 s");
+        assert_eq!(alpha_grid(&iv, 1_500_000, None), alpha_grid(&iv, 1_500_000, None), "a function of the time");
+        assert_eq!(alpha_grid(&iv, 3_500_000, None), a, "periodic: the same rings every interval");
+        // Shapes at radius 2 from (3, 3): diamond reaches (5, 3) and (4, 4); square reaches (5, 5).
+        let at_r2 = |shape| {
+            let mut input = PadInput::default();
+            input.push(PadHit { x: 3, y: 3, velocity: 100, t_us: 0 });
+            input.advance(500_000);
+            let mut l = LayerFrame::default();
+            CompiledEffect::Ripple { look: look(shape), interval: None }.paint_input(0, None, Some(&input), 1.0, &mut l);
+            l.px.map(|p| p.a)
+        };
+        let (c, d, s) = (at_r2(RippleShape::Circle), at_r2(RippleShape::Diamond), at_r2(RippleShape::Square));
+        assert!(d[4 * 8 + 4] > 0.0 && d[5 * 8 + 5] == 0.0, "diamond: |dx| + |dy| = 2");
+        assert!(s[5 * 8 + 5] > 0.0 && s[5 * 8 + 3] > 0.0, "square: max(|dx|, |dy|) = 2");
+        // On the ring the alpha is the fade (half the lifetime: 0.5).
+        assert!((c[5 * 8 + 3] - 0.5).abs() < 1e-6 && c[5 * 8 + 5] < s[5 * 8 + 5] && c[6 * 8 + 6] == 0.0, "circle: Euclidean");
+        // Wave phase 0.25 = a quarter cycle: the same picture as 0.25 s later at 1 cycle/s, reversed in time.
+        let wave = |phase| CompiledEffect::Wave { color: Rgb::new(1.0, 1.0, 1.0), axis: Axis::X, wavelength: 8.0, amplitude: 2.5, center: 3.5, speed: 1.0, thickness: 1.0, beat_amplitude: false, phase };
+        assert_eq!(alpha_grid(&wave(0.25), 250_000, None), alpha_grid(&wave(0.0), 0, None));
+        // Orb orbit_phase 0.5 starts on the opposite side: the same as half a turn later.
+        let orb = |orbit_phase| CompiledEffect::Orb {
+            color: Rgb::new(1.0, 1.0, 1.0),
+            center: (3.5, 3.5),
+            radius: 2.0,
+            edge: 0.0,
+            light: (0.0, 1.0),
+            shading: 0.0,
+            dither: 0.0,
+            dither_rate_hz: 4.0,
+            seed: 1,
+            motion: OrbMotion::Orbit,
+            speed: 0.5,
+            orbit_radius: 2.0,
+            bounce_dir: (1.0, 0.0),
+            orbit_phase,
+        };
+        assert_eq!(alpha_grid(&orb(0.5), 0, None), alpha_grid(&orb(0.0), 1_000_000, None));
+        // Absent optional fields: compiled as before and not written back.
+        for t in ["builtin.ripple", "builtin.wave", "builtin.orb"] {
+            let e = crate::edit::default_effect(t).unwrap();
+            let json = serde_json::to_value(&e).unwrap();
+            for k in ["shape", "origin_x", "origin_y", "interval_ms", "phase", "orbit_phase"] {
+                assert!(json["params"].get(k).is_none(), "{t} writes {k}");
+            }
+        }
+    }
+
+    #[test]
+    fn regions_groups_cover_the_board_as_specified() {
+        use RegionPattern::*;
+        for p in [HalvesLr, HalvesTb, Checker, Quadrants, Columns, Rows, Perimeter, Fan] {
+            let n = region_count(p);
+            let mut seen = vec![0; n];
+            for y in 0..8 {
+                for x in 0..8 {
+                    if let Some(g) = region_of(p, x, y) {
+                        seen[g] += 1;
+                    }
+                }
+            }
+            assert!(seen.iter().all(|c| *c > 0), "{p:?}: every group has cells {seen:?}");
+            let total: usize = seen.iter().sum();
+            assert_eq!(total, if p == Perimeter { 28 } else { 64 }, "{p:?}");
+        }
+        // Perimeter: clockwise from the bottom-left.
+        assert_eq!([(0, 0), (0, 7), (1, 7), (7, 7), (7, 6), (7, 0), (6, 0), (1, 0)].map(|(x, y)| region_of(Perimeter, x, y)), [0, 7, 8, 14, 15, 21, 22, 27].map(Some));
+        assert_eq!(region_of(Perimeter, 3, 3), None);
+        // Quadrants forward: bottom-left, bottom-right, top-right, top-left; fan from the middle out.
+        assert_eq!([(1, 1), (6, 1), (6, 6), (1, 6)].map(|(x, y)| region_of(Quadrants, x, y)), [0, 1, 2, 3].map(Some));
+        assert_eq!([3, 4, 2, 5, 0, 7].map(|x| region_of(Fan, x, 0)), [0, 0, 1, 1, 3, 3].map(Some));
+        // Orders.
+        assert_eq!((0..8).map(|k| step_group(k, 4, StepOrder::Forward)).collect::<Vec<_>>(), [0, 1, 2, 3, 0, 1, 2, 3]);
+        assert_eq!((0..4).map(|k| step_group(k, 4, StepOrder::Reverse)).collect::<Vec<_>>(), [3, 2, 1, 0]);
+        assert_eq!((0..8).map(|k| step_group(k, 4, StepOrder::Pingpong)).collect::<Vec<_>>(), [0, 1, 2, 3, 2, 1, 0, 1]);
+    }
+
+    #[test]
+    fn regions_step_by_beat_or_time_with_duty_soft_and_color_b() {
+        let white = Rgb::new(1.0, 1.0, 1.0);
+        let mk = |mode, soft, duty, color_b| CompiledEffect::Regions { pattern: RegionPattern::HalvesLr, color: white, color_b, mode, step_beats: 1.0, step_s: 0.5, order: StepOrder::Forward, soft, duty };
+        let hard = mk(StepMode::Beat, 0.0, 1.0, None);
+        // Beat 0.x: left half; beat 1.x: right half; unknown beat: nothing.
+        let a = alpha_grid(&hard, 0, Some(BeatState::new(0.3, 120.0)));
+        assert!(a[0] == 1.0 && a[7] == 0.0);
+        let b = alpha_grid(&hard, 0, Some(BeatState::new(1.3, 120.0)));
+        assert!(b[0] == 0.0 && b[7] == 1.0);
+        assert!(alpha_grid(&hard, 0, None).iter().all(|v| *v == 0.0));
+        // Seconds: 0.5 s per step from the clip's local time.
+        let secs = mk(StepMode::Seconds, 0.0, 1.0, None);
+        assert_eq!(alpha_grid(&secs, 600_000, None)[7], 1.0);
+        // Duty 0.5: dark in the second half of each step.
+        let half = mk(StepMode::Beat, 0.0, 0.5, None);
+        assert_eq!(alpha_grid(&half, 0, Some(BeatState::new(0.7, 120.0)))[0], 0.0);
+        // Soft 1, duty 1: a travelling peak; at the step boundary both halves are half lit.
+        let soft = mk(StepMode::Beat, 1.0, 1.0, None);
+        let m = alpha_grid(&soft, 0, Some(BeatState::new(1.0, 120.0)));
+        assert!((m[0] - 0.5).abs() < 1e-6 && (m[7] - 0.5).abs() < 1e-6, "{} {}", m[0], m[7]);
+        let peak = alpha_grid(&soft, 0, Some(BeatState::new(0.5, 120.0)));
+        assert!((peak[0] - 1.0).abs() < 1e-6 && peak[7] == 0.0);
+        // color_b: the unlit half is opaque color_b.
+        let mut l = LayerFrame::default();
+        mk(StepMode::Beat, 0.0, 1.0, Some(Rgb::new(0.0, 0.0, 1.0))).paint(0, Some(BeatState::new(0.3, 120.0)), 1.0, &mut l);
+        assert_eq!((l.px[7].a, l.px[7].b, l.px[7].r), (1.0, 1.0, 0.0));
+        assert_eq!((l.px[0].a, l.px[0].r), (1.0, 1.0));
+    }
+
+    fn pad_layer(e: &CompiledEffect, x: u8, y: u8, age_us: i64) -> LayerFrame {
+        let mut input = PadInput::default();
+        input.push(PadHit { x, y, velocity: 100, t_us: 0 });
+        input.advance(age_us);
+        let mut l = LayerFrame::default();
+        e.paint_input(0, None, Some(&input), 1.0, &mut l);
+        l
+    }
+
+    #[test]
+    fn tap_glow_cools_through_three_colors_and_repeats() {
+        let (s, m, e) = (Rgb::new(1.0, 1.0, 1.0), Rgb::new(1.0, 0.5, 0.0), Rgb::new(0.2, 0.0, 0.0));
+        let glow = |radius, repeats| CompiledEffect::TapGlow { start: s, mid: m, end: e, lifetime_us: 1_000_000, radius, repeats, repeat_us: 300_000, decay: 0.5 };
+        // At the pad: start color at 0, mid at half the lifetime.
+        let l = pad_layer(&glow(1.5, 1), 3, 3, 0);
+        assert!((l.px[3 * 8 + 3].g - 1.0).abs() < 1e-6);
+        let l = pad_layer(&glow(1.5, 1), 3, 3, 500_000);
+        assert!((l.px[3 * 8 + 3].g - 0.5).abs() < 1e-6 && l.px[3 * 8 + 3].a == 1.0);
+        // Radius 1.5: the neighbour is weaker, two cells away is dark.
+        assert!(l.px[3 * 8 + 4].a > 0.0 && l.px[3 * 8 + 4].a < 1.0 && l.px[3 * 8 + 5].a == 0.0);
+        // Radius 0: the pad only.
+        assert_eq!(pad_layer(&glow(0.0, 1), 3, 3, 0).px.iter().filter(|p| p.a > 0.0).count(), 1);
+        // After the lifetime nothing, unless a repeat (0.3 s later, half as strong) is still glowing.
+        assert!(pad_layer(&glow(1.5, 1), 3, 3, 1_100_000).px.iter().all(|p| p.a == 0.0));
+        let r = pad_layer(&glow(1.5, 2), 3, 3, 1_100_000);
+        assert!((r.px[3 * 8 + 3].a - 0.5).abs() < 1e-6);
+        // Nothing without input.
+        let mut l = LayerFrame::default();
+        glow(1.5, 1).paint(0, None, 1.0, &mut l);
+        assert!(l.px.iter().all(|p| p.a == 0.0));
+    }
+
+    #[test]
+    fn cross_heads_run_along_the_row_and_column_with_tails() {
+        let c = CompiledEffect::Cross { color: Rgb::new(1.0, 1.0, 1.0), speed: 10.0, length: 2.0, lifetime_us: 1_000_000 };
+        // 0.3 s: heads 3 cells out from (2, 2), fade 0.7.
+        let l = pad_layer(&c, 2, 2, 300_000);
+        let a = |x: usize, y: usize| l.px[y * 8 + x].a;
+        for (x, y) in [(5, 2), (2, 5)] {
+            assert!((a(x, y) - 0.7).abs() < 1e-6, "head at ({x}, {y}): {}", a(x, y));
+        }
+        assert!((a(4, 2) - 0.35).abs() < 1e-6, "tail one cell behind");
+        assert_eq!(a(2, 2), 0.0, "the pad is past the tail");
+        assert_eq!(a(3, 3), 0.0, "only the row and the column");
+        assert_eq!(a(6, 2), 0.0, "ahead of the head");
+        assert!(pad_layer(&c, 2, 2, 1_000_000).px.iter().all(|p| p.a == 0.0), "after the lifetime");
     }
 
     #[test]

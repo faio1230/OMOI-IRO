@@ -178,7 +178,7 @@ mod tests {
     #[test]
     fn new_0_1_2_presets_round_trip() {
         let mut show = load_str(DEMO).unwrap();
-        for (id, t) in [("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
+        for (id, t) in [("tg", "builtin.tap_glow"), ("x", "builtin.cross"), ("rg", "builtin.regions"), ("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
             let effect = omoiiro_core::edit::default_effect(t).unwrap();
             show.presets.push(omoiiro_core::model::Preset { id: id.into(), name: id.into(), effect });
         }
@@ -193,6 +193,19 @@ mod tests {
         let p = schema_pointers(&v);
         assert!(p.contains(&format!("/presets/{}/effect/params/duty", n - 2)), "{p:?}");
         assert!(p.contains(&format!("/presets/{}/effect/params/rate_hz", n - 1)), "{p:?}");
+        // An interval ripple needs its origin and interval (schema), and round-trips with them.
+        let ripple = v["presets"].as_array().unwrap().iter().position(|p| p["effect"]["type"] == "builtin.ripple").unwrap();
+        let mut w: Value = serde_json::from_str(&text).unwrap();
+        w["presets"][ripple]["effect"]["params"]["trigger"] = json!("interval");
+        assert!(!schema_pointers(&w).is_empty(), "interval without origin / interval_ms");
+        let p = &mut w["presets"][ripple]["effect"]["params"];
+        p["origin_x"] = json!(3.5);
+        p["origin_y"] = json!(3.5);
+        p["interval_ms"] = json!(800);
+        p["shape"] = json!("diamond");
+        let text = w.to_string();
+        let show = load_str(&text).unwrap();
+        assert_eq!(serde_json::to_value(&show).unwrap()["presets"][ripple], w["presets"][ripple]);
     }
 
     /// The eight invalid cases of the design review (README "設計成果物の確認").

@@ -1,4 +1,4 @@
-//! Show data model (docs/04-show-data.md, schemas/show.schema.json 0.1.2).
+//! Show data model (docs/04-show-data.md, schemas/show.schema.json 0.1.3).
 //!
 //! These types are the serde DTO and the domain model at once. Field order
 //! follows the Schema so that serialization gives the canonical key order;
@@ -10,10 +10,10 @@
 use crate::time::FrameRate;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-pub const SCHEMA_VERSION: &str = "0.1.2";
+pub const SCHEMA_VERSION: &str = "0.1.3";
 /// Older versions the store migrates on load (additive changes: only the
-/// version is rewritten; 0.1.2 adds effect types).
-pub const MIGRATABLE_VERSIONS: &[&str] = &["0.1.0", "0.1.1"];
+/// version is rewritten; 0.1.2 adds effect types, 0.1.3 the triggered layer).
+pub const MIGRATABLE_VERSIONS: &[&str] = &["0.1.0", "0.1.1", "0.1.2"];
 
 /// Serialize an `f64` as an integer when it is one (1.0 -> `1`, 0.6 -> `0.6`).
 pub fn ser_num<S: Serializer>(v: &f64, s: S) -> Result<S::Ok, S::Error> {
@@ -230,6 +230,103 @@ pub enum Effect {
     /// 0.1.2: a shaded disc, still, orbiting or bouncing.
     #[serde(rename = "builtin.orb")]
     Orb { version: u32, params: OrbParams },
+    /// 0.1.2: groups of cells lit in turn, by beat or by time.
+    #[serde(rename = "builtin.regions")]
+    Regions { version: u32, params: RegionsParams },
+    /// 0.1.2, input driven: a glow that cools down where a pad was pressed.
+    #[serde(rename = "builtin.tap_glow")]
+    TapGlow { version: u32, params: TapGlowParams },
+    /// 0.1.2, input driven: heads run up, down, left and right from a pressed pad.
+    #[serde(rename = "builtin.cross")]
+    Cross { version: u32, params: CrossParams },
+}
+
+/// Glow at a pressed pad: start → mid → end color over the lifetime, repeated.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TapGlowParams {
+    pub color_start: Param<String>,
+    pub color_mid: Param<String>,
+    pub color_end: Param<String>,
+    /// 100..=5000 ms.
+    pub lifetime_ms: Param<u32>,
+    /// Cells, 0..=3 (1 at the pad, 0 at this distance; 0 = the pad only).
+    #[serde(serialize_with = "ser_param_num")]
+    pub radius: Param<f64>,
+    /// 1..=8 glows per press.
+    pub repeats: Param<u32>,
+    /// 50..=2000 ms between repeats.
+    pub repeat_interval_ms: Param<u32>,
+    /// Brightness factor per repeat, 0..=1.
+    #[serde(serialize_with = "ser_param_num")]
+    pub repeat_decay: Param<f64>,
+}
+
+/// Four heads running from a pressed pad with linear tails.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CrossParams {
+    pub color: Param<String>,
+    /// Cells per second, 1..=32.
+    #[serde(serialize_with = "ser_param_num")]
+    pub speed: Param<f64>,
+    /// Tail length in cells, 0.5..=8.
+    #[serde(serialize_with = "ser_param_num")]
+    pub length: Param<f64>,
+    /// 100..=3000 ms.
+    pub lifetime_ms: Param<u32>,
+}
+
+/// Groups of cells (`pattern`) lit one after another.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RegionsParams {
+    pub pattern: Param<RegionPattern>,
+    pub color: Param<String>,
+    /// Groups that are not lit show this color (alternating look); absent = transparent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color_b: Option<Param<String>>,
+    pub step_mode: Param<StepMode>,
+    /// Beats per step (mode `beat`): 0.25, 0.5, 1, 2 or 4.
+    #[serde(serialize_with = "ser_param_num")]
+    pub step_beats: Param<f64>,
+    /// Milliseconds per step (mode `seconds`), 50..=5000.
+    pub step_ms: Param<u32>,
+    pub order: Param<StepOrder>,
+    /// Cross-fade width to the neighbouring steps, 0..=1.
+    #[serde(serialize_with = "ser_param_num")]
+    pub soft: Param<f64>,
+    /// Lit fraction of each step, 0.05..=1.
+    #[serde(serialize_with = "ser_param_num")]
+    pub duty: Param<f64>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RegionPattern {
+    HalvesLr,
+    HalvesTb,
+    Checker,
+    Quadrants,
+    Columns,
+    Rows,
+    Perimeter,
+    Fan,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StepMode {
+    Beat,
+    Seconds,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StepOrder {
+    Forward,
+    Reverse,
+    Pingpong,
 }
 
 impl Effect {
@@ -244,6 +341,9 @@ impl Effect {
             Effect::Rain { .. } => "builtin.rain",
             Effect::Wave { .. } => "builtin.wave",
             Effect::Orb { .. } => "builtin.orb",
+            Effect::Regions { .. } => "builtin.regions",
+            Effect::TapGlow { .. } => "builtin.tap_glow",
+            Effect::Cross { .. } => "builtin.cross",
         }
     }
 
@@ -257,7 +357,10 @@ impl Effect {
             | Effect::Ripple { version, .. }
             | Effect::Rain { version, .. }
             | Effect::Wave { version, .. }
-            | Effect::Orb { version, .. } => *version,
+            | Effect::Orb { version, .. }
+            | Effect::Regions { version, .. }
+            | Effect::TapGlow { version, .. }
+            | Effect::Cross { version, .. } => *version,
         }
     }
 
@@ -556,6 +659,66 @@ pub enum Blend {
 pub enum Content {
     Timeline { clips: Vec<Clip> },
     Continuous { preset_id: String },
+    /// 0.1.3: clips are the windows where `trigger` fires instances of the
+    /// clip's preset (positions and times come from the trigger).
+    Triggered { clips: Vec<Clip>, trigger: TriggerSpec },
+}
+
+impl Content {
+    /// Clips of a timeline or triggered layer.
+    pub fn clips(&self) -> Option<&Vec<Clip>> {
+        match self {
+            Content::Timeline { clips } | Content::Triggered { clips, .. } => Some(clips),
+            Content::Continuous { .. } => None,
+        }
+    }
+
+    pub fn clips_mut(&mut self) -> Option<&mut Vec<Clip>> {
+        match self {
+            Content::Timeline { clips } | Content::Triggered { clips, .. } => Some(clips),
+            Content::Continuous { .. } => None,
+        }
+    }
+}
+
+/// When a triggered layer fires (docs/14 §4-1).
+///
+/// * `press` / `release` / `hold`: pad input, timed by its arrival
+///   (monotonic): instances are not replayed by a seek and keep ageing
+///   through Stop. Only input that arrives while a clip is active counts.
+///   `hold` lasts from press to release (at most 10 s).
+/// * `clip_start` / `interval`: the clip's local time (deterministic, seek
+///   safe), at `origin_x` / `origin_y` (default the centre).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TriggerSpec {
+    pub on: TriggerOn,
+    /// `interval` only (required there): 100..=10000 ms.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub interval_ms: Option<u32>,
+    /// `clip_start` / `interval`: 0..=7 cells; absent = 3.5.
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_num")]
+    pub origin_x: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_num")]
+    pub origin_y: Option<f64>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TriggerOn {
+    Press,
+    Release,
+    Hold,
+    ClipStart,
+    Interval,
+}
+
+/// `ser_num` for an optional plain number (skipped when absent).
+pub fn ser_opt_num<S: Serializer>(v: &Option<f64>, s: S) -> Result<S::Ok, S::Error> {
+    match v {
+        Some(x) => ser_num(x, s),
+        None => s.serialize_none(),
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

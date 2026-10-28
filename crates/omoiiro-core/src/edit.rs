@@ -13,7 +13,7 @@
 //!   never reused within a show.
 
 use crate::model::{
-    Axis, BeatSource, Blend, ChaseParams, Clip, Content, Effect, Layer, Loss, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
+    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, TapGlowParams, Content, Effect, Layer, Loss, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
     StopBehavior, StrobeMode, StrobeParams, Sync, Target, TimecodeSettings, TimecodeSource, Waveform, SCHEMA_VERSION,
 };
 use crate::surface::GRID64_PROFILE;
@@ -205,6 +205,7 @@ pub fn default_effect(effect_type: &str) -> Option<Effect> {
                 speed: 1.0.into(),
                 thickness: 1.0.into(),
                 beat_amplitude: false.into(),
+                phase: None,
             },
         },
         "builtin.orb" => Effect::Orb {
@@ -224,7 +225,40 @@ pub fn default_effect(effect_type: &str) -> Option<Effect> {
                 speed: 1.0.into(),
                 orbit_radius: 1.5.into(),
                 bounce_angle: 35.0.into(),
+                orbit_phase: None,
             },
+        },
+        // Left / right halves alternating on the beat (2 Hz at 120 bpm).
+        "builtin.regions" => Effect::Regions {
+            version: 1,
+            params: RegionsParams {
+                pattern: RegionPattern::HalvesLr.into(),
+                color: "#FFFFFF".to_string().into(),
+                color_b: None,
+                step_mode: StepMode::Beat.into(),
+                step_beats: 1.0.into(),
+                step_ms: 500.into(),
+                order: StepOrder::Forward.into(),
+                soft: 0.0.into(),
+                duty: 1.0.into(),
+            },
+        },
+        "builtin.tap_glow" => Effect::TapGlow {
+            version: 1,
+            params: TapGlowParams {
+                color_start: "#FFFFFF".to_string().into(),
+                color_mid: "#FFB040".to_string().into(),
+                color_end: "#400000".to_string().into(),
+                lifetime_ms: 1200.into(),
+                radius: 1.5.into(),
+                repeats: 1.into(),
+                repeat_interval_ms: 300.into(),
+                repeat_decay: 0.6.into(),
+            },
+        },
+        "builtin.cross" => Effect::Cross {
+            version: 1,
+            params: CrossParams { color: "#00DCC8".to_string().into(), speed: 12.0.into(), length: 2.0.into(), lifetime_ms: 800.into() },
         },
         "builtin.ripple" => Effect::Ripple {
             version: 1,
@@ -236,6 +270,10 @@ pub fn default_effect(effect_type: &str) -> Option<Effect> {
                 fade: RippleFade::Linear.into(),
                 max_concurrent: 8.into(),
                 trigger: RippleTrigger::AnyPad.into(),
+                shape: None,
+                origin_x: None,
+                origin_y: None,
+                interval_ms: None,
             },
         },
         // The reference look: light-blue to white grains on deep blue. 6 Hz pattern = 3 Hz blinking.

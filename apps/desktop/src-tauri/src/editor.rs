@@ -121,6 +121,9 @@ fn color_of(e: &Effect) -> String {
         Effect::Rain { params, .. } => params.color.value().clone(),
         Effect::Wave { params, .. } => params.color.value().clone(),
         Effect::Orb { params, .. } => params.color.value().clone(),
+        Effect::Regions { params, .. } => params.color.value().clone(),
+        Effect::TapGlow { params, .. } => params.color_mid.value().clone(),
+        Effect::Cross { params, .. } => params.color.value().clone(),
     }
 }
 

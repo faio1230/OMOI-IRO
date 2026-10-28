@@ -31,13 +31,17 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 | `builtin.pulse` | 拍の明滅 | `color`, `beats_per_cycle`（0.25 / 0.5 / 1）, `depth`（0〜1）, `waveform`（`sine` / `triangle`） | 拍の位相で明るさが変わる。拍の頭で最大。拍が取れないと透明 |
 | `builtin.strobe` | 点滅 | `color`, `mode`（`hz` / `beat`）, `rate_hz`（0.5〜30）, `beats_per_cycle`（0.25 / 0.5 / 1 / 2）, `duty`（0.05〜0.95）, `phase_offset`（0〜1） | 矩形波。`hz` はクリップのローカル時刻、`beat` は拍の位相。使わない方の値も必須なので書く |
 | `builtin.noise` | ノイズ | `base_color`, `highlight_color`, `density`（0〜1）, `rate_hz`（0.5〜30）, `seed`（0〜2147483647）, `smooth`（bool）, `depth`（0〜1） | 地の色の上に粒が散る。density は点灯割合、rate_hz は模様の更新頻度、depth は粒の明るさの揺らぎ。時刻だけで決まる |
-| `builtin.ripple` | 波紋 | `color`, `speed`（セル/秒 0.5〜16）, `ring_width`（0.5〜4）, `lifetime_ms`（200〜4000）, `fade`（`linear` / `exp`）, `max_concurrent`（1〜16）, `trigger`（`any_pad`） | パッドを押した位置から輪が広がる（最新16件、4秒で破棄、重なりは最大値）。入力駆動なので CLI の `render` では見えない。GUI のプレビュー盤をクリックすると試せる |
+| `builtin.ripple` | 波紋 | `color`, `speed`（セル/秒 0.5〜16）, `ring_width`（0.5〜4）, `lifetime_ms`（200〜4000）, `fade`（`linear` / `exp`）, `max_concurrent`（1〜16）, `trigger`（`any_pad` / `interval`）。任意 `shape`（`circle` / `diamond` / `square`）。`interval` のとき `origin_x` / `origin_y`（0〜7）と `interval_ms`（100〜10000）が必須 | パッドを押した位置から輪が広がる（最新16件、4秒で破棄、重なりは最大値）。入力駆動なので CLI の `render` では見えない。GUI のプレビュー盤をクリックすると試せる |
 
 | `builtin.rain` | 雨 | `color`, `direction`（`down` / `up` / `left` / `right`）, `speed`（セル/秒 0.5〜16）, `density`（0〜1）, `tail`（0〜8）, `seed`, `flicker`（0〜1）。任意 `head_color` | 一方向に粒が流れ、尾を引く。0.5秒ごとの枠に確率 density で粒が出る。先頭は head_color（省略時は color）、尾は線形に減衰。flicker は尾を 8 Hz で揺らす。時刻だけで決まる。Matrix 風は緑 `#00C040` + 先頭 `#C8FFD8`、tail 4〜6、flicker 0.5 |
-| `builtin.wave` | 波形 | `color`, `axis`（`x` 横に流れる / `y` 縦）, `wavelength`（2〜16）, `amplitude`（0.5〜3.5）, `center`（0〜7）, `speed`（周期/秒 −4〜4、負で逆向き）, `thickness`（0.5〜3）, `beat_amplitude`（bool） | 正弦波の曲線に近いセルが光る。beat_amplitude を true にすると拍の頭で振幅が最大、裏で 0.3 倍（拍不明なら固定） |
-| `builtin.orb` | 球 | `color`, `center_x` / `center_y`（0〜7、小数可）, `radius`（0.5〜6）, `edge`（0〜2）, `light_angle`（0〜360、90 = 上から）, `shading`（0〜1）, `dither`（0〜1）, `dither_rate_hz`（0.5〜15）, `seed`, `motion`（`none` / `orbit` / `bounce`）, `speed`（orbit は 0.05〜2 周/秒、bounce は 0.5〜12 セル/秒、none は 0 でよい）, `orbit_radius`（0〜4）, `bounce_angle`（0〜360） | 陰影つきの円。dither で粒状のざらつき。orbit は中心の周りを回り、bounce は盤面の端で反射。すべて時刻だけで決まる |
+| `builtin.wave` | 波形 | `color`, `axis`（`x` 横に流れる / `y` 縦）, `wavelength`（2〜16）, `amplitude`（0.5〜3.5）, `center`（0〜7）, `speed`（周期/秒 −4〜4、負で逆向き）, `thickness`（0.5〜3）, `beat_amplitude`（bool）。任意 `phase`（0〜1、2枚重ねて交差させるときに 0.5） | 正弦波の曲線に近いセルが光る。beat_amplitude を true にすると拍の頭で振幅が最大、裏で 0.3 倍（拍不明なら固定） |
+| `builtin.orb` | 球 | `color`, `center_x` / `center_y`（0〜7、小数可）, `radius`（0.5〜6）, `edge`（0〜2）, `light_angle`（0〜360、90 = 上から）, `shading`（0〜1）, `dither`（0〜1）, `dither_rate_hz`（0.5〜15）, `seed`, `motion`（`none` / `orbit` / `bounce`）, `speed`（orbit は 0.05〜2 周/秒、bounce は 0.5〜12 セル/秒、none は 0 でよい）, `orbit_radius`（0〜4）, `bounce_angle`（0〜360）。任意 `orbit_phase`（0〜1、2つの球を対称に回すときに 0.5） | 陰影つきの円。dither で粒状のざらつき。orbit は中心の周りを回り、bounce は盤面の端で反射。すべて時刻だけで決まる |
 
-すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）。
+| `builtin.regions` | 領域ステップ | `pattern`（`halves_lr` 左右半面 / `halves_tb` 上下半面 / `checker` 市松 / `quadrants` 4象限 / `columns` 8列 / `rows` 8行 / `perimeter` 外周28セル / `fan` 中央から外へ4段）, `color`, `step_mode`（`beat` / `seconds`）, `step_beats`（0.25 / 0.5 / 1 / 2 / 4）, `step_ms`（50〜5000）, `order`（`forward` / `reverse` / `pingpong`）, `soft`（0〜1）, `duty`（0.05〜1）。任意 `color_b`（点いていない群の色） | 照明卓のチェイス。群が順に点く。soft 1 で明るさの山が滑らかに伝わる（8灯ディマー）。beat は拍不明なら透明。使わない方の step 値も必須なので書く |
+| `builtin.tap_glow` | 余熱 | `color_start`, `color_mid`, `color_end`, `lifetime_ms`（100〜5000）, `radius`（0〜3）, `repeats`（1〜8）, `repeat_interval_ms`（50〜2000）, `repeat_decay`（0〜1） | 押した位置が start → mid → end と色を変えて消える。repeats でエコー。入力駆動（CLI の render では見えない） |
+| `builtin.cross` | 十字 | `color`, `speed`（セル/秒 1〜32）, `length`（尾 0.5〜8）, `lifetime_ms`（100〜3000） | 押した位置から上下左右へ光が走る。入力駆動 |
+
+すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）、`d-effects-0.1.2.show.json`（領域ステップ・余熱・十字・形つき波紋）。
 
 ## 4. 書き方の規則
 

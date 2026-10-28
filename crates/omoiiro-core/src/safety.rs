@@ -8,7 +8,8 @@
 //!   one cell `(8 / width) / period_s` times per second; Strobe flashes at
 //!   `rate_hz` or `tempo / 60 / beats_per_cycle`; Noise cells blink at
 //!   `rate_hz / 2`; Rain flicker 4 Hz, Orb dither `rate / 2` (Wave: `|speed| × 2`,
-//!   warned about but never muted). A preset above
+//!   warned about but never muted); Regions one switch per step (none with
+//!   `soft >= 0.5`). A preset above
 //!   `max_flash_hz` gives a warning (with the value) for each layer that
 //!   uses it. Only when `limit_flash` is on are those layers muted
 //!   (opacity 0 at render time); the show itself is never rewritten.
@@ -81,12 +82,18 @@ pub enum FlashSource {
     Grain { hz: f64 },
     /// Wave: `|speed| × 2` per cell. A warning only: never muted (continuous motion).
     Wave { hz: f64 },
+    /// Regions stepping by time: one switch per step.
+    Step { hz: f64 },
+    /// Regions stepping on the beat (depends on the tempo).
+    StepBeat { beats_per_step: f64 },
 }
 
 impl FlashSource {
     pub fn hz(&self, tempo_bpm: f64) -> f64 {
         match self {
             FlashSource::Pulse { beats_per_cycle } | FlashSource::StrobeBeat { beats_per_cycle } => tempo_bpm / 60.0 / beats_per_cycle,
+            FlashSource::StepBeat { beats_per_step } => tempo_bpm / 60.0 / beats_per_step,
+            FlashSource::Step { hz } => *hz,
             FlashSource::Chase { hz } | FlashSource::Strobe { hz } | FlashSource::Noise { hz } | FlashSource::Grain { hz } | FlashSource::Wave { hz } => *hz,
         }
     }
@@ -111,12 +118,18 @@ pub fn effect_flash(e: &Effect) -> Option<FlashSource> {
         }),
         Effect::Noise { params, .. } => Some(FlashSource::Noise { hz: *params.rate_hz.value() / 2.0 }),
         // Driven by pad presses, not by time: not judged statically.
-        Effect::Ripple { .. } => None,
+        Effect::Ripple { .. } | Effect::TapGlow { .. } | Effect::Cross { .. } => None,
         Effect::Rain { params, .. } if *params.flicker.value() > 0.0 => Some(FlashSource::Grain { hz: 4.0 }),
         Effect::Rain { .. } => None,
         Effect::Wave { params, .. } => Some(FlashSource::Wave { hz: params.speed.value().abs() * 2.0 }),
         Effect::Orb { params, .. } if *params.dither.value() > 0.0 => Some(FlashSource::Grain { hz: *params.dither_rate_hz.value() / 2.0 }),
         Effect::Orb { .. } => None,
+        // A soft hand-over (>= 0.5) does not switch abruptly.
+        Effect::Regions { params, .. } if *params.soft.value() >= 0.5 => None,
+        Effect::Regions { params, .. } => Some(match params.step_mode.value() {
+            crate::model::StepMode::Seconds => FlashSource::Step { hz: 1000.0 / (*params.step_ms.value()).max(1) as f64 },
+            crate::model::StepMode::Beat => FlashSource::StepBeat { beats_per_step: *params.step_beats.value() },
+        }),
     }
 }
 
@@ -178,6 +191,8 @@ impl FlashProfile {
                         FlashSource::Strobe { .. } => ("strobe", format!("Strobe {hz:.2} Hz（上限 {max_hz} Hz）")),
                         FlashSource::StrobeBeat { beats_per_cycle } => ("strobe", format!("Strobe {beats_per_cycle} 拍周期 × {tempo_bpm:.1} bpm = {hz:.2} Hz（上限 {max_hz} Hz）")),
                         FlashSource::Noise { .. } => ("noise", format!("Noise のセルの明滅 {hz:.2} Hz（模様の更新の半分、上限 {max_hz} Hz）")),
+                        FlashSource::Step { .. } => ("regions", format!("領域ステップの切り替え {hz:.2} Hz（上限 {max_hz} Hz）")),
+                        FlashSource::StepBeat { beats_per_step } => ("regions", format!("領域ステップ {beats_per_step} 拍ごと × {tempo_bpm:.1} bpm = {hz:.2} Hz（上限 {max_hz} Hz）")),
                         FlashSource::Grain { .. } => ("grain", format!("粒の揺らぎ {hz:.2} Hz（上限 {max_hz} Hz）")),
                         FlashSource::Wave { .. } => ("wave", format!("Wave のセルから見た明滅 {hz:.2} Hz（警告のみ、消灯の対象外。上限 {max_hz} Hz）")),
                     };
@@ -292,6 +307,19 @@ mod tests {
         assert_eq!(p.layer_hz(0, 120.0), 12.0);
         // Raising the terminal limit lets it through.
         assert!(p.warnings(120.0, 15.0).is_empty());
+    }
+
+    #[test]
+    fn regions_flash_at_the_step_rate_unless_soft() {
+        use crate::edit::default_effect;
+        // Default: halves on the beat = 2 Hz at 120 bpm.
+        let Effect::Regions { version, mut params } = default_effect("builtin.regions").unwrap() else { unreachable!() };
+        assert_eq!(effect_flash(&Effect::Regions { version, params: params.clone() }).unwrap().hz(120.0), 2.0);
+        params.step_mode = crate::model::StepMode::Seconds.into();
+        params.step_ms = 100.into();
+        assert_eq!(effect_flash(&Effect::Regions { version, params: params.clone() }), Some(FlashSource::Step { hz: 10.0 }));
+        params.soft = 0.5.into();
+        assert_eq!(effect_flash(&Effect::Regions { version, params }), None);
     }
 
     #[test]

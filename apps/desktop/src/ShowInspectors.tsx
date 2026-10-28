@@ -3,7 +3,7 @@
 // hand-off as the timeline); ranges shown here follow the show schema.
 import { useEffect, useState } from "react";
 import * as ipc from "./ipc/commands";
-import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto } from "./ipc/types";
+import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern } from "./ipc/types";
 
 const TYPE_JA: Record<EffectType, string> = {
   "builtin.solid": "単色（Solid）",
@@ -15,6 +15,9 @@ const TYPE_JA: Record<EffectType, string> = {
   "builtin.rain": "雨（Rain）",
   "builtin.wave": "波形（Wave）",
   "builtin.orb": "球（Orb）",
+  "builtin.regions": "領域ステップ（Regions）",
+  "builtin.tap_glow": "余熱（TapGlow）",
+  "builtin.cross": "十字（Cross）",
 };
 
 /** Numeric input clamped to [min, max] on change. */
@@ -118,6 +121,105 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
       </div>
     );
   }
+  if (effect.type === "builtin.tap_glow") {
+    const p = effect.params;
+    const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
+    return (
+      <div className="insp-grid">
+        <ColorField label="押した直後の色" value={p.color_start} onChange={(color_start) => set({ color_start })} />
+        <ColorField label="途中の色" value={p.color_mid} onChange={(color_mid) => set({ color_mid })} />
+        <ColorField label="消える前の色" value={p.color_end} onChange={(color_end) => set({ color_end })} />
+        <NumberField label="消えるまで（ms）" value={p.lifetime_ms} min={100} max={5000} step={100} hint="100〜5000" onChange={(v) => set({ lifetime_ms: Math.round(v) })} />
+        <NumberField label="広がり（セル）" value={p.radius} min={0} max={3} step={0.25} hint="0 で押したパッドだけ" onChange={(radius) => set({ radius })} />
+        <NumberField label="繰り返し回数" value={p.repeats} min={1} max={8} step={1} hint="1〜8" onChange={(v) => set({ repeats: Math.round(v) })} />
+        <NumberField label="繰り返しの間隔（ms）" value={p.repeat_interval_ms} min={50} max={2000} step={50} hint="50〜2000" onChange={(v) => set({ repeat_interval_ms: Math.round(v) })} />
+        <label className="field">
+          <span>繰り返すたびの明るさ {Math.round(p.repeat_decay * 100)}%</span>
+          <input type="range" min={0} max={1} step={0.05} value={p.repeat_decay} onChange={(e) => set({ repeat_decay: Number(e.target.value) })} />
+        </label>
+        <p className="hint">パッドを押した位置が光って冷めていく。操作入力がないと何も出ない（プレビュー盤のクリックでも確認できる）。</p>
+      </div>
+    );
+  }
+  if (effect.type === "builtin.cross") {
+    const p = effect.params;
+    const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
+    return (
+      <div className="insp-grid">
+        <ColorField value={p.color} onChange={(color) => set({ color })} />
+        <NumberField label="走る速さ（セル/秒）" value={p.speed} min={1} max={32} step={1} hint="1〜32" onChange={(speed) => set({ speed })} />
+        <NumberField label="尾の長さ（セル）" value={p.length} min={0.5} max={8} step={0.5} hint="0.5〜8" onChange={(length) => set({ length })} />
+        <NumberField label="消えるまで（ms）" value={p.lifetime_ms} min={100} max={3000} step={100} hint="100〜3000" onChange={(v) => set({ lifetime_ms: Math.round(v) })} />
+        <p className="hint">押した位置から上下左右へ光が走る。操作入力がないと何も出ない（プレビュー盤のクリックでも確認できる）。</p>
+      </div>
+    );
+  }
+  if (effect.type === "builtin.regions") {
+    const p = effect.params;
+    const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
+    return (
+      <div className="insp-grid">
+        <label className="field">
+          <span>分け方</span>
+          <select value={p.pattern} onChange={(e) => set({ pattern: e.target.value as RegionPattern })}>
+            <option value="halves_lr">左右の半分</option>
+            <option value="halves_tb">上下の半分</option>
+            <option value="checker">市松</option>
+            <option value="quadrants">4象限（左下→右下→右上→左上）</option>
+            <option value="columns">8列</option>
+            <option value="rows">8行</option>
+            <option value="perimeter">外周（左下から時計回り）</option>
+            <option value="fan">中央から外へ</option>
+          </select>
+        </label>
+        <ColorField value={p.color} onChange={(color) => set({ color })} />
+        <label className="field check">
+          <input type="checkbox" checked={p.color_b !== undefined} onChange={(e) => set({ color_b: e.target.checked ? "#000040" : undefined })} />
+          <span>点いていない側も色で出す（交互）</span>
+        </label>
+        {p.color_b !== undefined && <ColorField label="点いていない側の色" value={p.color_b} onChange={(color_b) => set({ color_b })} />}
+        <label className="field">
+          <span>進み方</span>
+          <select value={p.step_mode} onChange={(e) => set({ step_mode: e.target.value as "beat" | "seconds" })}>
+            <option value="beat">拍で進む</option>
+            <option value="seconds">時間で進む</option>
+          </select>
+          <span className="hint">拍で進む場合、拍が不明な間は消える</span>
+        </label>
+        {p.step_mode === "beat" ? (
+          <label className="field">
+            <span>1段の拍数</span>
+            <select value={String(p.step_beats)} onChange={(e) => set({ step_beats: Number(e.target.value) })}>
+              <option value="0.25">0.25 拍</option>
+              <option value="0.5">0.5 拍</option>
+              <option value="1">1 拍</option>
+              <option value="2">2 拍</option>
+              <option value="4">4 拍</option>
+            </select>
+          </label>
+        ) : (
+          <NumberField label="1段の長さ（ms）" value={p.step_ms} min={50} max={5000} step={50} hint="50〜5000" onChange={(v) => set({ step_ms: Math.round(v) })} />
+        )}
+        <label className="field">
+          <span>順番</span>
+          <select value={p.order} onChange={(e) => set({ order: e.target.value as "forward" | "reverse" | "pingpong" })}>
+            <option value="forward">順に</option>
+            <option value="reverse">逆順</option>
+            <option value="pingpong">往復</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>なめらかさ {Math.round(p.soft * 100)}%</span>
+          <input type="range" min={0} max={1} step={0.05} value={p.soft} onChange={(e) => set({ soft: Number(e.target.value) })} />
+          <span className="hint">50% 以上は点滅として扱わない</span>
+        </label>
+        <label className="field">
+          <span>1段のうち点く割合 {Math.round(p.duty * 100)}%</span>
+          <input type="range" min={0.05} max={1} step={0.05} value={p.duty} onChange={(e) => set({ duty: Number(e.target.value) })} />
+        </label>
+      </div>
+    );
+  }
   if (effect.type === "builtin.rain") {
     const p = effect.params;
     const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
@@ -172,6 +274,7 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
           <input type="checkbox" checked={p.beat_amplitude} onChange={(e) => set({ beat_amplitude: e.target.checked })} />
           <span>拍で振幅を揺らす（0.3〜1 倍）</span>
         </label>
+        <NumberField label="位相のずらし（周期）" value={p.phase ?? 0} min={0} max={1} step={0.05} hint="0〜1" onChange={(phase) => set({ phase })} />
       </div>
     );
   }
@@ -212,6 +315,7 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
         </label>
         {p.motion !== "none" && <NumberField label={speedRange.label} value={p.speed} min={speedRange.min} max={speedRange.max} step={speedRange.step} hint={speedRange.hint} onChange={(speed) => set({ speed })} />}
         {p.motion === "orbit" && <NumberField label="回る半径（セル）" value={p.orbit_radius} min={0} max={4} step={0.25} hint="0〜4" onChange={(orbit_radius) => set({ orbit_radius })} />}
+        {p.motion === "orbit" && <NumberField label="回り始めの角度（周）" value={p.orbit_phase ?? 0} min={0} max={1} step={0.05} hint="0〜1" onChange={(orbit_phase) => set({ orbit_phase })} />}
         {p.motion === "bounce" && <NumberField label="跳ねる向き（度）" value={p.bounce_angle} min={0} max={360} step={5} onChange={(bounce_angle) => set({ bounce_angle })} />}
       </div>
     );
@@ -233,7 +337,33 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
           </select>
         </label>
         <NumberField label="同時に出す数" value={p.max_concurrent} min={1} max={16} step={1} hint="1〜16（超えたら古い輪から消す）" onChange={(v) => set({ max_concurrent: Math.round(v) })} />
-        <p className="hint">パッドを押すと、その位置から輪が広がる。操作入力（接続設定）がないと何も出ない。プレビュー盤をクリックしても確認できる（実機の入力とは別）。</p>
+        <label className="field">
+          <span>輪の形</span>
+          <select value={p.shape ?? "circle"} onChange={(e) => set({ shape: e.target.value as "circle" | "diamond" | "square" })}>
+            <option value="circle">円</option>
+            <option value="diamond">ひし形</option>
+            <option value="square">四角</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>出るきっかけ</span>
+          <select value={p.trigger} onChange={(e) => {
+            const trigger = e.target.value as "any_pad" | "interval";
+            // Interval needs its origin and interval (defaults: centre, 1 s).
+            set(trigger === "interval" ? { trigger, origin_x: p.origin_x ?? 3.5, origin_y: p.origin_y ?? 3.5, interval_ms: p.interval_ms ?? 1000 } : { trigger });
+          }}>
+            <option value="any_pad">パッドを押したとき</option>
+            <option value="interval">一定の間隔（入力なし）</option>
+          </select>
+        </label>
+        {p.trigger === "interval" && (
+          <>
+            <NumberField label="中心 x（セル）" value={p.origin_x ?? 3.5} min={0} max={7} step={0.5} onChange={(origin_x) => set({ origin_x })} />
+            <NumberField label="中心 y（セル）" value={p.origin_y ?? 3.5} min={0} max={7} step={0.5} onChange={(origin_y) => set({ origin_y })} />
+            <NumberField label="間隔（ms）" value={p.interval_ms ?? 1000} min={100} max={10000} step={100} hint="100〜10000（クリップの時刻で決まる）" onChange={(v) => set({ interval_ms: Math.round(v) })} />
+          </>
+        )}
+        <p className="hint">「パッドを押したとき」は押した位置から輪が広がる（操作入力がないと何も出ない。プレビュー盤のクリックでも確認できる）。「一定の間隔」は入力なしで指定の位置から出る。</p>
       </div>
     );
   }

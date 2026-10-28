@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://omoi-iro.invalid/schemas/show.schema.json",
   "title": "OMOI-IRO Show 0.1.2",
-  "description": "Show file schema. Cross-reference, ID uniqueness, drop-frame and interval checks require semantic validation. 0.1.0 and 0.1.1 files are read by migration (version only; 0.1.2 adds builtin.strobe, builtin.noise, builtin.ripple, builtin.rain, builtin.wave, builtin.orb and the optional chase reverse).",
+  "description": "Show file schema. Cross-reference, ID uniqueness, drop-frame and interval checks require semantic validation. 0.1.0 and 0.1.1 files are read by migration (version only; 0.1.2 adds builtin.strobe, builtin.noise, builtin.ripple, builtin.rain, builtin.wave, builtin.orb, builtin.regions, builtin.tap_glow, builtin.cross and the optional chase reverse, ripple shape / interval trigger, wave phase and orb orbit_phase).",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -264,7 +264,10 @@
             "builtin.ripple",
             "builtin.rain",
             "builtin.wave",
-            "builtin.orb"
+            "builtin.orb",
+            "builtin.regions",
+            "builtin.tap_glow",
+            "builtin.cross"
           ]
         }
       },
@@ -627,10 +630,54 @@
                   },
                   "trigger": {
                     "enum": [
-                      "any_pad"
+                      "any_pad",
+                      "interval"
                     ]
+                  },
+                  "shape": {
+                    "enum": [
+                      "circle",
+                      "diamond",
+                      "square"
+                    ]
+                  },
+                  "origin_x": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 7
+                  },
+                  "origin_y": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 7
+                  },
+                  "interval_ms": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 10000
                   }
-                }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "trigger": {
+                          "const": "interval"
+                        }
+                      },
+                      "required": [
+                        "trigger"
+                      ]
+                    },
+                    "then": {
+                      "required": [
+                        "origin_x",
+                        "origin_y",
+                        "interval_ms"
+                      ]
+                    }
+                  }
+                ]
               }
             }
           }
@@ -784,6 +831,9 @@
                   },
                   "beat_amplitude": {
                     "type": "boolean"
+                  },
+                  "phase": {
+                    "$ref": "#/$defs/unit"
                   }
                 }
               }
@@ -898,6 +948,234 @@
                     "type": "number",
                     "minimum": 0,
                     "maximum": 360
+                  },
+                  "orbit_phase": {
+                    "$ref": "#/$defs/unit"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "builtin.regions"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "version",
+              "params"
+            ],
+            "properties": {
+              "type": {
+                "const": "builtin.regions"
+              },
+              "version": {
+                "const": 1
+              },
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "pattern",
+                  "color",
+                  "step_mode",
+                  "step_beats",
+                  "step_ms",
+                  "order",
+                  "soft",
+                  "duty"
+                ],
+                "properties": {
+                  "pattern": {
+                    "enum": [
+                      "halves_lr",
+                      "halves_tb",
+                      "checker",
+                      "quadrants",
+                      "columns",
+                      "rows",
+                      "perimeter",
+                      "fan"
+                    ]
+                  },
+                  "color": {
+                    "$ref": "#/$defs/color"
+                  },
+                  "color_b": {
+                    "$ref": "#/$defs/color"
+                  },
+                  "step_mode": {
+                    "enum": [
+                      "beat",
+                      "seconds"
+                    ]
+                  },
+                  "step_beats": {
+                    "enum": [
+                      0.25,
+                      0.5,
+                      1,
+                      2,
+                      4
+                    ]
+                  },
+                  "step_ms": {
+                    "type": "integer",
+                    "minimum": 50,
+                    "maximum": 5000
+                  },
+                  "order": {
+                    "enum": [
+                      "forward",
+                      "reverse",
+                      "pingpong"
+                    ]
+                  },
+                  "soft": {
+                    "$ref": "#/$defs/unit"
+                  },
+                  "duty": {
+                    "type": "number",
+                    "minimum": 0.05,
+                    "maximum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "builtin.tap_glow"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "version",
+              "params"
+            ],
+            "properties": {
+              "type": {
+                "const": "builtin.tap_glow"
+              },
+              "version": {
+                "const": 1
+              },
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "color_start",
+                  "color_mid",
+                  "color_end",
+                  "lifetime_ms",
+                  "radius",
+                  "repeats",
+                  "repeat_interval_ms",
+                  "repeat_decay"
+                ],
+                "properties": {
+                  "color_start": {
+                    "$ref": "#/$defs/color"
+                  },
+                  "color_mid": {
+                    "$ref": "#/$defs/color"
+                  },
+                  "color_end": {
+                    "$ref": "#/$defs/color"
+                  },
+                  "lifetime_ms": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 5000
+                  },
+                  "radius": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 3
+                  },
+                  "repeats": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "repeat_interval_ms": {
+                    "type": "integer",
+                    "minimum": 50,
+                    "maximum": 2000
+                  },
+                  "repeat_decay": {
+                    "$ref": "#/$defs/unit"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "builtin.cross"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "version",
+              "params"
+            ],
+            "properties": {
+              "type": {
+                "const": "builtin.cross"
+              },
+              "version": {
+                "const": 1
+              },
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "color",
+                  "speed",
+                  "length",
+                  "lifetime_ms"
+                ],
+                "properties": {
+                  "color": {
+                    "$ref": "#/$defs/color"
+                  },
+                  "speed": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 32
+                  },
+                  "length": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 8
+                  },
+                  "lifetime_ms": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 3000
                   }
                 }
               }
