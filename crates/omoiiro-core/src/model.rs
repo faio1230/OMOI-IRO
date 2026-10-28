@@ -659,66 +659,6 @@ pub enum Blend {
 pub enum Content {
     Timeline { clips: Vec<Clip> },
     Continuous { preset_id: String },
-    /// 0.1.3: clips are the windows where `trigger` fires instances of the
-    /// clip's preset (positions and times come from the trigger).
-    Triggered { clips: Vec<Clip>, trigger: TriggerSpec },
-}
-
-impl Content {
-    /// Clips of a timeline or triggered layer.
-    pub fn clips(&self) -> Option<&Vec<Clip>> {
-        match self {
-            Content::Timeline { clips } | Content::Triggered { clips, .. } => Some(clips),
-            Content::Continuous { .. } => None,
-        }
-    }
-
-    pub fn clips_mut(&mut self) -> Option<&mut Vec<Clip>> {
-        match self {
-            Content::Timeline { clips } | Content::Triggered { clips, .. } => Some(clips),
-            Content::Continuous { .. } => None,
-        }
-    }
-}
-
-/// When a triggered layer fires (docs/14 §4-1).
-///
-/// * `press` / `release` / `hold`: pad input, timed by its arrival
-///   (monotonic): instances are not replayed by a seek and keep ageing
-///   through Stop. Only input that arrives while a clip is active counts.
-///   `hold` lasts from press to release (at most 10 s).
-/// * `clip_start` / `interval`: the clip's local time (deterministic, seek
-///   safe), at `origin_x` / `origin_y` (default the centre).
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TriggerSpec {
-    pub on: TriggerOn,
-    /// `interval` only (required there): 100..=10000 ms.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub interval_ms: Option<u32>,
-    /// `clip_start` / `interval`: 0..=7 cells; absent = 3.5.
-    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_num")]
-    pub origin_x: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_num")]
-    pub origin_y: Option<f64>,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TriggerOn {
-    Press,
-    Release,
-    Hold,
-    ClipStart,
-    Interval,
-}
-
-/// `ser_num` for an optional plain number (skipped when absent).
-pub fn ser_opt_num<S: Serializer>(v: &Option<f64>, s: S) -> Result<S::Ok, S::Error> {
-    match v {
-        Some(x) => ser_num(x, s),
-        None => s.serialize_none(),
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
