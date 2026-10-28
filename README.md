@@ -39,6 +39,7 @@ Claudeへ引き継ぐ場合は[引き継ぎ設計とP0仕様](docs/09-claude-han
 | [実装計画](docs/11-implementation-plan.md) | 試作から本番アプリへの移行（2026-10-28）。構成、マイルストーンM1〜M6、分担、進捗 |
 | [元要件との対応](docs/12-original-requirements.md) | 利用者の元要件（タイムライン・モジュール・ノードグラフ）と現在の実装の対応表。MVPで外した項目と確保する余地 |
 | [プリセット制作ガイド](docs/13-preset-authoring.md) | GUIを使わずJSONでプリセットとパレット用ショーを量産する手引き（Codex等の並行制作向け）。Schema 0.1.2の演出一覧、規則、CLIでの確認 |
+| [演出60案の対応表と拡張計画](docs/14-effects-roadmap.md) | Codex案の60演出を「今すぐ／小拡張／新基盤／外部入力」に分類。小拡張の仕様と基盤の順序（2026-10-28） |
 | [P0 環境調査](docs/validation/environment.md) | Windows側の確認値と未確認値（2026-10-28） |
 | [P0 検証手順書](docs/validation/p0-runbook.md) | Liveなしの確認、Windows + Live 12、Macの短時間枠 |
 | [P0 検証結果](docs/validation/p0-results.md) | Windows実測（Live 12 + LiveMTC、Link、代替ブリッジ計測）とnot-run項目 |

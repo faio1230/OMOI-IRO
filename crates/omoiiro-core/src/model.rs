@@ -82,6 +82,14 @@ pub fn ser_param_num<S: Serializer>(v: &Param<f64>, s: S) -> Result<S::Ok, S::Er
     ser_num(v.value(), s)
 }
 
+/// `ser_num` for an optional numeric parameter (skipped when absent).
+pub fn ser_opt_param_num<S: Serializer>(v: &Option<Param<f64>>, s: S) -> Result<S::Ok, S::Error> {
+    match v {
+        Some(p) => ser_num(p.value(), s),
+        None => s.serialize_none(),
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Show {
@@ -369,6 +377,17 @@ pub struct RippleParams {
     /// Rings drawn at once, 1..=16 (the oldest go first).
     pub max_concurrent: Param<u32>,
     pub trigger: Param<RippleTrigger>,
+    /// Ring shape (distance metric); absent = circle.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shape: Option<Param<RippleShape>>,
+    /// `interval` only (required there): ring centre, 0..=7 cells.
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub origin_x: Option<Param<f64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub origin_y: Option<Param<f64>>,
+    /// `interval` only (required there): a ring every 100..=10000 ms of local time.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub interval_ms: Option<Param<u32>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -383,6 +402,19 @@ pub enum RippleFade {
 pub enum RippleTrigger {
     /// Any grid pad Note On.
     AnyPad,
+    /// A ring every `interval_ms` of the clip's local time at `origin_x/y` (no input).
+    Interval,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RippleShape {
+    /// Euclidean distance.
+    Circle,
+    /// Manhattan distance.
+    Diamond,
+    /// Chebyshev distance.
+    Square,
 }
 /// Drops run along `direction`, one lane per row / column, with a tail behind.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -441,6 +473,9 @@ pub struct WaveParams {
     pub thickness: Param<f64>,
     /// Scale the amplitude 0.3..1 with the beat phase (fixed while it is unknown).
     pub beat_amplitude: Param<bool>,
+    /// Phase offset of the sine, 0..=1 cycle; absent = 0.
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub phase: Option<Param<f64>>,
 }
 
 /// A shaded disc (light from `light_angle`), optionally dithered and moving.
@@ -482,6 +517,9 @@ pub struct OrbParams {
     /// Degrees (bounce direction).
     #[serde(serialize_with = "ser_param_num")]
     pub bounce_angle: Param<f64>,
+    /// Start angle of the orbit, 0..=1 turn; absent = 0.
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub orbit_phase: Option<Param<f64>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
