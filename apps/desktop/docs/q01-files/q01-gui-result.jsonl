@@ -4,3 +4,4 @@
 {"id":"G3.1","title":"GUI：任意位置プレビューの画素 = render","expect":"64パッドの画面の色が render の RGB と±3以内（7bit 量子化と描画）","pass":true,"result":"t=12345000 us, 最大差 0","t":"2026-10-28T21:01:25"}
 {"id":"G4.1","title":"GUI：追従、編集の反映、Blackout、再接続","expect":"locked、編集が rev 2 で反映、Blackout の暗転理由、再接続後も動作","pass":true,"result":"locked True, rev2 True, blackout True","t":"2026-10-28T21:01:34"}
 {"id":"G5.1","title":"GUI：未保存で閉じる → キャンセル","expect":"確認が出る、キャンセルで残る、保存せずに終了でファイル不変","pass":true,"result":"asked True, stayed True, exited True, file unchanged True","t":"2026-10-28T21:01:40"}
+{"id":"G6.1","title":"GUI：メモリー（NFR07）","expect":"600 秒、60 秒ごとに子孫プロセス込みの working set。基準から増加 10% 以内かつ +50 MB 以内、単調増加なし","pass":true,"result":"基準 493.3 MB（61 s）→ 最後 524.5 MB（600 s）、増加 +31.2 MB（6.3%）、単調増加 False; 標本 <repo>\\apps\\desktop\\docs\\q01-files\\soak-samples-20261028-210635.jsonl","t":"2026-10-28T21:16:37"}

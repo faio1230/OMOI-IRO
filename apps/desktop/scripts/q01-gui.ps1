@@ -9,6 +9,7 @@
 #   Release build (`npx tauri build`) instead of the debug one: add -Release.
 #   Another bridge already sending to 9007 (a running Live): add -BridgePort 9017
 #   (the app's bridge address and fake_bridge use it; the settings are restored).
+#   Synthetic meters for builtin.meter (fake_bridge --meter): add -Meter.
 #   2-hour test (M6, NFR07) on real Live / devices with the saved terminal settings:
 #   pwsh apps/desktop/scripts/q01-gui.ps1 -Scenario soak -SoakSeconds 7200 -SampleSeconds 300 -BaselineSeconds 1800 -Show <file> -NoFakeBridge
 # Scenarios: new-save, reopen, preview, follow, close, soak, all (= all but soak).
@@ -26,7 +27,9 @@ param(
   [string]$Show = "",
   [switch]$NoFakeBridge,
   [switch]$Release,
-  [int]$BridgePort = 0
+  [int]$BridgePort = 0,
+  # fake_bridge also sends synthetic meters (0.1.3 builtin.meter).
+  [switch]$Meter
 )
 $ErrorActionPreference = "Stop"
 if (-not $OutDir) { $OutDir = Join-Path $Repo "apps\desktop\docs\q01-files" }
@@ -38,6 +41,7 @@ $Build = if ($Release) { "release" } else { "debug" }
 $Exe = Join-Path $TargetDir "$Build\omoiiro.exe"
 $Probe = Join-Path $TargetDir "$Build\omoiiro-probe.exe"
 $PortArg = if ($BridgePort) { " --port $BridgePort" } else { "" }
+if ($Meter) { $PortArg += " --meter" }
 $Sample = Join-Path $OutDir "q01-sample.show.json"
 $Results = Join-Path $OutDir "q01-gui-result.jsonl"
 
@@ -367,7 +371,7 @@ function Scenario-Soak {
     }
     Shot "q01-gui-soak.png" | Out-Null
     $verdict = Judge-Memory $samples $BaselineSeconds
-    Record "G6.1" "GUI：メモリー（NFR07）" ("{0} 秒、{1} 秒ごとに子孫プロセス込みの working set。基準から増加 10% 以内かつ +50 MB 以内、単調増加なし" -f $SoakSeconds, $SampleSeconds) $verdict.Ok ($verdict.Text + "; 標本 " + $samplesFile)
+    Record "G6.1" "GUI：メモリー（NFR07）" ("{0} 秒、{1} 秒ごとに子孫プロセス込みの working set。基準から増加 10% 以内かつ +50 MB 以内、単調増加なし" -f $SoakSeconds, $SampleSeconds) $verdict.Ok ($verdict.Text + "; 標本 " + $samplesFile.Replace($Repo, "<repo>"))
     Press "停止"
   } finally {
     if ($bridge -and -not $bridge.HasExited) { $bridge.Kill() }

@@ -1,0 +1,540 @@
+{
+  "$schema": "../../schemas/show.schema.json",
+  "schema_version": "0.1.3",
+  "id": "soak-heavy-0-1-3",
+  "name": "0.1.3 の soak 用の重いショー（粒子2・フレーム・文字・熱・記録・星座・音量、15分）",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "soak-fountain",
+      "name": "噴水（重い）",
+      "effect": {
+        "type": "builtin.particles",
+        "version": 1,
+        "params": {
+          "mode": "fountain",
+          "rate": 64,
+          "color": "#80FFFF",
+          "color_end": "#0040FF",
+          "speed_min": 6,
+          "speed_max": 10,
+          "angle": 90,
+          "spread": 30,
+          "gravity": -10,
+          "drag": 0.5,
+          "lifetime_ms": 6000,
+          "size": 2,
+          "tail": 4,
+          "edge_mode": "bounce",
+          "origin_x": 3.5,
+          "origin_y": 0,
+          "seed": 5
+        }
+      }
+    },
+    {
+      "id": "soak-sparks",
+      "name": "火花の繰り返し",
+      "effect": {
+        "type": "builtin.particles",
+        "version": 1,
+        "params": {
+          "mode": "burst",
+          "count": 24,
+          "color": "#FFE080",
+          "color_end": "#FF2000",
+          "speed_min": 3,
+          "speed_max": 9,
+          "angle": 90,
+          "spread": 360,
+          "gravity": -12,
+          "drag": 2,
+          "lifetime_ms": 900,
+          "size": 0.75,
+          "tail": 1,
+          "edge_mode": "vanish",
+          "seed": 9
+        }
+      }
+    },
+    {
+      "id": "rings",
+      "name": "30 手作り8フレーム（輪の伸縮）",
+      "effect": {
+        "type": "builtin.frames",
+        "version": 1,
+        "params": {
+          "frames": [
+            "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000FF0000FF0000000000000000000000000000000000000000FF0000FF0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000FFBF00FFBF00FFBF00FFBF00000000000000000000000000FFBF00000000000000FFBF00000000000000000000000000FFBF00000000000000FFBF00000000000000000000000000FFBF00FFBF00FFBF00FFBF00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "00000000000000000000000000000000000000000000000000000080FF0080FF0080FF0080FF0080FF0080FF0000000000000080FF0000000000000000000000000080FF0000000000000080FF0000000000000000000000000080FF0000000000000080FF0000000000000000000000000080FF0000000000000080FF0000000000000000000000000080FF0000000000000080FF0080FF0080FF0080FF0080FF0080FF00000000000000000000000000000000000000000000000000000000",
+            "00FF4000FF4000FF4000FF4000FF4000FF4000FF4000FF4000FF4000000000000000000000000000000000000000FF4000FF4000000000000000000000000000000000000000FF4000FF4000000000000000000000000000000000000000FF4000FF4000000000000000000000000000000000000000FF4000FF4000000000000000000000000000000000000000FF4000FF4000000000000000000000000000000000000000FF4000FF4000FF4000FF4000FF4000FF4000FF4000FF4000FF40",
+            "00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00000000000000000000000000000000000000FFFF00FFFF00000000000000000000000000000000000000FFFF00FFFF00000000000000000000000000000000000000FFFF00FFFF00000000000000000000000000000000000000FFFF00FFFF00000000000000000000000000000000000000FFFF00FFFF00000000000000000000000000000000000000FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF",
+            "0000000000000000000000000000000000000000000000000000000040FF0040FF0040FF0040FF0040FF0040FF0000000000000040FF0000000000000000000000000040FF0000000000000040FF0000000000000000000000000040FF0000000000000040FF0000000000000000000000000040FF0000000000000040FF0000000000000000000000000040FF0000000000000040FF0040FF0040FF0040FF0040FF0040FF000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000FF8000FF8000FF8000FF0000000000000000000000008000FF0000000000008000FF0000000000000000000000008000FF0000000000008000FF0000000000000000000000008000FF8000FF8000FF8000FF000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000FF00BFFF00BF000000000000000000000000000000000000FF00BFFF00BF000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "fps": 8,
+          "loop": true,
+          "hold_last": false,
+          "anchor": "board"
+        }
+      }
+    },
+    {
+      "id": "scroll-name",
+      "name": "54 OMOI-IRO のスクロール",
+      "effect": {
+        "type": "builtin.text",
+        "version": 1,
+        "params": {
+          "text": "OMOI-IRO",
+          "font": "5x7",
+          "color": "#40E0FF",
+          "mode": "scroll_left",
+          "speed": 8,
+          "gap": 1,
+          "loop": true
+        }
+      }
+    },
+    {
+      "id": "heat",
+      "name": "15 叩くほど熱く",
+      "effect": {
+        "type": "builtin.pads",
+        "version": 1,
+        "params": {
+          "mode": "heat",
+          "color_low": "#200040",
+          "color_high": "#FF4020",
+          "gain": 0.25,
+          "decay_ms": 4000
+        }
+      }
+    },
+    {
+      "id": "replay",
+      "name": "60 記録の再生（光の余熱）",
+      "effect": {
+        "type": "builtin.tap_glow",
+        "version": 1,
+        "params": {
+          "color_start": "#FFFFFF",
+          "color_mid": "#FFB040",
+          "color_end": "#400000",
+          "lifetime_ms": 1200,
+          "radius": 1.5,
+          "repeats": 1,
+          "repeat_interval_ms": 300,
+          "repeat_decay": 0.6
+        }
+      }
+    },
+    {
+      "id": "stars",
+      "name": "14 星座",
+      "effect": {
+        "type": "builtin.constellation",
+        "version": 1,
+        "params": {
+          "color": "#A0C0FF",
+          "stroke": 1,
+          "lifetime_ms": 3000,
+          "fade": "linear",
+          "max_segments": 8,
+          "dots": true
+        }
+      }
+    },
+    {
+      "id": "master-glow",
+      "name": "59 マスターで全面が明るく",
+      "effect": {
+        "type": "builtin.meter",
+        "version": 1,
+        "params": {
+          "source": "master",
+          "channel": "mix",
+          "mode": "glow",
+          "color_low": "#200030",
+          "color_high": "#FF60C0",
+          "gain": 1.5,
+          "floor": 0.05,
+          "attack_ms": 10,
+          "release_ms": 250
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "fountain",
+      "name": "噴水（常時）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "soak-fountain"
+      }
+    },
+    {
+      "id": "sparks",
+      "name": "火花（常時、寿命ごとに繰り返し）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "max",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "soak-sparks"
+      }
+    },
+    {
+      "id": "rings",
+      "name": "8フレームの輪",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 0.6,
+      "blend": "max",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "rings-1",
+            "preset_id": "rings",
+            "start_us": 0,
+            "duration_us": 900000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "scroll",
+      "name": "文字のスクロール（繰り返し）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "max",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "scroll-1",
+            "preset_id": "scroll-name",
+            "start_us": 0,
+            "duration_us": 900000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "heat",
+      "name": "熱（記録で叩く）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "max",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "heat-1",
+            "preset_id": "heat",
+            "start_us": 0,
+            "duration_us": 900000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0,
+            "loop": true,
+            "recording": {
+              "events": [
+                {
+                  "t_us": 0,
+                  "x": 0,
+                  "y": 0,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 250000,
+                  "x": 7,
+                  "y": 0,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 500000,
+                  "x": 7,
+                  "y": 7,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 750000,
+                  "x": 0,
+                  "y": 7,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 1000000,
+                  "x": 3,
+                  "y": 4,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 1250000,
+                  "x": 4,
+                  "y": 3,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 1500000,
+                  "x": 2,
+                  "y": 2,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 1750000,
+                  "x": 5,
+                  "y": 5,
+                  "velocity": 100,
+                  "duration_us": 100000
+                }
+              ],
+              "length_us": 2000000
+            }
+          }
+        ],
+        "trigger": {
+          "on": "press"
+        }
+      }
+    },
+    {
+      "id": "replay",
+      "name": "記録の再生（余熱）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "max",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "replay-1",
+            "preset_id": "replay",
+            "start_us": 0,
+            "duration_us": 900000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0,
+            "loop": true,
+            "recording": {
+              "events": [
+                {
+                  "t_us": 0,
+                  "x": 0,
+                  "y": 0,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 250000,
+                  "x": 7,
+                  "y": 0,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 500000,
+                  "x": 7,
+                  "y": 7,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 750000,
+                  "x": 0,
+                  "y": 7,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 1000000,
+                  "x": 3,
+                  "y": 4,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 1250000,
+                  "x": 4,
+                  "y": 3,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 1500000,
+                  "x": 2,
+                  "y": 2,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 1750000,
+                  "x": 5,
+                  "y": 5,
+                  "velocity": 100,
+                  "duration_us": 100000
+                }
+              ],
+              "length_us": 2000000
+            }
+          }
+        ],
+        "trigger": {
+          "on": "press"
+        }
+      }
+    },
+    {
+      "id": "stars",
+      "name": "星座（記録で結ぶ）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "max",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "stars-1",
+            "preset_id": "stars",
+            "start_us": 0,
+            "duration_us": 900000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0,
+            "loop": true,
+            "recording": {
+              "events": [
+                {
+                  "t_us": 0,
+                  "x": 0,
+                  "y": 0,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 250000,
+                  "x": 7,
+                  "y": 0,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 500000,
+                  "x": 7,
+                  "y": 7,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 750000,
+                  "x": 0,
+                  "y": 7,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 1000000,
+                  "x": 3,
+                  "y": 4,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 1250000,
+                  "x": 4,
+                  "y": 3,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 1500000,
+                  "x": 2,
+                  "y": 2,
+                  "velocity": 100,
+                  "duration_us": 100000
+                },
+                {
+                  "t_us": 1750000,
+                  "x": 5,
+                  "y": 5,
+                  "velocity": 100,
+                  "duration_us": 100000
+                }
+              ],
+              "length_us": 2000000
+            }
+          }
+        ],
+        "trigger": {
+          "on": "press"
+        }
+      }
+    },
+    {
+      "id": "meter",
+      "name": "音量の glow",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 0.5,
+      "blend": "add",
+      "content": {
+        "kind": "continuous",
+        "preset_id": "master-glow"
+      }
+    }
+  ]
+}

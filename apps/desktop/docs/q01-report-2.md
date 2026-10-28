@@ -26,7 +26,31 @@
 | 6.1 | headless 追従 12 s（release） | jitter p95 0.538 ms、render p95 0.019 ms、LED 送信 p95 0.006 ms、飛ばした frame 0 |
 
 - headless 23項目、GUI 6項目（G1.1〜G5.1）がすべて PASS。
-- G6.1（10分 soak）は今回の範囲外。重いショーでの soak として別に行う（作業3）。
+
+## G6.1 10分 soak（重いショー、合成源）
+
+- 手順：`pwsh apps/desktop/scripts/q01-gui.ps1 -Scenario soak -SoakSeconds 600 -SampleSeconds 60 -BaselineSeconds 60 -Release -BridgePort 9017 -Meter -Show <repo>\fixtures\shows\soak-heavy-0.1.3.show.json`
+- ショー：`fixtures/shows/soak-heavy-0.1.3.show.json`（8レイヤー、15分）。含まれるもの：
+  - 粒子2層：常時の噴水（64個/秒・6秒・bounce）と、繰り返す火花
+  - 8フレームの輪
+  - 繰り返す文字のスクロール
+  - 記録の繰り返しで叩く、熱・余熱・星座の3層（記録は2秒で8点）
+  - 合成 meter の glow
+- ブリッジ：`fake_bridge.py --steady 630 --meter`（合成の meter を約30 Hz）。LED はプロセス内の仮想 Launchpad X。
+- 結果：**PASS**。
+
+| 経過 | omoiiro.exe | 子孫プロセス込み（7プロセス） |
+| --- | --- | --- |
+| 10 s | 43.4 MB | 433.6 MB |
+| 61 s（基準） | 43.7 MB | 493.3 MB |
+| 300 s | 44.2 MB | 516.3 MB |
+| 541 s | 44.2 MB | 529.3 MB |
+| 600 s | 44.3 MB | 524.5 MB |
+
+- 子孫プロセス込みの増加は +31.2 MB（6.3%）。判定の条件（10% 以内かつ +50 MB 以内、単調増加なし）を満たした。
+- omoiiro.exe 本体は 43.4〜44.3 MB でほぼ横ばいだった。入力履歴と記録の展開には上限（1,024件・60 s）があり、PadLog は録音中か JSONL 出力中にしか溜まらない。そのため本体が増え続けないことと合っている。
+- 増加の大半は WebView2 の子孫プロセスで、後半は 516〜529 MB の間で頭打ちになった。
+- 標本：`q01-files/soak-samples-20261028-210635.jsonl`。
 
 ## スクリプトの変更（`apps/desktop/scripts/q01-gui.ps1`）
 
