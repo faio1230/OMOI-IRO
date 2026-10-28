@@ -91,7 +91,9 @@ function Tree-Memory {
   return [ordered]@{ app_mb = [math]::Round((Get-Process -Id $app.Id).WorkingSet64 / 1MB, 1); tree_mb = [math]::Round(($procs | Measure-Object WorkingSet64 -Sum).Sum / 1MB, 1); processes = @($procs).Count }
 }
 
-Log "start" @{ exe = $Exe; show = $Show; pid = $app.Id; sample_s = $SampleSeconds; duration_s = $DurationSeconds }
+# Paths in the record are relative to the repository (`<repo>\...`), never personal absolute paths.
+function RepoPath([string]$p) { if ($p.StartsWith($Repo, [StringComparison]::OrdinalIgnoreCase)) { "<repo>" + $p.Substring($Repo.Length) } else { [System.IO.Path]::GetFileName($p) } }
+Log "start" @{ exe = (RepoPath $Exe); show = (RepoPath $Show); pid = $app.Id; sample_s = $SampleSeconds; duration_s = $DurationSeconds }
 Press "開始"
 $t0 = Get-Date
 $next = 10
@@ -105,13 +107,13 @@ try {
       Log "sample" ([ordered]@{ t_s = [int]$el; memory = (Tree-Memory); texts = @(Texts) })
       $next = if ($next -eq 10) { $SampleSeconds } else { $next + $SampleSeconds }
     }
-    if (Test-Path $ShotReq) { Remove-Item $ShotReq; Log "shot" (Shot) }
+    if (Test-Path $ShotReq) { Remove-Item $ShotReq; Log "shot" (RepoPath (Shot)) }
     Start-Sleep -Milliseconds $IntervalMs
   }
   if ($SampleSeconds -gt 0 -and -not $app.HasExited) { Log "sample" ([ordered]@{ t_s = [int]((Get-Date) - $t0).TotalSeconds; memory = (Tree-Memory); texts = @(Texts) }) }
   if (-not $app.HasExited) {
     Log "texts" @(Texts)
-    Log "shot" (Shot)
+    Log "shot" (RepoPath (Shot))
     Press "停止"; Start-Sleep -Milliseconds 600
     Log "stopped" @(Texts)
   }

@@ -33,7 +33,11 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 | `builtin.noise` | ノイズ | `base_color`, `highlight_color`, `density`（0〜1）, `rate_hz`（0.5〜30）, `seed`（0〜2147483647）, `smooth`（bool）, `depth`（0〜1） | 地の色の上に粒が散る。density は点灯割合、rate_hz は模様の更新頻度、depth は粒の明るさの揺らぎ。時刻だけで決まる |
 | `builtin.ripple` | 波紋 | `color`, `speed`（セル/秒 0.5〜16）, `ring_width`（0.5〜4）, `lifetime_ms`（200〜4000）, `fade`（`linear` / `exp`）, `max_concurrent`（1〜16）, `trigger`（`any_pad`） | パッドを押した位置から輪が広がる（最新16件、4秒で破棄、重なりは最大値）。入力駆動なので CLI の `render` では見えない。GUI のプレビュー盤をクリックすると試せる |
 
-予定（実装後に Schema を見て追記）：`builtin.rain`（雨）、`builtin.wave`（波形）、`builtin.orb`（球）。
+| `builtin.rain` | 雨 | `color`, `direction`（`down` / `up` / `left` / `right`）, `speed`（セル/秒 0.5〜16）, `density`（0〜1）, `tail`（0〜8）, `seed`, `flicker`（0〜1）。任意 `head_color` | 一方向に粒が流れ、尾を引く。0.5秒ごとの枠に確率 density で粒が出る。先頭は head_color（省略時は color）、尾は線形に減衰。flicker は尾を 8 Hz で揺らす。時刻だけで決まる。Matrix 風は緑 `#00C040` + 先頭 `#C8FFD8`、tail 4〜6、flicker 0.5 |
+| `builtin.wave` | 波形 | `color`, `axis`（`x` 横に流れる / `y` 縦）, `wavelength`（2〜16）, `amplitude`（0.5〜3.5）, `center`（0〜7）, `speed`（周期/秒 −4〜4、負で逆向き）, `thickness`（0.5〜3）, `beat_amplitude`（bool） | 正弦波の曲線に近いセルが光る。beat_amplitude を true にすると拍の頭で振幅が最大、裏で 0.3 倍（拍不明なら固定） |
+| `builtin.orb` | 球 | `color`, `center_x` / `center_y`（0〜7、小数可）, `radius`（0.5〜6）, `edge`（0〜2）, `light_angle`（0〜360、90 = 上から）, `shading`（0〜1）, `dither`（0〜1）, `dither_rate_hz`（0.5〜15）, `seed`, `motion`（`none` / `orbit` / `bounce`）, `speed`（orbit は 0.05〜2 周/秒、bounce は 0.5〜12 セル/秒、none は 0 でよい）, `orbit_radius`（0〜4）, `bounce_angle`（0〜360） | 陰影つきの円。dither で粒状のざらつき。orbit は中心の周りを回り、bounce は盤面の端で反射。すべて時刻だけで決まる |
+
+すべての種類の試験用ショー：`fixtures/shows/effects-0.1.2.show.json`（点滅・ノイズ）、`ripple-0.1.2.show.json`（波紋）、`rain-wave-orb-0.1.2.show.json`（雨・波形・球、10秒ずつ）。
 
 ## 4. 書き方の規則
 
@@ -69,7 +73,7 @@ OMOI-IRO のショーデータ（`.show.json`）に入れる演出プリセッ�
 
 - 「青の雨と水面」：base `#0D2346`、highlight `#9FE8FF`〜`#FFFFFF`。Noise を密度 0.15 / 0.3 / 0.5 で3つ、Chase 縦（上→下、`reverse: true`）を速さ3段階、Pulse 白 depth 1 を1つ。
 - 「赤のテーマ（OMOI-IRO）」：`#FF2A2A` 系。Solid 2段階、Strobe beat 1拍 duty 0.25、Noise 赤×橙、Chase 横を2速度。
-- 「Matrix」：Rain 実装後。緑 `#00C040`、先頭 `#B0FFB0`。
+- 「Matrix」：Rain 下向き、緑 `#00C040`、先頭 `#C8FFD8`、speed 6〜10、density 0.3〜0.5、tail 4〜6、flicker 0.5。
 
 ## 7. やってはいけないこと
 

@@ -53,6 +53,9 @@ surfaceは左下原点のLEDリストとしてCoreへ読み込む。汎用的な
 | `builtin.strobe` v1（0.1.2） | `color`, `mode`（hz / beat）, `rate_hz`, `beats_per_cycle`, `duty`, `phase_offset` | 矩形波の点滅。hzはクリップのローカル時刻、beatは拍位相（不明なら透明）。安全解析の対象 |
 | `builtin.noise` v1（0.1.2） | `base_color`, `highlight_color`, `density`, `rate_hz`, `seed`, `smooth`, `depth` | hash(seed, cell, step)で決まる粒。時刻だけで決まる。安全解析は rate_hz/2 |
 | `builtin.ripple` v1（0.1.2） | `color`, `speed`, `ring_width`, `lifetime_ms`, `fade`, `max_concurrent`, `trigger` | 操作入力（パッド押下）を起点に輪が広がる。render(show, t)の純粋性の例外：`render_input(t, beat, Option<&PadInput>)` で入力状態を受ける |
+| `builtin.rain` v1（0.1.2） | `color`, `head_color`（任意）, `direction`, `speed`, `density`, `tail`, `seed`, `flicker` | レーンごとに0.5秒枠で確率発生、先頭+線形減衰の尾、flickerは8 Hzのhash。時刻だけで決まる。安全解析はflicker>0で4 Hz |
+| `builtin.wave` v1（0.1.2） | `color`, `axis`, `wavelength`, `amplitude`, `center`, `speed`, `thickness`, `beat_amplitude` | 正弦曲線からの距離でalpha。拍で振幅0.3〜1倍（不明なら固定）。安全解析は|speed|×2を警告のみ（消灯対象外） |
+| `builtin.orb` v1（0.1.2） | `color`, `center_x/y`, `radius`, `edge`, `light_angle`, `shading`, `dither`, `dither_rate_hz`, `seed`, `motion`, `speed`, `orbit_radius`, `bounce_angle` | 陰影つき円。orbitは周回、bounceは三角波で端反射（状態なし）。安全解析はdither>0でdither_rate_hz/2 |
 
 colorは`#RRGGBB`のsRGB、alphaはfadeとopacityで表す。Chaseの`period_us`は帯が1周する時間、widthは1〜8セル。PulseはMVPで0.25/0.5/1拍周期だけに限定し、不明な小節位置から長周期を推定しない。depth 0は常時最大、depth 1は周期内でゼロまで下がる。PulseはRGB色を固定しalphaを変化させる規約とし、位相0で最大となる。
 

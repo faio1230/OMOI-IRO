@@ -1,0 +1,166 @@
+{
+  "$schema": "../../schemas/show.schema.json",
+  "schema_version": "0.1.2",
+  "id": "rain-wave-orb-0-1-2",
+  "name": "0.1.2 の演出（雨・波形・球）",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "rain-green",
+      "name": "緑の雨",
+      "effect": {
+        "type": "builtin.rain",
+        "version": 1,
+        "params": {
+          "color": "#00C040",
+          "head_color": "#C8FFD8",
+          "direction": "down",
+          "speed": 8,
+          "density": 0.6,
+          "tail": 4,
+          "seed": 1,
+          "flicker": 0
+        }
+      }
+    },
+    {
+      "id": "wave-cyan",
+      "name": "シアンの波",
+      "effect": {
+        "type": "builtin.wave",
+        "version": 1,
+        "params": {
+          "color": "#00DCC8",
+          "axis": "x",
+          "wavelength": 8,
+          "amplitude": 2.5,
+          "center": 3.5,
+          "speed": 1,
+          "thickness": 1,
+          "beat_amplitude": false
+        }
+      }
+    },
+    {
+      "id": "orb-amber",
+      "name": "琥珀の球",
+      "effect": {
+        "type": "builtin.orb",
+        "version": 1,
+        "params": {
+          "color": "#FFB040",
+          "center_x": 3.5,
+          "center_y": 3.5,
+          "radius": 3,
+          "edge": 0.7,
+          "light_angle": 90,
+          "shading": 0.7,
+          "dither": 0.2,
+          "dither_rate_hz": 4,
+          "seed": 1,
+          "motion": "bounce",
+          "speed": 2,
+          "orbit_radius": 1.5,
+          "bounce_angle": 35
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "rain",
+      "name": "雨",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "rain-1",
+            "preset_id": "rain-green",
+            "start_us": 0,
+            "duration_us": 10000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "wave",
+      "name": "波形",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "wave-1",
+            "preset_id": "wave-cyan",
+            "start_us": 10000000,
+            "duration_us": 10000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "orb",
+      "name": "球",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "over",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "orb-1",
+            "preset_id": "orb-amber",
+            "start_us": 20000000,
+            "duration_us": 10000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    }
+  ]
+}
