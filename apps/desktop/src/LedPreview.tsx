@@ -85,13 +85,14 @@ export default function LedPreview(props: { showPath: string; running: boolean; 
         </div>
         <div className="preview-side">
           <div className="segmented">
-            <button className={mode === "runtime" ? "on" : ""} onClick={() => switchMode("runtime")}>Runtime出力</button>
-            <button className={mode === "local" ? "on" : ""} onClick={() => (info ? switchMode("local") : openLocal())}>ローカルプレビュー</button>
+            <button className={mode === "runtime" && running ? "on" : ""} disabled={!running} onClick={() => switchMode("runtime")}>実機出力（開始中）</button>
+            <button className={mode === "local" ? "on" : ""} onClick={() => (info ? switchMode("local") : openLocal())}>手元で再生（Live と無関係）</button>
           </div>
           <p className="source">
-            {showing === "runtime" && "表示中：Runtimeが描画したLEDフレーム（機器へ送る値）"}
-            {showing === "local" && (independent ? "表示中：独立プレビュー（Live・機器の位置は変わらない）" : "表示中：ローカルプレビュー（ローカル時計）")}
-            {showing === null && (running ? "Runtimeのフレーム待ち" : "ローカルプレビューを開くと表示する")}
+            {!running && showing !== "local" && "「開始」していないため実機出力はありません。手元で再生を使ってください"}
+            {running && showing === "runtime" && "表示中：実機へ送っている値（Live に追従）"}
+            {showing === "local" && (independent ? "表示中：独立プレビュー（Live・機器の位置は変わらない）" : "表示中：手元で再生（ローカル時計）")}
+            {running && showing === null && "実機出力のフレーム待ち"}
           </p>
           <div className="mono readout">
             {fmt(frame?.show_time_us ?? null)}
