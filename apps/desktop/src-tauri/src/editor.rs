@@ -130,6 +130,7 @@ fn color_of(e: &Effect) -> String {
         Effect::Shape { params, .. } => params.color.value().clone(),
         Effect::TapGlow { params, .. } => params.color_mid.value().clone(),
         Effect::Cross { params, .. } => params.color.value().clone(),
+        Effect::Particles { params, .. } => params.color.value().clone(),
     }
 }
 

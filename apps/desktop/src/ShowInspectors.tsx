@@ -3,7 +3,7 @@
 // hand-off as the timeline); ranges shown here follow the show schema.
 import { useEffect, useState, type ReactElement } from "react";
 import * as ipc from "./ipc/commands";
-import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, PathKind, Mirror, ShapeKind, LayerMask, TriggerOn, TriggerSpec, K, Keyframe, Ease } from "./ipc/types";
+import type { BeatSource, Blend, EditCommand, EditorView, Effect, EffectType, LayerDto, OnConflict, PresetDto, RegionPattern, PathKind, Mirror, ShapeKind, LayerMask, ParticleMode, TriggerOn, TriggerSpec, K, Keyframe, Ease } from "./ipc/types";
 
 const TYPE_JA: Record<EffectType, string> = {
   "builtin.solid": "単色（Solid）",
@@ -20,6 +20,7 @@ const TYPE_JA: Record<EffectType, string> = {
   "builtin.cross": "十字（Cross）",
   "builtin.path": "経路（Path）",
   "builtin.shape": "図形（Shape）",
+  "builtin.particles": "粒子（Particles）",
 };
 
 const isKeyed = <T,>(v: K<T>): v is { keyframes: Keyframe<T>[] } => typeof v === "object" && v !== null && "keyframes" in v;
@@ -310,6 +311,64 @@ export function EffectForm({ effect, onChange }: { effect: Effect; onChange: (e:
             <span>終点で折り返して往復する（切ると終点で止まる）</span>
           </label>
         )}
+      </div>
+    );
+  }
+  if (effect.type === "builtin.particles") {
+    const p = effect.params;
+    const set = (patch: Partial<typeof p>) => onChange({ ...effect, params: { ...p, ...patch } });
+    const burstLike = p.mode !== "fountain";
+    return (
+      <div className="insp-grid">
+        <label className="field">
+          <span>出し方</span>
+          <select value={p.mode} onChange={(e) => set({ mode: e.target.value as ParticleMode })}>
+            <option value="burst">一度に飛び散る（burst）</option>
+            <option value="fountain">出し続ける（fountain）</option>
+            <option value="rocket">打ち上げて破裂（rocket）</option>
+            <option value="implode">集まってから破裂（implode）</option>
+          </select>
+          <span className="hint">{p.mode === "fountain" ? "発火レイヤーでは「押している間」に出し続け、他の発火では寿命の間だけ出す" : "タイムラインはクリップ開始で1回、常時レイヤーは繰り返す"}</span>
+        </label>
+        {burstLike && <NumberField label="数" value={p.count ?? 16} min={1} max={64} step={1} integer hint="1〜64（時間変化は段だけ）" onChange={(count) => set({ count })} />}
+        {!burstLike && <NumberField label="1秒あたりの数" value={p.rate ?? 8} min={0.5} max={64} step={0.5} hint="0.5〜64" onChange={(rate) => set({ rate })} />}
+        <ColorField value={p.color} onChange={(color) => set({ color })} />
+        <label className="field check">
+          <input type="checkbox" checked={p.color_end !== undefined} onChange={(e) => set({ color_end: e.target.checked ? "#400000" : undefined })} />
+          <span>寿命の終わりの色に変える</span>
+        </label>
+        {p.color_end !== undefined && <ColorField label="終わりの色" value={p.color_end} onChange={(color_end) => set({ color_end })} />}
+        <NumberField label="最小の速さ（セル/秒）" value={p.speed_min} min={0} max={16} step={0.5} hint="0〜16" onChange={(speed_min) => set({ speed_min })} />
+        <NumberField label="最大の速さ（セル/秒）" value={p.speed_max} min={0} max={16} step={0.5} hint="0〜16" onChange={(speed_max) => set({ speed_max })} />
+        <NumberField label="向き（度）" value={p.angle} min={0} max={360} step={15} hint="0 で右、90 で上" onChange={(angle) => set({ angle })} />
+        <NumberField label="広がり（度）" value={p.spread} min={0} max={360} step={15} hint="360 で全方向" onChange={(spread) => set({ spread })} />
+        <NumberField label="重力（セル/秒²）" value={p.gravity} min={-32} max={32} step={1} hint="負で下へ落ちる" onChange={(gravity) => set({ gravity })} />
+        <NumberField label="空気抵抗" value={p.drag} min={0} max={8} step={0.25} hint="0〜8（大きいほど早く止まる）" onChange={(drag) => set({ drag })} />
+        <NumberField label="寿命（ms）" value={p.lifetime_ms} min={100} max={6000} step={100} integer hint="100〜6000" onChange={(lifetime_ms) => set({ lifetime_ms })} />
+        <NumberField label="粒の大きさ（セル）" value={p.size} min={0.5} max={2} step={0.25} hint="0.5〜2" onChange={(size) => set({ size })} />
+        <NumberField label="尾の長さ（セル）" value={p.tail} min={0} max={4} step={0.5} hint="0〜4" onChange={(tail) => set({ tail })} />
+        <label className="field">
+          <span>盤の端</span>
+          <select value={p.edge_mode} onChange={(e) => set({ edge_mode: e.target.value as "vanish" | "bounce" })}>
+            <option value="vanish">消える</option>
+            <option value="bounce">跳ね返る</option>
+          </select>
+        </label>
+        <NumberField label="発生位置 x" value={p.origin_x ?? 3.5} min={0} max={7} step={0.5} hint="時間で出すとき（パッドで出すときは押した位置）" onChange={(origin_x) => set({ origin_x })} />
+        <NumberField label="発生位置 y" value={p.origin_y ?? 3.5} min={0} max={7} step={0.5} hint="0〜7（下が 0）" onChange={(origin_y) => set({ origin_y })} />
+        {p.mode === "rocket" && (
+          <>
+            <NumberField label="上昇の速さ（セル/秒）" value={p.rise_speed ?? 10} min={1} max={32} step={1} hint="1〜32。パッドでは押した列の下端から上がる" onChange={(rise_speed) => set({ rise_speed })} />
+            <NumberField label="破裂する高さ（行）" value={p.burst_height ?? 5} min={0} max={7} step={0.5} hint="0〜7" onChange={(burst_height) => set({ burst_height })} />
+          </>
+        )}
+        {p.mode === "implode" && (
+          <>
+            <NumberField label="集まり始める半径（セル）" value={p.implode_radius ?? 4} min={1} max={6} step={0.5} hint="1〜6。寿命の前半で中心へ集まる" onChange={(implode_radius) => set({ implode_radius })} />
+            <NumberField label="中心で待つ時間（ms）" value={p.pause_ms ?? 200} min={0} max={1000} step={50} integer hint="0〜1000" onChange={(pause_ms) => set({ pause_ms })} />
+          </>
+        )}
+        <NumberField label="乱数の種" value={p.seed} min={0} max={2147483647} step={1} integer hint="同じ種なら同じ飛び方（巻き戻しても同じ）" onChange={(seed) => set({ seed })} />
       </div>
     );
   }

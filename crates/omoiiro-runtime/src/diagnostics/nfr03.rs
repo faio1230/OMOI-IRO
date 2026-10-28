@@ -64,6 +64,45 @@ pub fn load_show(minutes: u32) -> Show {
     omoiiro_store::load_str(&doc.to_string()).expect("NFR03 load show is valid")
 }
 
+/// The particle load (0.1.3 stage 5): 8 continuous layers, each a fountain
+/// at the per-layer cap (64 per second × 6 s lifetime = 384 alive, 256
+/// drawn) with the largest spot and tail, bouncing so every particle stays.
+pub fn load_show_particles() -> Show {
+    let layers: Vec<Value> = (0..8)
+        .map(|l| {
+            let blend = ["over", "add", "max"][l % 3];
+            json!({
+                "id": format!("layer{l}"), "name": format!("layer {l}"), "target_id": "main-pad", "enabled": true,
+                "opacity": 1, "blend": blend,
+                "content": {"kind": "continuous", "preset_id": format!("p{l}")},
+            })
+        })
+        .collect();
+    let presets: Vec<Value> = (0..8)
+        .map(|l| {
+            json!({"id": format!("p{l}"), "name": format!("p{l}"), "effect": {"type": "builtin.particles", "version": 1, "params": {
+                "mode": "fountain", "rate": 64, "color": "#FFC040", "color_end": "#2000FF",
+                "speed_min": 2, "speed_max": 16, "angle": 45 * l, "spread": 360, "gravity": -8, "drag": 0.5,
+                "lifetime_ms": 6000, "size": 2, "tail": 4, "edge_mode": "bounce", "origin_x": 3.5, "origin_y": 3.5, "seed": l,
+            }}})
+        })
+        .collect();
+    let doc = json!({
+        "schema_version": omoiiro_core::model::SCHEMA_VERSION, "id": "nfr03-particles", "name": "NFR03 particle load", "seed": 1,
+        "sync": {
+            "timecode": {"source": "live_bridge", "frame_rate": "30", "origin": "00:00:00:00", "input_offset_us": 0},
+            "beat_source": "midi_clock", "stop_behavior": "hold",
+            "loss": {"holdover_ms": 250, "blackout_after_ms": 1000, "recovery_fade_ms": 100},
+        },
+        "render": {"fps": 30, "master_brightness": 0.8},
+        "preview": {"bpm": 128},
+        "targets": [{"id": "main-pad", "name": "Launchpad X", "profile": omoiiro_core::surface::GRID64_PROFILE}],
+        "presets": presets,
+        "layers": layers,
+    });
+    omoiiro_store::load_str(&doc.to_string()).expect("particle load show is valid")
+}
+
 fn snapshot(t: i64, beat: f64) -> TransportSnapshot {
     TransportSnapshot {
         now_us: t,
@@ -106,9 +145,14 @@ pub fn measure(show: &Show, frames: u64) -> Histogram {
 }
 
 pub fn report(h: &Histogram, build: &str) -> Value {
+    report_load(h, build, "64 pads, 8 layers, timeline clips overlapping with fades, solid/chase/pulse, over/add/max")
+}
+
+/// `report` for a named load (the particle load).
+pub fn report_load(h: &Histogram, build: &str, load: &str) -> Value {
     json!({
         "nfr03": {
-            "load": "64 pads, 8 layers, timeline clips overlapping with fades, solid/chase/pulse, over/add/max",
+            "load": load,
             "build": build,
             "render_time": h.summary_json(),
             "limit_p95_us": NFR03_P95_LIMIT_US,

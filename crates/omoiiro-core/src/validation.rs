@@ -464,6 +464,50 @@ pub fn validate(show: &Show) -> Vec<Issue> {
                     c.unit(*v, format!("{e}/params/repeat_decay"));
                 }
             }
+            Effect::Particles { params, .. } => {
+                for v in params.color.values().chain(params.color_end.iter().flat_map(|c| c.values())) {
+                    c.color(v, format!("{e}/params/color"));
+                }
+                let num = |c: &mut Ctx, name: &str, p: Option<&crate::model::Param<f64>>, lo: f64, hi: f64| {
+                    for v in p.into_iter().flat_map(|p| p.values()) {
+                        c.range(*v, lo, hi, format!("{e}/params/{name}"));
+                    }
+                };
+                num(&mut c, "rate", params.rate.as_ref(), 0.5, 64.0);
+                num(&mut c, "speed_min", Some(&params.speed_min), 0.0, 16.0);
+                num(&mut c, "speed_max", Some(&params.speed_max), 0.0, 16.0);
+                num(&mut c, "angle", Some(&params.angle), 0.0, 360.0);
+                num(&mut c, "spread", Some(&params.spread), 0.0, 360.0);
+                num(&mut c, "gravity", Some(&params.gravity), -32.0, 32.0);
+                num(&mut c, "drag", Some(&params.drag), 0.0, 8.0);
+                num(&mut c, "size", Some(&params.size), 0.5, 2.0);
+                num(&mut c, "tail", Some(&params.tail), 0.0, 4.0);
+                num(&mut c, "origin_x", params.origin_x.as_ref(), 0.0, 7.0);
+                num(&mut c, "origin_y", params.origin_y.as_ref(), 0.0, 7.0);
+                num(&mut c, "rise_speed", params.rise_speed.as_ref(), 1.0, 32.0);
+                num(&mut c, "burst_height", params.burst_height.as_ref(), 0.0, 7.0);
+                num(&mut c, "implode_radius", params.implode_radius.as_ref(), 1.0, 6.0);
+                // speed_min <= speed_max at every keyframe value pair is not
+                // checked: a larger min only swaps the range.
+                if let Some(n) = &params.count {
+                    if !n.values().all(|v| (1..=64).contains(v)) {
+                        c.push(format!("{e}/params/count"), "count must be within 1..=64");
+                    }
+                    c.step_only(n, format!("{e}/params/count"));
+                }
+                if !params.lifetime_ms.values().all(|v| (100..=6000).contains(v)) {
+                    c.push(format!("{e}/params/lifetime_ms"), "lifetime_ms must be within 100..=6000");
+                }
+                if let Some(p) = &params.pause_ms {
+                    if !p.values().all(|v| *v <= 1000) {
+                        c.push(format!("{e}/params/pause_ms"), "pause_ms must be within 0..=1000");
+                    }
+                }
+                if params.seed.values().any(|v| *v > i32::MAX as u32) {
+                    c.push(format!("{e}/params/seed"), "seed must be within 0..=2147483647");
+                }
+                c.step_only(&params.seed, format!("{e}/params/seed"));
+            }
             Effect::Cross { params, .. } => {
                 for v in params.color.values() {
                     c.color(v, format!("{e}/params/color"));
@@ -807,6 +851,29 @@ mod tests {
             ok.presets.push(Preset { id: t.replace("builtin.", ""), name: t.into(), effect: crate::edit::default_effect(t).unwrap() });
         }
         assert!(pointers(&ok).is_empty(), "{:?}", pointers(&ok));
+    }
+
+    #[test]
+    fn particle_ranges() {
+        use crate::model::{Effect, Preset};
+        let mut e = crate::edit::default_effect("builtin.particles").unwrap();
+        let mut s = demo();
+        s.presets.push(Preset { id: "pt".into(), name: "x".into(), effect: e.clone() });
+        assert!(pointers(&s).is_empty(), "defaults are valid: {:?}", pointers(&s));
+        let Effect::Particles { params, .. } = &mut e else { unreachable!() };
+        params.count = Some(65.into());
+        params.lifetime_ms = 50.into();
+        params.gravity = (-40.0).into();
+        params.size = 3.0.into();
+        params.pause_ms = Some(1500.into());
+        params.implode_radius = Some(0.5.into());
+        params.color_end = Some("red".to_string().into());
+        s.presets.last_mut().unwrap().effect = e;
+        let p = pointers(&s);
+        let n = s.presets.len() - 1;
+        for k in ["count", "lifetime_ms", "gravity", "size", "pause_ms", "implode_radius", "color"] {
+            assert!(p.contains(&format!("/presets/{n}/effect/params/{k}")), "{k} in {p:?}");
+        }
     }
 
     #[test]

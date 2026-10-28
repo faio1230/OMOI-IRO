@@ -63,6 +63,7 @@
 use crate::model::{
     Axis, Blend, Content, Effect, LayerMask, Mirror, OrbMotion, PathKind, ShapeKind, TriggerOn, RainDirection, RegionPattern, RippleFade, RippleShape, RippleTrigger, Show, StepMode, StepOrder, StrobeMode, Waveform,
 };
+use crate::particles::{paint_event, Event, ParticleLook, MAX_EVENTS, MAX_PARTICLES};
 use crate::surface::{Frame, LayerFrame, Rgb, Rgba, GRID_H, GRID_LEDS, GRID_W};
 use crate::time::{BeatState, ShowTimeUs};
 use crate::timeline::{ClipIndex, ClipSpan};
@@ -100,6 +101,8 @@ pub enum CompiledEffect {
     },
     TapGlow { start: Rgb, mid: Rgb, end: Rgb, lifetime_us: i64, radius: f64, repeats: u32, repeat_us: i64, decay: f64 },
     Cross { color: Rgb, speed: f64, length: f64, lifetime_us: i64 },
+    /// 0.1.3: particles; layers turn time or pads into events (`particles`).
+    Particles(ParticleLook),
     Regions { pattern: RegionPattern, color: Rgb, color_b: Option<Rgb>, mode: StepMode, step_beats: f64, step_s: f64, order: StepOrder, soft: f64, duty: f64, custom: Option<CustomGroups> },
     Path(PathLook),
     Shape { kind: ShapeKind, color: Rgb, fill: bool, stroke: f64, center: (f64, f64), size: (f64, f64), angle: f64, edge: f64, invert: bool },
@@ -345,6 +348,7 @@ impl CompiledEffect {
                 custom: custom_groups(params),
             },
             Effect::Path { params, .. } => CompiledEffect::Path(compile_path(params, t)?),
+            Effect::Particles { params, .. } => CompiledEffect::Particles(ParticleLook::compile(params, t, col)?),
             Effect::Shape { params, .. } => {
                 let size = params.size.at(t);
                 CompiledEffect::Shape {
@@ -446,6 +450,11 @@ impl CompiledEffect {
             CompiledEffect::Ripple { interval: None, .. } => {}
             // Pad driven: drawn by `paint_input`.
             CompiledEffect::TapGlow { .. } | CompiledEffect::Cross { .. } => {}
+            // On its own (a timeline clip, a preview): one event at the emitter from local 0.
+            CompiledEffect::Particles(look) => {
+                let ev = Event { x: look.origin.0, y: look.origin.1, age_s: local_us as f64 / 1e6, emit_s: f64::INFINITY, id: 0, start_us: 0 };
+                paint_event(&ev, &|_| Some(look), alpha, layer, &mut MAX_PARTICLES.clone());
+            }
             CompiledEffect::Regions { pattern, color, color_b, mode, step_beats, step_s, order, soft, duty, custom } => {
                 let pos = match mode {
                     StepMode::Seconds => local_us as f64 / 1e6 / step_s,
@@ -1084,6 +1093,93 @@ fn paint_instances_sampled(effects: &[CompiledEffect], keyed: &[Option<Effect>],
     }
 }
 
+/// Particle parameters of effect `i` at local time `t` (keyframes sampled).
+fn particle_look(effects: &[CompiledEffect], keyed: &[Option<Effect>], i: usize, t: u64) -> Option<ParticleLook> {
+    match sample(effects, keyed, i, t) {
+        CompiledEffect::Particles(l) => Some(l),
+        _ => None,
+    }
+}
+
+/// Draw particle events (newest first) of effect `i`, at most `MAX_PARTICLES`.
+fn paint_particles(effects: &[CompiledEffect], keyed: &[Option<Effect>], i: usize, events: &[Event], alpha: f64, layer: &mut LayerFrame) {
+    let mut budget = MAX_PARTICLES;
+    let look_at = |t: u64| particle_look(effects, keyed, i, t);
+    for ev in events {
+        paint_event(ev, &look_at, alpha, layer, &mut budget);
+    }
+}
+
+/// Events of a continuous particle layer at show time `t`: a fountain emits
+/// from 0 on; the other modes repeat, one event per span (implode with its pause).
+fn continuous_particle_events(look_at: &dyn Fn(u64) -> Option<ParticleLook>, t: u64, out: &mut Vec<Event>) {
+    out.clear();
+    let Some(look) = look_at(t) else { return };
+    let (x, y) = look.origin;
+    if look.mode == crate::model::ParticleMode::Fountain {
+        out.push(Event { x, y, age_s: t as f64 / 1e6, emit_s: f64::INFINITY, id: 0, start_us: 0 });
+    } else {
+        let period = ((look.span_s(y, 0.0) * 1e6) as u64).max(1);
+        let k = t / period;
+        out.push(Event { x, y, age_s: (t - k * period) as f64 / 1e6, emit_s: 0.0, id: k, start_us: k * period });
+    }
+}
+
+/// Events of one active triggered particle clip (newest first, at most
+/// `MAX_EVENTS`). Pads emit at the pad (a rocket from the bottom of its
+/// column); clip_start / interval at the effect's emitter. A fountain emits
+/// while held on `hold`, otherwise for one lifetime.
+fn triggered_particle_events(on: TriggerOn, interval_us: i64, span: &ClipSpan, local: i64, input: Option<&PadInput>, look_at: &dyn Fn(u64) -> Option<ParticleLook>, out: &mut Vec<Event>) {
+    use crate::model::ParticleMode;
+    out.clear();
+    let mut push = |x: f64, y: f64, age_us: i64, emit_s: Option<f64>, id: u64| {
+        let start_us = (local - age_us).max(0) as u64;
+        let Some(look) = look_at(start_us) else { return };
+        let emit_s = if look.mode == ParticleMode::Fountain { emit_s.unwrap_or(look.lifetime_s) } else { 0.0 };
+        let age_s = age_us as f64 / 1e6;
+        if age_us >= 0 && age_s < look.span_s(y, emit_s) {
+            out.push(Event { x, y, age_s, emit_s, id, start_us });
+        }
+    };
+    match on {
+        TriggerOn::ClipStart => {
+            if let Some(l) = look_at(0) {
+                push(l.origin.0, l.origin.1, local, None, 0);
+            }
+        }
+        TriggerOn::Interval => {
+            let mut k = local / interval_us;
+            while k >= 0 && local - k * interval_us <= PadInput::MAX_AGE_US {
+                if let Some(l) = look_at((k * interval_us) as u64) {
+                    push(l.origin.0, l.origin.1, local - k * interval_us, None, k as u64);
+                }
+                k -= 1;
+            }
+        }
+        TriggerOn::Press | TriggerOn::Release | TriggerOn::Hold => {
+            let Some(input) = input else { return };
+            let now = input.now_us;
+            for h in input.hits.iter().rev() {
+                if !h.show_us.is_some_and(|s| span.contains(s)) {
+                    continue;
+                }
+                let id = (h.t_us as u64) ^ ((h.x as u64) << 56) ^ ((h.y as u64) << 48);
+                let release = h.effective_release(now);
+                let (age, emit, id) = match (on, release) {
+                    (TriggerOn::Release, Some(r)) => (now - r, None, id ^ 1),
+                    (TriggerOn::Release, None) => continue,
+                    // Hold: a fountain emits while the pad is held.
+                    (TriggerOn::Hold, r) => (now - h.t_us, Some(r.unwrap_or(now).saturating_sub(h.t_us) as f64 / 1e6), id),
+                    _ => (now - h.t_us, None, id),
+                };
+                let rocket = look_at((local - age).max(0) as u64).is_some_and(|l| l.mode == ParticleMode::Rocket);
+                push(h.x as f64, if rocket { 0.0 } else { h.y as f64 }, age, emit, id);
+            }
+        }
+    }
+    out.truncate(MAX_EVENTS);
+}
+
 /// Instances of one active triggered clip (newest first, at most `MAX_INSTANCES`).
 /// Pad events count only when they arrived while this clip was active.
 fn triggered_instances(on: TriggerOn, interval_us: i64, origin: (f64, f64), span: &ClipSpan, local: i64, input: Option<&PadInput>, out: &mut Vec<Instance>) {
@@ -1231,6 +1327,8 @@ pub struct Renderer {
     /// Presets with keyframes (same index as `effects`): sampled per frame
     /// on their time axis; None = the compiled constant in `effects`.
     keyed: Vec<Option<Effect>>,
+    /// Particle events of one layer (reused, at most `MAX_EVENTS` kept).
+    events: Vec<Event>,
 }
 
 impl Renderer {
@@ -1285,6 +1383,7 @@ impl Renderer {
             muted: vec![false; show.layers.len()],
             inst: Vec::with_capacity(MAX_INSTANCES),
             keyed,
+            events: Vec::with_capacity(4 * MAX_EVENTS),
         })
     }
 
@@ -1315,6 +1414,11 @@ impl Renderer {
             }
             self.buf.clear();
             match &layer.content {
+                LayerContent::Continuous { effect } if matches!(self.effects[*effect], CompiledEffect::Particles(_)) => {
+                    let (effects, keyed, ei) = (&self.effects, &self.keyed, *effect);
+                    continuous_particle_events(&|x| particle_look(effects, keyed, ei, x), t as u64, &mut self.events);
+                    paint_particles(effects, keyed, ei, &self.events, 1.0, &mut self.buf);
+                }
                 LayerContent::Continuous { effect } => {
                     let e = sample(&self.effects, &self.keyed, *effect, t as u64);
                     match (&self.keyed[*effect], input) {
@@ -1331,15 +1435,29 @@ impl Renderer {
                     index.active(t, &mut self.active);
                     for span in &self.active {
                         let local = span.local_us(t);
-                        sample(&self.effects, &self.keyed, effects[span.order], local).paint_input(local, beat, input, span.fade(t), &mut self.buf);
+                        let ei = effects[span.order];
+                        if matches!(self.effects[ei], CompiledEffect::Particles(_)) {
+                            // One event from the clip start; parameters as at the start.
+                            let Some(l) = particle_look(&self.effects, &self.keyed, ei, 0) else { continue };
+                            let ev = Event { x: l.origin.0, y: l.origin.1, age_s: local as f64 / 1e6, emit_s: f64::INFINITY, id: span.order as u64, start_us: 0 };
+                            paint_particles(&self.effects, &self.keyed, ei, std::slice::from_ref(&ev), span.fade(t), &mut self.buf);
+                            continue;
+                        }
+                        sample(&self.effects, &self.keyed, ei, local).paint_input(local, beat, input, span.fade(t), &mut self.buf);
                     }
                 }
                 LayerContent::Triggered { index, effects, on, interval_us, origin } => {
                     index.active(t, &mut self.active);
                     for span in &self.active {
                         let local = span.local_us(t) as i64;
-                        triggered_instances(*on, *interval_us, *origin, span, local, input, &mut self.inst);
                         let ei = effects[span.order];
+                        if matches!(self.effects[ei], CompiledEffect::Particles(_)) {
+                            let (fx, keyed) = (&self.effects, &self.keyed);
+                            triggered_particle_events(*on, *interval_us, span, local, input, &|x| particle_look(fx, keyed, ei, x), &mut self.events);
+                            paint_particles(fx, keyed, ei, &self.events, span.fade(t), &mut self.buf);
+                            continue;
+                        }
+                        triggered_instances(*on, *interval_us, *origin, span, local, input, &mut self.inst);
                         if self.effects[ei].takes_instances() {
                             paint_instances_sampled(&self.effects, &self.keyed, ei, &self.inst, span.fade(t), &mut self.buf);
                         } else if !self.inst.is_empty() {
@@ -1894,6 +2012,139 @@ mod tests {
         assert_eq!(lit(&r.render(2_100_000, None)), 0);
     }
 
+    fn particles(f: impl FnOnce(&mut crate::model::ParticlesParams)) -> Effect {
+        let mut e = crate::edit::default_effect("builtin.particles").unwrap();
+        let Effect::Particles { params, .. } = &mut e else { unreachable!() };
+        f(params);
+        e
+    }
+
+    fn lit_cells(a: &[f32; 64]) -> Vec<usize> {
+        (0..64).filter(|i| a[*i] > 0.0).collect()
+    }
+
+    #[test]
+    fn burst_spreads_falls_and_is_a_function_of_time() {
+        let e = CompiledEffect::compile(&particles(|_| {})).unwrap();
+        // At its start every particle is at the emitter (3.5, 3.5): the four middle cells.
+        assert_eq!(lit_cells(&alpha_grid(&e, 0, None)), vec![27, 28, 35, 36]);
+        let mean_y = |t| {
+            let a = alpha_grid(&e, t, None);
+            let w: f32 = a.iter().sum();
+            (0..64).map(|i| a[i] * (i / 8) as f32).sum::<f32>() / w
+        };
+        assert!(lit_cells(&alpha_grid(&e, 300_000, None)).len() > 4, "spread out");
+        assert!(mean_y(900_000) < mean_y(100_000), "gravity pulls down");
+        assert_eq!(lit_cells(&alpha_grid(&e, 1_300_000, None)), Vec::<usize>::new(), "gone after the lifetime");
+        // Seek: drawing 0.7 s directly equals drawing it after other times.
+        let direct = alpha_grid(&e, 700_000, None);
+        let _ = alpha_grid(&e, 200_000, None);
+        assert_eq!(alpha_grid(&e, 700_000, None), direct);
+    }
+
+    #[test]
+    fn edges_vanish_or_bounce() {
+        let one = |edge| {
+            CompiledEffect::compile(&particles(|p| {
+                p.count = Some(1.into());
+                p.speed_min = 8.0.into();
+                p.speed_max = 8.0.into();
+                p.angle = 0.0.into();
+                p.spread = 0.0.into();
+                p.gravity = 0.0.into();
+                p.drag = 0.0.into();
+                p.lifetime_ms = 3000.into();
+                p.tail = 0.0.into();
+                p.size = 0.5.into();
+                p.origin_x = Some(0.0.into());
+                p.origin_y = Some(3.0.into());
+                p.edge_mode = edge;
+            }))
+            .unwrap()
+        };
+        let (vanish, bounce) = (one(crate::model::EdgeMode::Vanish.into()), one(crate::model::EdgeMode::Bounce.into()));
+        assert_eq!(lit_cells(&alpha_grid(&vanish, 500_000, None)), vec![3 * 8 + 4]);
+        assert_eq!(lit_cells(&alpha_grid(&vanish, 1_500_000, None)), Vec::<usize>::new(), "x = 12: gone");
+        assert_eq!(lit_cells(&alpha_grid(&bounce, 1_500_000, None)), vec![3 * 8 + 3], "x = 12 folds back to 3");
+    }
+
+    #[test]
+    fn implode_gathers_waits_and_bursts() {
+        let e = CompiledEffect::compile(&particles(|p| p.mode = crate::model::ParticleMode::Implode.into())).unwrap();
+        // Start on a circle of radius 4: the middle is dark. Gathered (0.6 s) and
+        // waiting (0.2 s): the middle only. Then the burst spreads again.
+        let start = alpha_grid(&e, 0, None);
+        assert_eq!((start[27], start[36]), (0.0, 0.0));
+        assert_eq!(lit_cells(&alpha_grid(&e, 700_000, None)), vec![27, 28, 35, 36]);
+        assert!(lit_cells(&alpha_grid(&e, 1_100_000, None)).len() > 4);
+    }
+
+    #[test]
+    fn triggered_particles_follow_pads() {
+        let lit_near = |f: &Frame, x: usize, y: usize| (y.saturating_sub(1)..=(y + 1).min(7)).any(|cy| (x.saturating_sub(1)..=(x + 1).min(7)).any(|cx| f.leds[cy * 8 + cx].r > 0.0));
+        // Press burst at the pad.
+        let mut r = Renderer::new(&triggered_show(particles(|_| {}), on(TriggerOn::Press))).unwrap();
+        let mut input = PadInput::default();
+        input.apply(PadEvent::Press { x: 1, y: 1, velocity: 100, t_us: 0 }, Some(2_000_000));
+        input.advance(10_000);
+        let f = r.render_input(2_010_000, None, Some(&input));
+        assert!(lit_near(&f, 1, 1) && !lit_near(&f, 6, 6));
+        // Rocket: rises from the bottom of the pressed column, bursts at row 5.
+        let mut r = Renderer::new(&triggered_show(particles(|p| p.mode = crate::model::ParticleMode::Rocket.into()), on(TriggerOn::Press))).unwrap();
+        let mut input = PadInput::default();
+        input.apply(PadEvent::Press { x: 5, y: 6, velocity: 100, t_us: 0 }, Some(2_000_000));
+        input.advance(100_000); // 10 cells/s: at row 1
+        let f = r.render_input(2_100_000, None, Some(&input));
+        assert!(lit_near(&f, 5, 1) && !lit_near(&f, 5, 6), "rising in column 5");
+        input.advance(520_000); // burst at 0.5 s from (5, 5)
+        assert!(lit_near(&r.render_input(2_520_000, None, Some(&input)), 5, 5));
+        // Hold fountain: emits while held, the last ones fly one lifetime after release.
+        let mut r = Renderer::new(&triggered_show(particles(|p| p.mode = crate::model::ParticleMode::Fountain.into()), on(TriggerOn::Hold))).unwrap();
+        let mut input = PadInput::default();
+        input.apply(PadEvent::Press { x: 3, y: 3, velocity: 100, t_us: 0 }, Some(2_000_000));
+        input.apply(PadEvent::Release { x: 3, y: 3, t_us: 1_000_000 }, Some(3_000_000));
+        for (now, any) in [(500_000, true), (1_500_000, true), (2_300_000, false)] {
+            input.advance(now);
+            assert_eq!(lit(&r.render_input(2_000_000 + now, None, Some(&input))) > 0, any, "at {now}");
+        }
+    }
+
+    #[test]
+    fn continuous_bursts_repeat_and_fountains_keep_going() {
+        let mut s = demo();
+        s.presets.push(crate::model::Preset { id: "p".into(), name: "p".into(), effect: particles(|_| {}) });
+        s.layers.truncate(1);
+        s.layers[0].content = Content::Continuous { preset_id: "p".into() };
+        let mut r = Renderer::new(&s).unwrap();
+        // A new burst (new random directions) every lifetime (1.2 s), each from the emitter.
+        let middle = |f: &Frame| (0..64).filter(|i| f.leds[*i].r > 0.0).collect::<Vec<_>>();
+        assert_eq!(middle(&r.render(1_200_000 * 7, None)), vec![27, 28, 35, 36]);
+        assert_ne!(r.render(300_000, None), r.render(300_000 + 1_200_000 * 7, None));
+        let Effect::Particles { params, .. } = &mut s.presets.last_mut().unwrap().effect else { unreachable!() };
+        params.mode = crate::model::ParticleMode::Fountain.into();
+        params.rate = Some(64.0.into());
+        params.lifetime_ms = 6000.into();
+        let mut r = Renderer::new(&s).unwrap();
+        assert!(lit(&r.render(60_000_000, None)) > 0, "still emitting after a minute");
+    }
+
+    #[test]
+    fn particles_per_layer_are_capped() {
+        // 64 per second for 6 s = 384 alive: only 256 are drawn.
+        let CompiledEffect::Particles(look) = CompiledEffect::compile(&particles(|p| {
+            p.mode = crate::model::ParticleMode::Fountain.into();
+            p.rate = Some(64.0.into());
+            p.lifetime_ms = 6000.into();
+        }))
+        .unwrap() else { unreachable!() };
+        let ev = Event { x: 3.5, y: 3.5, age_s: 10.0, emit_s: f64::INFINITY, id: 0, start_us: 0 };
+        let mut budget = MAX_PARTICLES;
+        paint_event(&ev, &|_| Some(look), 1.0, &mut LayerFrame::default(), &mut budget);
+        assert_eq!(budget, 0);
+        let mut budget = MAX_PARTICLES;
+        paint_event(&Event { age_s: 1.0, ..ev }, &|_| Some(look), 1.0, &mut LayerFrame::default(), &mut budget);
+        assert_eq!(MAX_PARTICLES - budget, 65, "0..=64 born in the first second");
+    }
     #[test]
     fn hold_draws_while_held_and_release_fires_on_release() {
         // A fixed-position effect on hold: a blinder drawn only while a pad is held.

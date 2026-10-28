@@ -1,0 +1,290 @@
+{
+  "$schema": "../../schemas/show.schema.json",
+  "schema_version": "0.1.3",
+  "id": "particles-0-1-3",
+  "name": "0.1.3 の粒子（09 火花・10 花火・11 しずく・40 吸い込み→爆発・噴水）",
+  "seed": 1,
+  "sync": {
+    "timecode": {
+      "source": "live_bridge",
+      "frame_rate": "30",
+      "origin": "01:00:00:00",
+      "input_offset_us": 0
+    },
+    "beat_source": "midi_clock",
+    "stop_behavior": "hold",
+    "loss": {
+      "holdover_ms": 250,
+      "blackout_after_ms": 1000,
+      "recovery_fade_ms": 100
+    },
+    "mtc_output": {
+      "enabled": false
+    }
+  },
+  "render": {
+    "fps": 30,
+    "master_brightness": 1
+  },
+  "preview": {
+    "bpm": 120
+  },
+  "targets": [
+    {
+      "id": "main-pad",
+      "name": "Launchpad X",
+      "profile": "novation.launchpad_x.grid64.v1"
+    }
+  ],
+  "presets": [
+    {
+      "id": "sparks",
+      "name": "09 火花",
+      "effect": {
+        "type": "builtin.particles",
+        "version": 1,
+        "params": {
+          "mode": "burst",
+          "count": 24,
+          "color": "#FFE080",
+          "color_end": "#FF2000",
+          "speed_min": 3,
+          "speed_max": 9,
+          "angle": 90,
+          "spread": 360,
+          "gravity": -12,
+          "drag": 2,
+          "lifetime_ms": 900,
+          "size": 0.75,
+          "tail": 1,
+          "edge_mode": "vanish",
+          "seed": 9
+        }
+      }
+    },
+    {
+      "id": "firework",
+      "name": "10 花火",
+      "effect": {
+        "type": "builtin.particles",
+        "version": 1,
+        "params": {
+          "mode": "rocket",
+          "count": 32,
+          "color": "#FF60C0",
+          "color_end": "#400020",
+          "speed_min": 2,
+          "speed_max": 6,
+          "angle": 90,
+          "spread": 360,
+          "gravity": -4,
+          "drag": 1.5,
+          "lifetime_ms": 1500,
+          "size": 0.75,
+          "tail": 0.5,
+          "edge_mode": "vanish",
+          "seed": 10,
+          "rise_speed": 12,
+          "burst_height": 5.5
+        }
+      }
+    },
+    {
+      "id": "drop",
+      "name": "11 重力のしずく",
+      "effect": {
+        "type": "builtin.particles",
+        "version": 1,
+        "params": {
+          "mode": "burst",
+          "count": 1,
+          "color": "#40A0FF",
+          "speed_min": 0,
+          "speed_max": 1,
+          "angle": 90,
+          "spread": 60,
+          "gravity": -20,
+          "drag": 0.3,
+          "lifetime_ms": 3000,
+          "size": 0.75,
+          "tail": 0.5,
+          "edge_mode": "bounce",
+          "seed": 11
+        }
+      }
+    },
+    {
+      "id": "implode",
+      "name": "40 吸い込み→爆発",
+      "effect": {
+        "type": "builtin.particles",
+        "version": 1,
+        "params": {
+          "mode": "implode",
+          "count": 24,
+          "color": "#C080FF",
+          "color_end": "#FFFFFF",
+          "speed_min": 4,
+          "speed_max": 10,
+          "angle": 90,
+          "spread": 360,
+          "gravity": 0,
+          "drag": 2,
+          "lifetime_ms": 1600,
+          "size": 0.75,
+          "tail": 1,
+          "edge_mode": "vanish",
+          "seed": 40,
+          "pause_ms": 300,
+          "implode_radius": 4
+        }
+      }
+    },
+    {
+      "id": "fountain",
+      "name": "噴水（下中央から上へ）",
+      "effect": {
+        "type": "builtin.particles",
+        "version": 1,
+        "params": {
+          "mode": "fountain",
+          "rate": 24,
+          "color": "#80FFFF",
+          "color_end": "#0040FF",
+          "speed_min": 6,
+          "speed_max": 10,
+          "angle": 90,
+          "spread": 30,
+          "gravity": -10,
+          "drag": 0.5,
+          "lifetime_ms": 1500,
+          "size": 0.75,
+          "tail": 1,
+          "edge_mode": "vanish",
+          "origin_x": 3.5,
+          "origin_y": 0,
+          "seed": 5
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "sparks",
+      "name": "09 火花（押す）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "max",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "sparks-1",
+            "preset_id": "sparks",
+            "start_us": 0,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ],
+        "trigger": {
+          "on": "press"
+        }
+      }
+    },
+    {
+      "id": "firework",
+      "name": "10 花火（押した列から）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "max",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "firework-1",
+            "preset_id": "firework",
+            "start_us": 8000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ],
+        "trigger": {
+          "on": "press"
+        }
+      }
+    },
+    {
+      "id": "drop",
+      "name": "11 重力のしずく（押す）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "max",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "drop-1",
+            "preset_id": "drop",
+            "start_us": 16000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ],
+        "trigger": {
+          "on": "press"
+        }
+      }
+    },
+    {
+      "id": "implode",
+      "name": "40 吸い込み→爆発（押す）",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "max",
+      "content": {
+        "kind": "triggered",
+        "clips": [
+          {
+            "id": "implode-1",
+            "preset_id": "implode",
+            "start_us": 24000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ],
+        "trigger": {
+          "on": "press"
+        }
+      }
+    },
+    {
+      "id": "fountain",
+      "name": "噴水",
+      "target_id": "main-pad",
+      "enabled": true,
+      "opacity": 1,
+      "blend": "max",
+      "content": {
+        "kind": "timeline",
+        "clips": [
+          {
+            "id": "fountain-1",
+            "preset_id": "fountain",
+            "start_us": 32000000,
+            "duration_us": 8000000,
+            "fade_in_us": 0,
+            "fade_out_us": 0
+          }
+        ]
+      }
+    }
+  ]
+}

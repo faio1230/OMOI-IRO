@@ -11,14 +11,21 @@ pub struct BenchArgs {
     /// Print JSON only.
     #[arg(long)]
     pub json: bool,
+    /// The particle load instead (8 layers of capped fountains, 256 particles each).
+    #[arg(long)]
+    pub particles: bool,
 }
 
 pub fn run(args: BenchArgs) -> Result<(), Box<dyn std::error::Error>> {
-    let minutes = (args.frames / (30 * 60) + 1) as u32;
-    let show = nfr03::load_show(minutes);
-    let h = nfr03::measure(&show, args.frames);
     let build = if cfg!(debug_assertions) { "debug" } else { "release" };
-    let report = nfr03::report(&h, build);
+    let report = if args.particles {
+        let h = nfr03::measure(&nfr03::load_show_particles(), args.frames);
+        nfr03::report_load(&h, build, "64 pads, 8 continuous particle layers, fountain 64/s x 6 s (256 drawn per layer), size 2, tail 4, bounce, over/add/max")
+    } else {
+        let minutes = (args.frames / (30 * 60) + 1) as u32;
+        let h = nfr03::measure(&nfr03::load_show(minutes), args.frames);
+        nfr03::report(&h, build)
+    };
     if args.json {
         println!("{}", serde_json::to_string(&report)?);
     } else {

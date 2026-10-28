@@ -13,7 +13,7 @@
 //!   never reused within a show.
 
 use crate::model::{
-    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Content, Effect, Layer, LayerMask, Loss, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
+    Axis, BeatSource, Blend, ChaseParams, Clip, CrossParams, Mirror, PathKind, PathParams, ShapeKind, ShapeParams, TapGlowParams, Content, Effect, EdgeMode, Layer, LayerMask, Loss, ParticleMode, ParticlesParams, MtcOutput, NoiseParams, OrbMotion, OrbParams, Preset, RainDirection, RainParams, RegionPattern, RegionsParams, StepMode, StepOrder, RippleFade, RippleParams, RippleTrigger, WaveParams, Preview, PulseParams, RenderSettings, Show, SolidParams,
     StopBehavior, StrobeMode, StrobeParams, Sync, TriggerOn, TriggerSpec, Target, TimecodeSettings, TimecodeSource, Waveform, SCHEMA_VERSION,
 };
 use crate::surface::GRID64_PROFILE;
@@ -271,6 +271,33 @@ pub fn default_effect(effect_type: &str) -> Option<Effect> {
                 looping: true.into(),
                 phase: 0.0.into(),
                 mirror: Mirror::None.into(),
+            },
+        },
+        "builtin.particles" => Effect::Particles {
+            version: 1,
+            params: ParticlesParams {
+                mode: ParticleMode::Burst.into(),
+                count: Some(16.into()),
+                rate: None,
+                color: "#FFC040".to_string().into(),
+                color_end: Some("#FF2000".to_string().into()),
+                speed_min: 2.0.into(),
+                speed_max: 6.0.into(),
+                angle: 90.0.into(),
+                spread: 360.0.into(),
+                gravity: (-6.0).into(),
+                drag: 1.0.into(),
+                lifetime_ms: 1200.into(),
+                size: 0.75.into(),
+                tail: 1.0.into(),
+                edge_mode: EdgeMode::Vanish.into(),
+                origin_x: None,
+                origin_y: None,
+                seed: 1.into(),
+                rise_speed: None,
+                burst_height: None,
+                pause_ms: None,
+                implode_radius: None,
             },
         },
         "builtin.shape" => Effect::Shape {

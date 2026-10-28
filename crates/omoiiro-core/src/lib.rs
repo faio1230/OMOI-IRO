@@ -10,6 +10,8 @@
 //!   `Renderer`.
 //! * `validation`: semantic validation with JSON Pointers.
 //! * `safety`: brightness ceiling, flashing-rate analysis and warnings.
+//! * `particles`: burst / fountain / rocket / implode particles placed in
+//!   closed form from their emission time (seekable).
 //! * `shape`: signed distances and alpha of shapes on the grid (shared by
 //!   shape, path and ripple).
 //! * `edit`: edit commands (validated), snapping, Undo / Redo over snapshots.
@@ -19,6 +21,7 @@
 
 pub mod edit;
 pub mod model;
+pub mod particles;
 pub mod render;
 pub mod safety;
 pub mod shape;

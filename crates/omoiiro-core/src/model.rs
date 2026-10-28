@@ -453,6 +453,95 @@ pub enum Effect {
     /// 0.1.2, input driven: heads run up, down, left and right from a pressed pad.
     #[serde(rename = "builtin.cross")]
     Cross { version: u32, params: CrossParams },
+    /// 0.1.3: particles (burst, fountain, rocket, implode) placed from their
+    /// emission time only, so any time can be drawn (seek).
+    #[serde(rename = "builtin.particles")]
+    Particles { version: u32, params: ParticlesParams },
+}
+
+/// Particles. Each particle's start values come from hash(seed, event,
+/// particle); its position is the closed form of drag and gravity.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ParticlesParams {
+    pub mode: Param<ParticleMode>,
+    /// burst / rocket / implode: particles per event, 1..=64 (absent = 16).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub count: Option<Param<u32>>,
+    /// fountain: particles per second, 0.5..=64 (absent = 8).
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub rate: Option<Param<f64>>,
+    pub color: Param<String>,
+    /// Color at the end of the lifetime (absent = `color`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color_end: Option<Param<String>>,
+    /// Start speed range, cells per second 0..=16.
+    #[serde(serialize_with = "ser_param_num")]
+    pub speed_min: Param<f64>,
+    #[serde(serialize_with = "ser_param_num")]
+    pub speed_max: Param<f64>,
+    /// Centre of the launch directions in degrees (0 = +x, 90 = +y).
+    #[serde(serialize_with = "ser_param_num")]
+    pub angle: Param<f64>,
+    /// Width of the launch directions, 0..=360 degrees.
+    #[serde(serialize_with = "ser_param_num")]
+    pub spread: Param<f64>,
+    /// Cells per second², -32..=32 (negative = down).
+    #[serde(serialize_with = "ser_param_num")]
+    pub gravity: Param<f64>,
+    /// Speed decay per second, 0..=8 (v = v0·e^(−k t)).
+    #[serde(serialize_with = "ser_param_num")]
+    pub drag: Param<f64>,
+    /// 100..=6000 ms.
+    pub lifetime_ms: Param<u32>,
+    /// Spot radius 0.5..=2 cells.
+    #[serde(serialize_with = "ser_param_num")]
+    pub size: Param<f64>,
+    /// Tail length 0..=4 cells.
+    #[serde(serialize_with = "ser_param_num")]
+    pub tail: Param<f64>,
+    pub edge_mode: Param<EdgeMode>,
+    /// Emitter when the time drives it (timeline, continuous, clip_start,
+    /// interval); absent = 3.5. A pad press emits at the pad.
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub origin_x: Option<Param<f64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub origin_y: Option<Param<f64>>,
+    pub seed: Param<u32>,
+    /// rocket: rise speed, cells per second 1..=32 (absent = 10).
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub rise_speed: Option<Param<f64>>,
+    /// rocket: burst row y, 0..=7 (absent = 5).
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub burst_height: Option<Param<f64>>,
+    /// implode: wait at the centre before the burst, 0..=1000 ms (absent = 200).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pause_ms: Option<Param<u32>>,
+    /// implode: start circle radius, 1..=6 cells (absent = 4).
+    #[serde(default, skip_serializing_if = "Option::is_none", serialize_with = "ser_opt_param_num")]
+    pub implode_radius: Option<Param<f64>>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ParticleMode {
+    /// `count` at once.
+    Burst,
+    /// `rate` per second while emitting.
+    Fountain,
+    /// One spark rises at `rise_speed` to `burst_height`, then bursts.
+    Rocket,
+    /// `count` gather from a circle to the emitter, wait `pause_ms`, burst.
+    Implode,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EdgeMode {
+    /// Gone once it leaves the grid.
+    Vanish,
+    /// Reflected at the grid edges (restitution 1).
+    Bounce,
 }
 
 /// Glow at a pressed pad: start → mid → end color over the lifetime, repeated.
@@ -707,6 +796,7 @@ impl Effect {
             Effect::Shape { .. } => "builtin.shape",
             Effect::TapGlow { .. } => "builtin.tap_glow",
             Effect::Cross { .. } => "builtin.cross",
+            Effect::Particles { .. } => "builtin.particles",
         }
     }
 
@@ -725,13 +815,15 @@ impl Effect {
             | Effect::Path { version, .. }
             | Effect::Shape { version, .. }
             | Effect::TapGlow { version, .. }
-            | Effect::Cross { version, .. } => *version,
+            | Effect::Cross { version, .. }
+            | Effect::Particles { version, .. } => *version,
         }
     }
 
-    /// Draws instances (position and age) handed to it: ripple, tap_glow, cross.
+    /// Fired by any trigger of a triggered layer (position and age): ripple,
+    /// tap_glow, cross and particles. Others are drawn only on `hold`.
     pub fn takes_instances(&self) -> bool {
-        matches!(self, Effect::Ripple { .. } | Effect::TapGlow { .. } | Effect::Cross { .. })
+        matches!(self, Effect::Ripple { .. } | Effect::TapGlow { .. } | Effect::Cross { .. } | Effect::Particles { .. })
     }
 
     /// Compiled-in effect (`builtin.*`), as opposed to a future graph reference.
@@ -1120,7 +1212,7 @@ pub(crate) fn demo_for_tests() -> Show {
     s
 }
 
-step_only!(Axis, Waveform, StrobeMode, RippleFade, RippleTrigger, RippleShape, RainDirection, OrbMotion, RegionPattern, StepMode, StepOrder, PathKind, Mirror, ShapeKind);
+step_only!(Axis, Waveform, StrobeMode, RippleFade, RippleTrigger, RippleShape, RainDirection, OrbMotion, RegionPattern, StepMode, StepOrder, PathKind, Mirror, ShapeKind, ParticleMode, EdgeMode);
 
 #[cfg(test)]
 mod keyframe_tests {

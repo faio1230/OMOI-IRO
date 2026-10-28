@@ -142,6 +142,8 @@ pub fn effect_flash(e: &Effect) -> Option<FlashSource> {
         // Driven by pad presses, not by time: not judged statically.
         Effect::Ripple { .. } | Effect::TapGlow { .. } | Effect::Cross { .. } => None,
         Effect::Shape { .. } => None,
+        // Continuous motion, not a flash (docs/14 §4-5).
+        Effect::Particles { .. } => None,
         // A spot passing a cell: (cells per second) / (spot diameter). A warning only.
         Effect::Path { params, .. } => {
             let length = |k: &crate::model::PathKind| match k {

@@ -264,6 +264,32 @@ mod tests {
     }
 
     #[test]
+    fn particles_fixture_loads_round_trips_and_fires() {
+        use omoiiro_core::render::{PadEvent, PadInput, Renderer};
+        let text = include_str!("../../../fixtures/shows/particles-0.1.3.show.json");
+        let show = load_str(text).unwrap();
+        let saved = to_canonical_string(&show);
+        assert_eq!(serde_json::from_str::<Value>(&saved).unwrap(), serde_json::from_str::<Value>(text).unwrap());
+        let mut a = Renderer::new(&show).unwrap();
+        let mut b = Renderer::new(&load_str(&saved).unwrap()).unwrap();
+        let lit = |f: &omoiiro_core::surface::Frame| f.leds.iter().filter(|c| c.r + c.g + c.b > 0.0).count();
+        // Each pad layer fires inside its window; the fountain runs on time alone.
+        for (show_us, x, y) in [(1_000_000i64, 2u8, 2u8), (9_000_000, 5, 6), (17_000_000, 3, 6), (25_000_000, 4, 4)] {
+            let mut input = PadInput::default();
+            input.apply(PadEvent::Press { x, y, velocity: 100, t_us: 0 }, Some(show_us));
+            input.advance(150_000);
+            let f = a.render_input(show_us + 150_000, None, Some(&input));
+            assert!(lit(&f) > 0, "fires at {show_us}");
+            assert_eq!(f, b.render_input(show_us + 150_000, None, Some(&input)));
+            assert_eq!(lit(&a.render(show_us + 150_000, None)), 0, "nothing without a press at {show_us}");
+        }
+        for t in [32_000_000, 33_000_000, 36_500_000, 39_900_000] {
+            assert_eq!(a.render(t, None), b.render(t, None), "at {t}");
+        }
+        assert!(lit(&a.render(36_500_000, None)) > 0);
+    }
+
+    #[test]
     fn triggered_layer_round_trips_and_needs_its_interval() {
         let mut v = demo_value();
         v["layers"][0]["content"] = json!({"kind": "triggered", "clips": [], "trigger": {"on": "interval"}});
@@ -285,7 +311,7 @@ mod tests {
     #[test]
     fn new_0_1_2_presets_round_trip() {
         let mut show = load_str(DEMO).unwrap();
-        for (id, t) in [("pa", "builtin.path"), ("sh", "builtin.shape"), ("tg", "builtin.tap_glow"), ("x", "builtin.cross"), ("rg", "builtin.regions"), ("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
+        for (id, t) in [("pt", "builtin.particles"), ("pa", "builtin.path"), ("sh", "builtin.shape"), ("tg", "builtin.tap_glow"), ("x", "builtin.cross"), ("rg", "builtin.regions"), ("ra", "builtin.rain"), ("w", "builtin.wave"), ("o", "builtin.orb"), ("r", "builtin.ripple"), ("s", "builtin.strobe"), ("n", "builtin.noise")] {
             let effect = omoiiro_core::edit::default_effect(t).unwrap();
             show.presets.push(omoiiro_core::model::Preset { id: id.into(), name: id.into(), effect });
         }
