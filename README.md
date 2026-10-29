@@ -2,8 +2,6 @@
 
 Ableton Liveを再生マスターとして、MIDIコントローラーの操作入力とLED演出を管理するデスクトップアプリの開発プロジェクトです。製品名はOMOI-IRO（2026-10-28決定。赤をテーマカラーとし、「思い」をテーマにした音楽イベントのために、Launchpad Xをキャンバスに見立てて演出する）。設計資料では作業名「DJ Show Control」を使っています。
 
-OMOI-IROは個人のオープンソースプロジェクトで、ソニーグループ株式会社およびその商標「Omoiiro」とは無関係です。表記は常に「OMOI-IRO」を用います。
-
 2026年10月28日にP0（技術検証）を完了し、本番アプリ（[実装計画](docs/11-implementation-plan.md)）を実装しました。Cargo workspace（`crates/`、`apps/probe`）、Tauri 2 + React のデスクトップアプリ（`apps/desktop/`）、Live側スクリプト（`live-bridge/`）があります。2026年10月29日の本番ではMac（Apple Silicon）でLaunchpad Xを点灯させて運用しました（[結果](docs/validation/m6-results.md)）。ビルドとテストの手順は [BUILD.md](BUILD.md)。
 
 ## 画面
