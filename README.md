@@ -4,7 +4,21 @@ Ableton Liveを再生マスターとして、MIDIコントローラーの操作�
 
 OMOI-IROは個人のオープンソースプロジェクトで、ソニーグループ株式会社およびその商標「Omoiiro」とは無関係です。表記は常に「OMOI-IRO」を用います。
 
-2026年10月28日にP0（技術検証）を完了し、本番アプリの実装（[実装計画](docs/11-implementation-plan.md)）に入りました。Cargo workspace（`crates/`、`apps/probe`）とLive側スクリプト（`live-bridge/`）があります。Tauriのdesktop shellはまだありません（M5）。ビルドとテストの手順は [BUILD.md](BUILD.md)。
+2026年10月28日にP0（技術検証）を完了し、本番アプリ（[実装計画](docs/11-implementation-plan.md)）を実装しました。Cargo workspace（`crates/`、`apps/probe`）、Tauri 2 + React のデスクトップアプリ（`apps/desktop/`）、Live側スクリプト（`live-bridge/`）があります。2026年10月29日の本番ではMac（Apple Silicon）でLaunchpad Xを点灯させて運用しました（[結果](docs/validation/m6-results.md)）。ビルドとテストの手順は [BUILD.md](BUILD.md)。
+
+## 画面
+
+Windows版 v0.1.0（2026-10-29）。ショーは同梱の雛形 `shows/omoi-iro-live-template.show.json`。
+
+| 演奏タブ | 素材ライブラリー |
+| --- | --- |
+| ![演奏タブ。ショーの開始、タイムコード、パッド入力、接続状態、右にLEDプレビュー](docs/images/perform-tab.jpg) | ![素材ライブラリー。分類・タグで絞り込み、サムネイルで動きを確認してレイヤーへ配置](docs/images/material-bank.jpg) |
+
+![タイムライン。レイヤーごとのクリップ、再生ヘッド、選択したクリップの数値編集、右にLEDプレビュー](docs/images/timeline.jpg)
+
+- 演奏タブ：ショーファイルを選んで「開始」。時刻源は「Live に追従」か「手元の時計（Live なし）」。LEDプレビューは実機へ送っている値を映す。
+- 素材ライブラリー：ショー内の素材と、ショー横断のライブラリー（`shows/omoi-iro-library-*.show.json`、160素材）を切り替えて探し、タイムラインのレイヤーへ置く。
+- タイムライン：クリップをドラッグで移動・伸縮・別レイヤーへ移動。Space で再生、Delete で削除、⌘Z / Ctrl+Z で取り消し。
 
 ## 合意した前提
 
