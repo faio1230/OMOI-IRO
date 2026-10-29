@@ -15,7 +15,7 @@ function fmt(us: number | null): string {
 
 export default function LedPreview(props: { showPath: string; running: boolean; onError: (e: string | null) => void }) {
   const { showPath, running, onError } = props;
-  const { frame, info, error } = preview.usePreview();
+  const { frame, info, error, runtimeLocal } = preview.usePreview();
   const mode: PreviewSource = info?.mode ?? "runtime";
   const [scrubUs, setScrubUs] = useState<number | null>(null);
   const [bpmText, setBpmText] = useState("");
@@ -55,7 +55,7 @@ export default function LedPreview(props: { showPath: string; running: boolean; 
           </div>
           <p className="source">
             {!running && showing !== "local" && "「開始」していないため実機出力はありません。手元で再生を使ってください"}
-            {running && showing === "runtime" && "表示中：実機へ送っている値（Live に追従）"}
+            {running && showing === "runtime" && (runtimeLocal ? "表示中：実機へ送っている値（手元の時計）" : "表示中：実機へ送っている値（Live に追従）")}
             {showing === "local" && (independent ? "表示中：独立プレビュー（Live・機器の位置は変わらない）" : "表示中：手元で再生（ローカル時計）")}
             {running && showing === null && "実機出力のフレーム待ち"}
           </p>

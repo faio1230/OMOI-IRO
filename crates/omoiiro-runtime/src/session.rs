@@ -766,6 +766,55 @@ mod tests {
         assert!(!off.is_empty() && sent.ends_with(&off), "stop sends the LED shutdown last");
     }
 
+    /// A21 (Mac report): a new show (no clips, no length) started locally,
+    /// then edited, played and edited again: the time advances and an edit
+    /// keeps the position.
+    #[test]
+    fn local_clock_of_a_new_show_advances_and_survives_edits() {
+        use omoiiro_core::edit::{apply, EditCommand, Snap};
+        let mut show = omoiiro_core::edit::new_show("x");
+        let (be, _ports) = fake_backend();
+        let backend: SharedBackend = Arc::new(Mutex::new(Box::new(be)));
+        let cfg = SessionConfig {
+            time_source: TimeSource::Local,
+            show: show.clone(),
+            bind: "127.0.0.1:0".into(),
+            clock_in: None,
+            link: false,
+            led_out: LedOut::Virtual,
+            control: None,
+            timecode_out: None,
+            record: None,
+            meta: json!({}),
+            safety: Default::default(),
+            identify_led: false,
+        };
+        let mut s = FollowSession::start(cfg, backend).unwrap();
+        assert_eq!(s.local_transport().unwrap().length_us, None);
+        // Edit: a preset, a layer and a 44 s clip.
+        let (x, o) = apply(&show, &EditCommand::AddPreset { name: "白".into(), effect_type: "builtin.solid".into() }, Snap::None).unwrap();
+        let pid = o.preset_id.unwrap();
+        let (x, o) = apply(&x, &EditCommand::AddLayer { name: "a".into(), index: None }, Snap::None).unwrap();
+        let (x, _) = apply(&x, &EditCommand::AddClip { layer_id: o.layer_id.unwrap(), preset_id: pid, start_us: 0, duration_us: 44_160_000 }, Snap::None).unwrap();
+        show = x;
+        s.submit_show(&show).unwrap();
+        assert_eq!(s.local_transport().unwrap().length_us, Some(44_160_000));
+        s.local_play(true).unwrap();
+        std::thread::sleep(Duration::from_millis(500));
+        let t1 = s.status().transport.show_time_us.unwrap();
+        assert!(t1 >= 400_000, "advancing: {t1}");
+        let f = s.status().follow.show_time_us.unwrap();
+        assert!(f >= 300_000, "the render loop follows: {f}");
+        // Another edit keeps playing from where it was.
+        let (x, _) = apply(&show, &EditCommand::AddLayer { name: "b".into(), index: None }, Snap::None).unwrap();
+        s.submit_show(&x).unwrap();
+        let l = s.local_transport().unwrap();
+        assert!(l.playing && l.position_us >= t1, "{l:?}");
+        std::thread::sleep(Duration::from_millis(200));
+        assert!(s.status().follow.show_time_us.unwrap() > t1);
+        s.stop().unwrap();
+    }
+
     /// M6: a Launchpad-looking LED output starts only with the device permission.
     #[test]
     fn launchpad_led_output_needs_the_permission() {

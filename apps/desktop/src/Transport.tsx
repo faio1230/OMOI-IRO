@@ -3,7 +3,7 @@
 // clock only; while the runtime follows Live this is the independent preview.
 import { useEffect, useRef, useState } from "react";
 import * as preview from "./previewStore";
-import { clockView, fmtFrames, positionUs, usePreview } from "./previewStore";
+import { clockView, fmtFrames, usePreview } from "./previewStore";
 
 const editable = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || ["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(t.tagName));
 
@@ -52,10 +52,46 @@ export function TransportBar({ running, blocked }: { running: boolean; blocked: 
   );
 }
 
-/** The timeline playhead at the shown position (`fallbackUs` before any frame). */
+/** Manual scrolling pauses following the playhead for this long. */
+const FOLLOW_PAUSE_MS = 3000;
+
+/**
+ * The timeline playhead at the transport bar's position (the clock in use:
+ * the runtime's local clock or the preview), `fallbackUs` before any. While
+ * playing it keeps itself in view: past the right 1/8 of the visible track it
+ * scrolls so that it sits at the left 1/8.
+ */
 export function Playhead({ left, pxPerSec, fallbackUs }: { left: number; pxPerSec: number; fallbackUs: number | null }) {
   const s = usePreview();
-  const us = positionUs(s) ?? fallbackUs;
-  if (us === null) return null;
-  return <div className="tl-playhead" style={{ left: left + (us / 1e6) * pxPerSec }} />;
+  const clock = clockView(s);
+  const us = clock?.position_us ?? fallbackUs;
+  const x = us === null ? null : left + (us / 1e6) * pxPerSec;
+  const el = useRef<HTMLDivElement>(null);
+  const pausedUntil = useRef(0);
+  const ownScroll = useRef(false);
+  const scroller = () => el.current?.closest(".tl-scroll") as HTMLElement | null;
+  useEffect(() => {
+    const sc = scroller();
+    if (!sc) return;
+    const onScroll = () => {
+      if (ownScroll.current) ownScroll.current = false;
+      else pausedUntil.current = performance.now() + FOLLOW_PAUSE_MS;
+    };
+    sc.addEventListener("scroll", onScroll, { passive: true });
+    return () => sc.removeEventListener("scroll", onScroll);
+  }, [x === null]);
+  useEffect(() => {
+    const sc = scroller();
+    if (!sc || x === null || !clock?.playing || performance.now() < pausedUntil.current) return;
+    // The sticky layer heads cover the first `left` pixels of the view.
+    const start = sc.scrollLeft + left;
+    const width = sc.clientWidth - left;
+    if (width <= 0 || (x >= start && x <= start + (width * 7) / 8)) return;
+    const to = Math.max(0, Math.min(x - left - width / 8, sc.scrollWidth - sc.clientWidth));
+    if (Math.abs(to - sc.scrollLeft) < 1) return;
+    ownScroll.current = true;
+    sc.scrollLeft = to;
+  }, [x, clock?.playing]);
+  if (x === null) return null;
+  return <div ref={el} className="tl-playhead" style={{ left: x }} />;
 }
