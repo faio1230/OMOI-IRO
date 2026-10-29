@@ -298,10 +298,10 @@ export default function App() {
       refreshRecent();
     });
 
-  // Ctrl+S saves the open document.
+  // Ctrl+S / ⌘S saves the open document (with Shift: save as).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key.toLowerCase() === "s") {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
         if (status?.document) (e.shiftKey ? saveDocAs : saveDoc)();
       }

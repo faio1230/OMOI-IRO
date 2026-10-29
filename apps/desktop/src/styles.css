@@ -162,7 +162,13 @@ button.tiny.danger, button.danger { border-color: var(--danger); color: var(--da
 .tl-clip .fade.in { left: 0; background: linear-gradient(to right, rgba(12, 14, 18, 0.85), transparent); }
 .tl-clip .fade.out { right: 0; background: linear-gradient(to left, rgba(12, 14, 18, 0.85), transparent); }
 .tl-clip-label { position: relative; font-size: 11px; padding: 0 6px; line-height: 32px; white-space: nowrap; color: #fff; text-shadow: 0 1px 2px #000; pointer-events: none; }
-.tl-resize { position: absolute; right: 0; top: 0; bottom: 0; width: 7px; cursor: ew-resize; background: rgba(255, 255, 255, 0.15); }
+.tl-resize { position: absolute; right: 0; top: 0; bottom: 0; width: 10px; cursor: col-resize; background: rgba(255, 255, 255, 0.12); touch-action: none; }
+.tl-resize:hover { background: rgba(255, 255, 255, 0.35); }
+/* No text selection while dragging clips (or anywhere in the timeline). */
+body.dragging, body.dragging * { user-select: none !important; -webkit-user-select: none !important; cursor: inherit; }
+.timeline-panel { user-select: none; -webkit-user-select: none; }
+.timeline-panel:focus { outline: none; }
+.timeline-panel input, .timeline-panel select, .timeline-panel textarea { user-select: text; -webkit-user-select: text; }
 .tl-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--danger); pointer-events: none; z-index: 4; }
 .inspector { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
 .insp-title { font-size: 13px; margin-bottom: 6px; }

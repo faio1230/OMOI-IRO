@@ -159,20 +159,31 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
     setForm({ start: sec(c.start_us), duration: sec(c.duration_us), fadeIn: sec(c.fade_in_us), fadeOut: sec(c.fade_out_us) });
   }, [selected?.clip.start_us, selected?.clip.duration_us, selected?.clip.fade_in_us, selected?.clip.fade_out_us, selClip]);
 
-  // Keyboard: Ctrl+Z / Ctrl+Y (Ctrl+Shift+Z), Delete, Ctrl+D.
+  const panel = useRef<HTMLElement>(null);
+  // After a delete nothing is selected and the keys go to the timeline again.
+  const deleteClip = (clipId: string) => {
+    apply({ op: "delete_clip", clip_id: clipId });
+    setSelClip(null);
+    panel.current?.focus({ preventScroll: true });
+  };
+
+  // Keyboard (Ctrl or ⌘): Z / Y (Shift+Z), D; Delete or Backspace (the Mac delete key) removes the selected clip.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "SELECT") return;
-      if (e.ctrlKey && e.key.toLowerCase() === "z" && !e.shiftKey) {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || ["INPUT", "SELECT", "TEXTAREA"].includes(t.tagName))) return;
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === "z" && !e.shiftKey) {
         e.preventDefault();
         if (view?.can_undo) call(() => ipc.editorUndo());
-      } else if (e.ctrlKey && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) {
+      } else if (mod && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) {
         e.preventDefault();
         if (view?.can_redo) call(() => ipc.editorRedo());
-      } else if (e.key === "Delete" && selClip) {
-        apply({ op: "delete_clip", clip_id: selClip });
-        setSelClip(null);
-      } else if (e.ctrlKey && e.key.toLowerCase() === "d" && selClip) {
+      } else if ((e.key === "Delete" || e.key === "Backspace") && !mod && selClip) {
+        // A selected layer alone is not deleted from the keyboard (only its × button).
+        e.preventDefault();
+        deleteClip(selClip);
+      } else if (mod && e.key.toLowerCase() === "d" && selClip) {
         e.preventDefault();
         apply({ op: "duplicate_clip", clip_id: selClip, start_us: null });
       }
@@ -181,25 +192,28 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  // Drag: ghost locally, one command on release.
+  // Drag: ghost locally, one command on release. The pressed element captures
+  // the pointer (moves and the release bubble to the clip); no text selection meanwhile.
+  const dragging = drag !== null;
   useEffect(() => {
-    if (!drag) return;
-    const move = (e: PointerEvent) => setDrag((d) => (d ? { ...d, dx: e.clientX - d.x0 } : d));
-    const up = () => {
-      const d = drag;
-      setDrag(null);
-      const deltaUs = Math.round((d.dx / pxPerSec) * 1e6);
-      if (Math.abs(d.dx) < 2) return;
-      if (d.kind === "move") apply({ op: "move_clip", clip_id: d.clip.id, start_us: Math.max(0, d.clip.start_us + deltaUs), to_layer_id: null });
-      else apply({ op: "resize_clip", clip_id: d.clip.id, duration_us: Math.max(1, d.clip.duration_us + deltaUs) });
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up, { once: true });
-    return () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-  });
+    document.body.classList.toggle("dragging", dragging);
+    return () => document.body.classList.remove("dragging");
+  }, [dragging]);
+  const beginDrag = (e: React.PointerEvent<HTMLElement>, d: Drag) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDrag(d);
+  };
+  const dragMove = (e: React.PointerEvent) => setDrag((d) => (d ? { ...d, dx: e.clientX - d.x0 } : d));
+  const endDrag = (commit: boolean) => {
+    const d = drag;
+    setDrag(null);
+    if (!d || !commit || Math.abs(d.dx) < 2) return;
+    const deltaUs = Math.round((d.dx / pxPerSec) * 1e6);
+    if (d.kind === "move") apply({ op: "move_clip", clip_id: d.clip.id, start_us: Math.max(0, d.clip.start_us + deltaUs), to_layer_id: null });
+    else apply({ op: "resize_clip", clip_id: d.clip.id, duration_us: Math.max(1, d.clip.duration_us + deltaUs) });
+  };
 
   if (!view) {
     return (
@@ -302,11 +316,11 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
         }
       }}
     />
-    <section id="timeline-editor" className="panel timeline-panel">
+    <section id="timeline-editor" className="panel timeline-panel" ref={panel} tabIndex={-1}>
       <h2>タイムライン：{view.name}{view.path ? "" : "（新規・未保存）"}{compound ? ` ／ 素材「${compound.name}」の中` : ""}</h2>
       <div className="tl-toolbar">
-        <button disabled={!view.can_undo} onClick={() => call(() => ipc.editorUndo())} title="Ctrl+Z">元に戻す{view.undo_label ? `（${view.undo_label}）` : ""}</button>
-        <button disabled={!view.can_redo} onClick={() => call(() => ipc.editorRedo())} title="Ctrl+Y">やり直す{view.redo_label ? `（${view.redo_label}）` : ""}</button>
+        <button disabled={!view.can_undo} onClick={() => call(() => ipc.editorUndo())} title="Ctrl+Z / ⌘Z">元に戻す{view.undo_label ? `（${view.undo_label}）` : ""}</button>
+        <button disabled={!view.can_redo} onClick={() => call(() => ipc.editorRedo())} title="Ctrl+Y / ⇧⌘Z">やり直す{view.redo_label ? `（${view.redo_label}）` : ""}</button>
         <button onClick={() => ask("new")}>新規ショー</button>
         <label className="inline">
           スナップ
@@ -406,21 +420,24 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
                         style={{ left: (startUs / 1e6) * pxPerSec, width: Math.max(w, 4), ["--c" as string]: cp ? c.tint ?? "#9A8CFF" : p?.color ?? "#888" }}
                         title={`${c.id} · ${label} · ${sec(c.start_us)}s + ${sec(c.duration_us)}s`}
                         onPointerDown={(e) => {
-                          e.stopPropagation();
                           setSelClip(c.id);
                           setSelLayer(layer.id);
-                          setDrag({ kind: "move", clip: c, layerId: layer.id, x0: e.clientX, dx: 0 });
+                          beginDrag(e, { kind: "move", clip: c, layerId: layer.id, x0: e.clientX, dx: 0 });
                         }}
+                        onPointerMove={dragMove}
+                        onPointerUp={() => endDrag(true)}
+                        onPointerCancel={() => endDrag(false)}
                       >
                         <div className="fade in" style={{ width: (c.fade_in_us / durUs) * 100 + "%" }} />
                         <div className="fade out" style={{ width: (c.fade_out_us / durUs) * 100 + "%" }} />
                         <span className="tl-clip-label">{label}</span>
                         <div
                           className="tl-resize"
+                          title="ドラッグで長さを変更"
                           onPointerDown={(e) => {
-                            e.stopPropagation();
                             setSelClip(c.id);
-                            setDrag({ kind: "resize", clip: c, layerId: layer.id, x0: e.clientX, dx: 0 });
+                            setSelLayer(layer.id);
+                            beginDrag(e, { kind: "resize", clip: c, layerId: layer.id, x0: e.clientX, dx: 0 });
                           }}
                         />
                       </div>
@@ -479,8 +496,8 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
                 <button className="danger" onClick={() => apply({ op: "set_clip_recording", clip_id: selected.clip.id, recording: null, looping: null })}>記録を削除</button>
               </>
             )}
-            <button onClick={() => apply({ op: "duplicate_clip", clip_id: selected.clip.id, start_us: null })} title="Ctrl+D">複製</button>
-            <button className="danger" onClick={() => { apply({ op: "delete_clip", clip_id: selected.clip.id }); setSelClip(null); }} title="Delete">削除</button>
+            <button onClick={() => apply({ op: "duplicate_clip", clip_id: selected.clip.id, start_us: null })} title="Ctrl+D / ⌘D">複製</button>
+            <button className="danger" onClick={() => deleteClip(selected.clip.id)} title="Delete / Backspace">削除</button>
             <span className="hint">ドラッグで移動、右端で長さ。数値の開始・長さもスナップに合わせる。</span>
           </div>
         </div>
