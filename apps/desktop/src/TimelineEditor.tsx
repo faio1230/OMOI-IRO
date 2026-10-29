@@ -16,7 +16,8 @@ const ROW_H = 46;
 const HEAD_W = 190;
 const DEFAULT_CLIP_US = 4_000_000;
 
-type Drag = { kind: "move" | "resize"; clip: ClipDto; layerId: string; x0: number; dx: number };
+/** `target`: the row under the pointer while moving (another layer = move there). */
+type Drag = { kind: "move" | "resize"; clip: ClipDto; layerId: string; x0: number; dx: number; target: string };
 
 const sec = (us: number) => (us / 1e6).toFixed(3);
 const frames30 = (us: number) => Math.round((us * 30) / 1e6);
@@ -205,15 +206,51 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
     e.currentTarget.setPointerCapture(e.pointerId);
     setDrag(d);
   };
-  const dragMove = (e: React.PointerEvent) => setDrag((d) => (d ? { ...d, dx: e.clientX - d.x0 } : d));
+  // Moving: the row under the pointer (rows of the shown timeline, a compound's inside included).
+  const rowAt = (y: number): string | null => {
+    for (const r of document.querySelectorAll<HTMLElement>("#timeline-editor [data-layer-id]")) {
+      const b = r.getBoundingClientRect();
+      if (y >= b.top && y < b.bottom) return r.dataset.layerId ?? null;
+    }
+    return null;
+  };
+  const dragMove = (e: React.PointerEvent) => {
+    const y = e.clientY;
+    setDrag((d) => (d ? { ...d, dx: e.clientX - d.x0, target: d.kind === "move" ? rowAt(y) ?? d.target : d.target } : d));
+  };
+  // Only a row of the same kind (timeline or triggered) takes the clip; Rust checks the rest.
+  const accepts = (d: Drag, layerId: string) => {
+    const shown = (scope ? view?.compounds.find((c) => c.id === scope)?.layers : view?.layers) ?? [];
+    const from = shown.find((l) => l.id === d.layerId);
+    const to = shown.find((l) => l.id === layerId);
+    return !!from && !!to && to.kind !== "continuous" && to.kind === from.kind;
+  };
   const endDrag = (commit: boolean) => {
     const d = drag;
     setDrag(null);
-    if (!d || !commit || Math.abs(d.dx) < 2) return;
+    if (!d || !commit) return;
+    const other = d.kind === "move" && d.target !== d.layerId;
+    if (!other && Math.abs(d.dx) < 2) return;
     const deltaUs = Math.round((d.dx / pxPerSec) * 1e6);
-    if (d.kind === "move") apply({ op: "move_clip", clip_id: d.clip.id, start_us: Math.max(0, d.clip.start_us + deltaUs), to_layer_id: null });
+    if (other && !accepts(d, d.target)) {
+      setError("このレイヤーには移せない（常時レイヤー、または種類の違うレイヤー）");
+      return;
+    }
+    if (d.kind === "move") apply({ op: "move_clip", clip_id: d.clip.id, start_us: Math.max(0, d.clip.start_us + deltaUs), to_layer_id: other ? d.target : null });
     else apply({ op: "resize_clip", clip_id: d.clip.id, duration_us: Math.max(1, d.clip.duration_us + deltaUs) });
   };
+  // Esc cancels a drag (like pointercancel).
+  useEffect(() => {
+    if (!dragging) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setDrag(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dragging]);
 
   if (!view) {
     return (
@@ -390,8 +427,12 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
           </div>
           {rows.map((layer) => {
             const idx = layers.findIndex((l) => l.id === layer.id);
+            // Moving a clip from another row onto this one: highlight and a ghost.
+            const dropHere = !!drag && drag.kind === "move" && drag.target === layer.id && drag.layerId !== layer.id;
+            const ghost = dropHere ? drag!.clip : null;
+            const ghostColor = ghost ? (ghost.compound_id ? ghost.tint ?? "#9A8CFF" : presetOf(ghost.preset_id)?.color ?? "#888") : undefined;
             return (
-              <div key={layer.id} className={selLayer === layer.id ? "tl-row sel" : "tl-row"} style={{ width: HEAD_W + widthPx, height: ROW_H }} onPointerDown={() => { setSelLayer(layer.id); setSelClip(null); }}>
+              <div key={layer.id} data-layer-id={layer.id} className={`tl-row${selLayer === layer.id ? " sel" : ""}${dropHere ? (accepts(drag!, layer.id) ? " drop-ok" : " drop-no") : ""}`} style={{ width: HEAD_W + widthPx, height: ROW_H }} onPointerDown={() => { setSelLayer(layer.id); setSelClip(null); }}>
                 <div className="tl-head" style={{ width: HEAD_W }}>
                   <div className="tl-name" title={layer.id}>{layer.name}</div>
                   <div className="tl-meta">{layer.kind === "continuous" ? `常時 · ${presetOf(layer.preset_id ?? "")?.name ?? ""}` : layer.kind === "triggered" ? `発火 · ${TRIGGER_JA[layer.trigger?.on ?? "press"]}` : `${layer.blend} · ${Math.round(layer.opacity * 100)}%`}</div>
@@ -404,6 +445,12 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
                 </div>
                 <div className="tl-track">
                   {layer.kind === "continuous" && <div className={flashing.has(layer.id) ? "tl-continuous flash" : "tl-continuous"} style={{ background: presetOf(layer.preset_id ?? "")?.color }} />}
+                  {ghost && (
+                    <div className={`tl-clip ghost${accepts(drag!, layer.id) ? "" : " reject"}`} aria-hidden
+                      style={{ left: (Math.max(0, ghost.start_us + (drag!.dx / pxPerSec) * 1e6) / 1e6) * pxPerSec, width: Math.max((ghost.duration_us / 1e6) * pxPerSec, 4), ["--c" as string]: ghostColor }}>
+                      <span className="tl-clip-label">{ghost.compound_id ? `素材：${compoundOf(ghost.compound_id)?.name ?? ""}` : presetOf(ghost.preset_id)?.name ?? ghost.preset_id}</span>
+                    </div>
+                  )}
                   {layer.clips.map((c) => {
                     const p = presetOf(c.preset_id);
                     const cp = compoundOf(c.compound_id);
@@ -416,13 +463,13 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
                     return (
                       <div
                         key={c.id}
-                        className={`tl-clip${selClip === c.id ? " sel" : ""}${flashing.has(c.id) ? " flash" : ""}`}
+                        className={`tl-clip${selClip === c.id ? " sel" : ""}${flashing.has(c.id) ? " flash" : ""}${d?.kind === "move" && d.target !== layer.id ? " leaving" : ""}`}
                         style={{ left: (startUs / 1e6) * pxPerSec, width: Math.max(w, 4), ["--c" as string]: cp ? c.tint ?? "#9A8CFF" : p?.color ?? "#888" }}
                         title={`${c.id} · ${label} · ${sec(c.start_us)}s + ${sec(c.duration_us)}s`}
                         onPointerDown={(e) => {
                           setSelClip(c.id);
                           setSelLayer(layer.id);
-                          beginDrag(e, { kind: "move", clip: c, layerId: layer.id, x0: e.clientX, dx: 0 });
+                          beginDrag(e, { kind: "move", clip: c, layerId: layer.id, x0: e.clientX, dx: 0, target: layer.id });
                         }}
                         onPointerMove={dragMove}
                         onPointerUp={() => endDrag(true)}
@@ -437,7 +484,7 @@ export default function TimelineEditor(props: { showPath: string; playheadUs: nu
                           onPointerDown={(e) => {
                             setSelClip(c.id);
                             setSelLayer(layer.id);
-                            beginDrag(e, { kind: "resize", clip: c, layerId: layer.id, x0: e.clientX, dx: 0 });
+                            beginDrag(e, { kind: "resize", clip: c, layerId: layer.id, x0: e.clientX, dx: 0, target: layer.id });
                           }}
                         />
                       </div>

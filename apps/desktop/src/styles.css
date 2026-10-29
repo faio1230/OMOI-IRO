@@ -158,6 +158,12 @@ button.tiny.danger, button.danger { border-color: var(--danger); color: var(--da
 .tl-continuous { position: absolute; inset: 8px 0; opacity: 0.25; border-radius: 3px; }
 .tl-clip { position: absolute; top: 6px; bottom: 6px; border-radius: 4px; background: color-mix(in srgb, var(--c) 55%, #0c0e12); border: 1px solid color-mix(in srgb, var(--c) 80%, #fff 0%); cursor: grab; overflow: hidden; touch-action: none; user-select: none; }
 .tl-clip.sel { outline: 2px solid #fff; outline-offset: 0; z-index: 1; }
+/* Moving a clip to another layer: the original fades, a ghost shows in the target row. */
+.tl-clip.leaving { opacity: 0.3; }
+.tl-clip.ghost { opacity: 0.6; pointer-events: none; z-index: 2; border-style: dashed; }
+.tl-clip.ghost.reject { background: rgba(200, 40, 40, 0.35); border-color: var(--danger); }
+.tl-row.drop-ok .tl-track { background: rgba(120, 200, 255, 0.10); }
+.tl-row.drop-no .tl-track { background: rgba(255, 60, 60, 0.14); cursor: not-allowed; }
 .tl-clip .fade { position: absolute; top: 0; bottom: 0; pointer-events: none; }
 .tl-clip .fade.in { left: 0; background: linear-gradient(to right, rgba(12, 14, 18, 0.85), transparent); }
 .tl-clip .fade.out { right: 0; background: linear-gradient(to left, rgba(12, 14, 18, 0.85), transparent); }
